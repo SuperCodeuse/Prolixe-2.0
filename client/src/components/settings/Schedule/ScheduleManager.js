@@ -154,9 +154,7 @@ const ScheduleManager = () => {
 
             <div className="schedule-manager">
                 <div className="section-header">
-                    <div className="section-header">
-                <h3>Créneaux horaires ({hours.length})</h3>
-            </div>
+                    <h3>Créneaux horaires ({hours.length})</h3>
                 </div>
 
                 {sortedHours.length === 0 ? (

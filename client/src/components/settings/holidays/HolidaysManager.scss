@@ -1,85 +1,148 @@
-@import '../../../App.scss';
-.holidays-manager {
+@import '../../../App';
 
-  color: black;
-  padding: 20px;
+.holidays-manager {
+  /* Suppression du container-base car il est déjà dans .settings-page */
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
 
   .header-section {
-    margin-bottom: 30px;
-    h2 { color: white; margin-bottom: 5px; }
-    .subtitle { color: #7f8c8d; font-size: 0.9rem; }
+    /* On s'aligne sur le style .settings-header */
+    margin-bottom: 1rem;
+
+    h2 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--text-light);
+      margin-bottom: 0.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .subtitle {
+      color: #9ca3af;
+      font-size: 0.9rem;
+    }
   }
 
   .main-grid {
     display: grid;
-    grid-template-columns: 350px 1fr;
-    gap: 20px;
+    /* On ajuste la grille pour qu'elle respire dans le panneau principal */
+    grid-template-columns: 320px 1fr;
+    gap: 1.5rem;
+    align-items: start;
 
-    @media (max-width: 900px) {
+    @media (max-width: 1100px) {
       grid-template-columns: 1fr;
     }
   }
 
+  /* Style des cartes pour correspondre à .class-card de Settings.scss */
   .card {
-    background: white;
-    padding: 20px;
+    background: var(--bg-dark-secondary);
+    border: 1px solid #333333;
     border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    padding: 1.5rem;
+    transition: all 0.3s ease;
 
     h3 {
-      margin-top: 0;
+      color: var(--text-light);
       font-size: 1.1rem;
-      border-bottom: 2px solid #f8f9fa;
-      padding-bottom: 10px;
-      margin-bottom: 20px;
+      font-weight: 600;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid #333333;
     }
   }
 
+  /* Formulaires et Sélections */
   .custom-select-wrapper {
-    margin-bottom: 20px;
-    label { display: block; margin-bottom: 8px; font-weight: 500; color: #34495e; }
+    margin-bottom: 1.25rem;
+
+    label {
+      display: block;
+      color: #9ca3af;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.5rem;
+    }
 
     .prolixe-select {
       width: 100%;
-      padding: 12px;
+      padding: 0.75rem;
+      background: var(--bg-dark-tertiary); /* Plus sombre pour contraste */
+      border: 1px solid #333333;
       border-radius: 8px;
-      border: 1px solid #dcdde1;
-      background-color: #f5f6fa;
-      font-size: 1rem;
+      color: var(--text-light);
       outline: none;
-      transition: border 0.2s;
       cursor: pointer;
 
-      &:focus { border-color: #3498db; }
+      &:focus {
+        border-color: var(--accent-blue);
+      }
     }
   }
 
+  /* Bouton d'upload aligné sur .btn-primary de Settings */
   .upload-box {
     input { display: none; }
     .btn-upload {
-      display: block;
-      text-align: center;
-      background: #3498db;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.5rem;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-dark-blue));
       color: white;
-      padding: 10px;
+      border: none;
       border-radius: 8px;
       cursor: pointer;
-      transition: background 0.3s;
-      &:hover { background: #2980b9; }
+      font-weight: 500;
+      font-size: 0.875rem;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+
+      &:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+      }
     }
   }
 
+  /* Liste des statuts style "Settings List" */
   .status-summary {
-    margin-top: 30px;
-    h4 { font-size: 0.9rem; color: #95a5a6; text-transform: uppercase; }
+    margin-top: 1.5rem;
+
+    h4 {
+      font-size: 0.75rem;
+      color: #64748b;
+      text-transform: uppercase;
+      margin-bottom: 0.75rem;
+    }
+
     ul {
       list-style: none;
       padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+
       li {
         display: flex;
         align-items: center;
-        padding: 8px 0;
-        font-size: 0.9rem;
+        padding: 0.6rem 0.75rem;
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 6px;
+        font-size: 0.85rem;
+        color: #9ca3af;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.06);
+        }
+
         .dot {
           width: 8px;
           height: 8px;
@@ -88,31 +151,54 @@
         }
 
         strong {
-          margin-left: 0.3rem;
+          margin-left: auto;
+          font-weight: 500;
+        }
+
+        &.status-done {
+          color: var(--text-light);
+          .dot { background: var(--accent-green); box-shadow: 0 0 8px var(--accent-green); }
+        }
+
+        &.status-empty {
+          .dot { background: #4b5563; }
         }
       }
-      .status-done .dot { background: #2ecc71; }
-      .status-empty .dot { background: #e74c3c; }
     }
+  }
+
+  /* Tableau style "Settings Main content" */
+  .table-responsive {
+    border-radius: 8px;
+    border: 1px solid #333333;
+    overflow: hidden;
   }
 
   .prolixe-table {
     width: 100%;
     border-collapse: collapse;
-    th, td {
-      text-align: left;
-      padding: 12px;
-      border-bottom: 1px solid #f1f2f6;
-    }
-    th { background: #f8f9fa; color: #7f8c8d; font-weight: 600; }
-  }
+    font-size: 0.9rem;
 
-  .empty-state {
-    height: 200px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #bdc3c7;
-    font-style: italic;
+    th {
+      background: rgba(255, 255, 255, 0.03);
+      color: #9ca3af;
+      text-align: left;
+      padding: 1rem;
+      font-weight: 500;
+      border-bottom: 1px solid #333333;
+    }
+
+    td {
+      padding: 1rem;
+      color: var(--text-light);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    tbody tr:hover {
+      background: rgba(59, 130, 246, 0.08);
+      backdrop-filter: blur(4px);
+      td { color: var(--text-light); }
+    }
+
   }
 }
