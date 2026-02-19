@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, {useEffect, useState} from 'react';
+import { useLocation } from 'react-router-dom';
 import ClassesManager from "./Class/ClassManager";
 import ScheduleManager from "./Schedule/ScheduleManager";
 import HolidaysManager from "./holidays/HolidaysManager";
@@ -10,7 +11,10 @@ import { useAuth } from "../../hooks/useAuth";
 import './Settings.scss';
 
 const Settings = () => {
+    const location = useLocation();
     const { user } = useAuth();
+
+
 
     const [collapsed, setCollapsed] = useState({
         admin: false,
@@ -22,7 +26,18 @@ const Settings = () => {
     };
 
     const initialTab = user?.role === "ADMIN" ? 'horaire' : 'classes';
-    const [activeTab, setActiveTab] = useState(initialTab);
+    const [activeTab, setActiveTab] = useState(() => {
+        if (location.state?.activeTab) {
+            return location.state.activeTab;
+        }
+        return user?.role === "ADMIN" ? 'journals' : 'classes';
+    });
+
+    useEffect(() => {
+        if (location.state?.activeTab) {
+            setActiveTab(location.state.activeTab);
+        }
+    }, [location.state]);
 
     // Définition des sections de manière structurée
     const sections = [];
