@@ -1,13 +1,12 @@
-// frontend/src/components/Login.jsx
 import React, { useState } from 'react';
-import { useAuth } from '../../hooks/useAuth'; // Assurez-vous du chemin
-import { useToast } from '../../hooks/useToast'; // Pour les notifications
+import { useAuth } from '../../hooks/useAuth';
+import { useToast } from '../../hooks/useToast'; //
 import './login.scss';
-import {Link} from "react-router-dom"; // Votre fichier CSS pour le formulaire de connexion
+import { Link } from "react-router-dom";
 
 const Login = () => {
     const { login } = useAuth();
-    const { success, error: showError } = useToast();
+    const { error: showError } = useToast(); //
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -19,7 +18,7 @@ const Login = () => {
         setIsSubmitting(true);
 
         if (!email || !password) {
-            showError('Veuillez entrer votre email et votre mot de passe.', 'error');
+            showError('Veuillez entrer votre email et votre mot de passe.'); //
             setIsSubmitting(false);
             return;
         }
@@ -27,10 +26,10 @@ const Login = () => {
         try {
             const result = await login(email, password, rememberMe);
             if (!result.success) {
-                showError(result.message || 'Échec de la connexion. Veuillez réessayer.', 'error');
+                showError(result.message || 'Échec de la connexion. Veuillez réessayer.'); //
             }
         } catch (err) {
-            showError(err.message || 'Une erreur est survenue.', 'error');
+            showError(err.message || 'Une erreur est survenue.'); //
         }
 
         setIsSubmitting(false);
@@ -53,7 +52,6 @@ const Login = () => {
                             onChange={(e) => setEmail(e.target.value)}
                             disabled={isSubmitting}
                             required
-                            autoFocus
                         />
                     </div>
                     <div className="form-group">
@@ -67,22 +65,11 @@ const Login = () => {
                             required
                         />
                     </div>
-                    <div className="form-group remember-me-group">
-                        <input
-                            type="checkbox"
-                            id="rememberMe"
-                            checked={rememberMe}
-                            onChange={(e) => setRememberMe(e.target.checked)}
-                        />
-                        <label htmlFor="rememberMe">Rester connecté</label>
-                    </div>
                     <button type="submit" className="btn btn-primary login-btn" disabled={isSubmitting}>
                         {isSubmitting ? 'Connexion en cours...' : 'Se connecter'}
                     </button>
                 </form>
-                <p>
-                    Créer un compte? <Link to="/register">S'inscrire</Link>
-                </p>
+                <p>Créer un compte? <Link to="/register">S'inscrire</Link></p>
             </div>
         </div>
     );

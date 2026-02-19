@@ -1,21 +1,14 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { useClasses } from '../../hooks/useClasses';
-import { useSchedule } from '../../hooks/useSchedule';
-import { useJournal } from '../../hooks/useJournal';
-import { useScheduleHours } from '../../hooks/useScheduleHours';
-import useScheduleModel from '../../hooks/useScheduleModel';
-import HolidaysManagerService from '../../services/HolidaysManagerService';
-import { format, parseISO, isWithinInterval } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import './dashboard.scss';
 import './dashboard_mobile.scss';
 import NoteSection from './NoteSection';
-import TodayScheduleSection from './TodayScheduleSection';
 import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
+
     const { user } = useAuth();
+    /*
     const navigate = useNavigate();
     const [holidays, setHolidays] = useState([]);
     const [loadingHolidays, setLoadingHolidays] = useState(true);
@@ -207,7 +200,7 @@ const Dashboard = () => {
 
     if (isLoading) {
         return <div className="dashboard-page"><div className="loading-message">Chargement...</div></div>;
-    }
+    }*/
 
     return (
         <div className="dashboard-page">
@@ -218,37 +211,12 @@ const Dashboard = () => {
 
             <div className="dashboard-content">
                 <div className="dashboard-columns">
-                    <div className="column main-column margin-bottom-lg">
-                        <TodayScheduleSection
-                            todaySchedule={todaySchedule}
-                            holidayInfo={holidayInfo}
-                            getClassColor={getClassColor}
-                            classes={classes}
-                            loading={loadingSchedule || loadingHours}
-                        />
-                    </div>
                     <div className="column side-column">
                         <NoteSection />
                     </div>
                 </div>
             </div>
-            <div className="stats-grid">
-                {stats.map((stat, index) => (
-                    <div
-                        key={index}
-                        className={`stat-card ${stat.color} ${stat.action ? 'clickable' : ''}`}
-                        onClick={stat.action ? () => handleStatClick(stat) : undefined}
-                    >
-                        <div className="stat-header">
-                            <div className="stat-icon">{stat.icon}</div>
-                        </div>
-                        <div className="stat-content">
-                            <h3>{stat.value}</h3>
-                            <p>{stat.title}</p>
-                        </div>
-                    </div>
-                ))}
-            </div>
+           
         </div>
     );
 };
