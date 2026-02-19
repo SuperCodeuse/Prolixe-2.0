@@ -17,7 +17,7 @@ class JournalService {
     }
 
     static async deleteJournal(id) {
-        return ApiService.delete(`${JOURNAL_API_URL}/archive/${id}`);
+        return ApiService.delete(`${JOURNAL_API_URL}/delete/${id}`);
     }
 
     static async importJournal(file, journalId) {

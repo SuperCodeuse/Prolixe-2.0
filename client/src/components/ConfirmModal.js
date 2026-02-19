@@ -29,7 +29,7 @@ const ConfirmModal = ({
 
                 <div className="confirm-modal-body">
                     <div className={`confirm-icon confirm-icon-${type}`}>
-                        {type === 'danger' ? '⚠️' : 'ℹ️'}
+                        {type === 'danger' ? '' : 'ℹ️'}
                     </div>
                     <p className="confirm-message">{message}</p>
                 </div>

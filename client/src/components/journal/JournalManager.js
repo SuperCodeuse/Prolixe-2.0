@@ -1,11 +1,10 @@
 // client/src/components/settings/Journal/JournalManager.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useJournal } from '../../hooks/useJournal';
 import { useSchoolYears } from '../../hooks/useSchoolYear';
 import { useToast } from '../../hooks/useToast';
 import ConfirmModal from '../ConfirmModal';
 import JournalService from '../../services/JournalService';
-import SchoolYearDisplay from '../../hooks/SchoolYearDisplay';
 import './JournalManager.scss';
 
 const JournalManager = () => {
@@ -19,7 +18,6 @@ const JournalManager = () => {
         deleteArchivedJournal,
         clearJournal,
         loading: journalLoading,
-        error: journalError,
         loadAllJournals,
     } = useJournal();
 
@@ -28,50 +26,34 @@ const JournalManager = () => {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [formData, setFormData] = useState({ name: '', school_year_id: '' });
-    const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
+    const [confirmModal, setConfirmModal] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: null,
+        successMessage: '' // Ajout d'un message personnalisé en cas de succès
+    });
+
     const [selectedFile, setSelectedFile] = useState(null);
     const [isImporting, setIsImporting] = useState(false);
     const [importTargetJournalId, setImportTargetJournalId] = useState('');
 
-    useEffect(() => {
-        if (journalError) {
-            showError(journalError.message || journalError);
-        }
-    }, [journalError, showError]);
+    const activeJournals = useMemo(() => journals.filter(j => !j.is_archived), [journals]);
+    const otherActiveJournals = useMemo(() =>
+            activeJournals.filter(j => j.id !== currentJournal?.id),
+        [activeJournals, currentJournal]);
 
-    const handleClear = (journal) => {
-        showConfirmModal(
-            'Vider le journal',
-            `Êtes-vous sûr de vouloir vider le journal "${journal.name}" ? Toutes ses entrées seront définitivement supprimées. Cette action est irréversible.`,
-            async () => {
-                try {
-                    await clearJournal(journal.id);
-                    success(`Journal "${journal.name}" vidé avec succès.`);
-                    closeConfirmModal();
-                } catch (err) {
-                    showError(err.message || "Erreur lors du vidage du journal.");
-                    closeConfirmModal();
-                }
-            }
-        );
-    };
-
-    const handleFileChange = (event) => {
-        const file = event.target.files[0];
-        if (file && file.type === 'application/json') {
-            setSelectedFile(file);
-        } else {
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file?.type === 'application/json') setSelectedFile(file);
+        else {
             showError('Veuillez sélectionner un fichier JSON valide.');
-            setSelectedFile(null);
-            event.target.value = null;
+            e.target.value = null;
         }
     };
 
     const handleImport = async () => {
-        if (!selectedFile || !importTargetJournalId) {
-            showError('Veuillez sélectionner un fichier et un journal de destination.');
-            return;
-        }
+        if (!selectedFile || !importTargetJournalId) return;
         setIsImporting(true);
         try {
             const response = await JournalService.importJournal(selectedFile, importTargetJournalId);
@@ -83,92 +65,105 @@ const JournalManager = () => {
             setIsImporting(false);
             setSelectedFile(null);
             setImportTargetJournalId('');
-            const fileInput = document.getElementById('import-journal-input');
-            if(fileInput) fileInput.value = null;
         }
     };
 
-    const handleOpenModal = () => {
-        setFormData({ name: '', school_year_id: '' });
-        setIsModalOpen(true);
+    // Helper pour configurer la modal avec un message de succès
+    const showConfirm = (title, message, onConfirm, successMessage) => {
+        setConfirmModal({ isOpen: true, title, message, onConfirm, successMessage });
     };
 
-    const handleCloseModal = () => {
-        setIsModalOpen(false);
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (!formData.name.trim()) {
-            showError("Le nom du journal ne peut pas être vide.");
-            return;
-        }
-        if (!formData.school_year_id) {
-            showError("Veuillez sélectionner une année scolaire.");
-            return;
-        }
-        try {
-            await createJournal(formData);
-            success('Nouveau journal créé avec succès !');
-            handleCloseModal();
-        } catch (err) {
-            showError(err.message || "Erreur lors de la création du journal.");
-        }
-    };
-
-    const handleArchive = (journal) => {
-        showConfirmModal(
-            'Archiver le journal',
-            `Êtes-vous sûr de vouloir archiver le journal "${journal.name}" ? Vous ne pourrez plus y ajouter d'entrées.`,
-            async () => {
-                try {
-                    await archiveJournal(journal.id);
-                    success('Journal archivé.');
-                    closeConfirmModal();
-                } catch (err) {
-                    showError(err.message);
-                    closeConfirmModal();
-                }
-            }
-        );
-    };
-
-    const handleDelete = (journal) => {
-        showConfirmModal(
-            'Supprimer le journal',
-            `Êtes-vous sûr de vouloir supprimer définitivement le journal archivé "${journal.name}" ? Cette action est irréversible.`,
-            async () => {
-                try {
-                    await deleteArchivedJournal(journal.id);
-                    success('Journal supprimé définitivement.');
-                    closeConfirmModal();
-                } catch (err) {
-                    showError(err.message);
-                    closeConfirmModal();
-                }
-            }
-        );
-    };
+    const closeConfirmModal = () => setConfirmModal(prev => ({ ...prev, isOpen: false }));
 
     const handleFormChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const showConfirmModal = (title, message, onConfirm) => {
-        setConfirmModal({ isOpen: true, title, message, onConfirm });
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            await createJournal(formData);
+            success('Nouveau journal créé avec succès !');
+            setIsModalOpen(false);
+            setFormData({ name: '', school_year_id: '' });
+        } catch (err) {
+            showError(err.response?.data?.message || "Erreur lors de la création.");
+        }
     };
 
-    const closeConfirmModal = () => {
-        setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null });
+    const JournalCard = ({ journal, type }) => {
+        const isSelected = journal.id === currentJournal?.id;
+        const isArchived = type === 'archived';
+        const hasEntries = journal.entries_count > 0;
+
+        return (
+            <div className={`journal-card ${isArchived ? 'archived' : ''} ${isSelected ? 'current' : ''}`}>
+                <div className="journal-info">
+                    <strong>{journal.name}</strong>
+                    <span>{journal.year_label}</span>
+                    {hasEntries && <small>{journal.entries_count} entrée(s)</small>}
+                </div>
+                <div className="journal-actions">
+                    {isSelected && !isArchived && <span className="status-badge current">Actif</span>}
+                    {isSelected && isArchived && <span className="status-badge selected">Visualisé</span>}
+
+                    {!isSelected && (
+                        <button onClick={() => selectJournal(journal)} className="btn-select">
+                            {isArchived ? 'Visualiser' : 'Sélectionner'}
+                        </button>
+                    )}
+
+                    {!isArchived && (
+                        <>
+                            <button
+                                onClick={() => showConfirm(
+                                    'Vider le journal',
+                                    `Vider ${journal.name} ? Cette action est irréversible.`,
+                                    () => clearJournal(journal.id),
+                                    'Journal vidé avec succès.'
+                                )}
+                                className="btn-clear"
+                                disabled={!hasEntries}
+                            >
+                                Vider
+                            </button>
+                            <button
+                                onClick={() => showConfirm(
+                                    'Archiver le journal',
+                                    `Archiver ${journal.name} ? Il passera en lecture seule.`,
+                                    () => archiveJournal(journal.id),
+                                    'Journal archivé.'
+                                )}
+                                className="btn-archive"
+                                disabled={activeJournals.length <= 1}
+                            >
+                                Archiver
+                            </button>
+                        </>
+                    )}
+
+                    {isArchived && (
+                        <button
+                            onClick={() => showConfirm(
+                                'Supprimer le journal',
+                                `Supprimer définitivement ${journal.name} ?`,
+                                () => deleteArchivedJournal(journal.id),
+                                'Journal supprimé.'
+                            )}
+                            className="btn-delete"
+                        >
+                            Supprimer
+                        </button>
+                    )}
+                </div>
+            </div>
+        );
     };
-
-    const activeJournals = journals.filter(j => !j.is_archived);
-
-    if (journalLoading && journals.length) return <p>Chargement des journaux...</p>;
 
     return (
         <div className="journal-manager">
+            {/* ... section-header et journal-lists identiques ... */}
             <div className="section-header">
                 <h2>📚 Gestion des Journaux</h2>
                 <div className="file-container">
@@ -176,118 +171,53 @@ const JournalManager = () => {
                         <select
                             value={importTargetJournalId}
                             onChange={(e) => setImportTargetJournalId(e.target.value)}
-                            disabled={isImporting || activeJournals.length === 0}
                             className="btn-select"
                         >
                             <option value="">Importer dans...</option>
-                            {activeJournals.map(j => (
-                                <option key={j.id} value={j.id}>{j.name}</option>
-                            ))}
+                            {activeJournals.map(j => <option key={j.id} value={j.id}>{j.name}</option>)}
                         </select>
-                        <input
-                            type="file"
-                            id="import-journal-input"
-                            accept=".json"
-                            onChange={handleFileChange}
-                            style={{ display: 'none' }}
-                        />
-                        <label htmlFor="import-journal-input" className="file-input-label">
-                            📁 Choisir un fichier
-                        </label>
+                        <input type="file" id="import-input" accept=".json" onChange={handleFileChange} hidden />
+                        <label htmlFor="import-input" className="file-input-label">📁 {selectedFile ? selectedFile.name : 'Choisir un fichier'}</label>
                         {selectedFile && (
-                            <button
-                                className="btn-primary"
-                                onClick={handleImport}
-                                disabled={!selectedFile || isImporting || !importTargetJournalId}
-                            >
-                                {isImporting ? 'Importation...' : `Importer dans "${journals.find(j => j.id === importTargetJournalId)?.name}"`}
+                            <button className="btn-primary" onClick={handleImport} disabled={isImporting}>
+                                {isImporting ? '...' : 'Lancer Import'}
                             </button>
                         )}
                     </div>
-                    <button className="btn-primary" onClick={handleOpenModal}>
-                        <span>➕</span> Ajouter un journal
-                    </button>
+                    <button className="btn-primary" onClick={() => setIsModalOpen(true)}><span>➕</span> Ajouter un journal</button>
                 </div>
             </div>
 
             <div className="journal-lists">
                 <div className="journal-list">
-                    <h3>Journal Courant / Visualisé</h3>
-                    {currentJournal ? (
-                        <div className={`journal-card ${currentJournal.is_archived ? 'archived' : ''} current`}>
-                            <div className="journal-info">
-                                <strong>{currentJournal.name}</strong>
-                                <span><SchoolYearDisplay schoolYearId={currentJournal.school_year_id} /></span>
-                            </div>
-                            <div className="journal-actions">
-                                {currentJournal.is_archived ? (
-                                    <span className="status-badge archived">Lecture seule</span>
-                                ) : (
-                                    <>
-                                        <span className="status-badge current">Actif</span>
-                                        <button onClick={() => handleClear(currentJournal)} className="btn-clear">Vider</button>
-                                        <button onClick={() => handleArchive(currentJournal)} className="btn-archive" disabled={activeJournals.length <= 1}>Archiver</button>
-                                    </>
-                                )}
-                            </div>
-                        </div>
-                    ) : (
-                        <p>Aucun journal courant sélectionné. Choisissez-en un ci-dessous.</p>
-                    )}
+                    <h3>Journal sélectionné</h3>
+                    {currentJournal ? <JournalCard journal={currentJournal} type={currentJournal.is_archived ? 'archived' : 'active'} /> : <p>Aucune sélection.</p>}
                 </div>
 
                 <div className="journal-list">
-                    <h3>Autres Journaux Actifs</h3>
-                    {activeJournals.filter(j => j.id !== currentJournal?.id).length > 0 ? (
-                        activeJournals.filter(j => j.id !== currentJournal?.id).map(journal => (
-                            <div key={journal.id} className="journal-card">
-                                <div className="journal-info">
-                                    <strong>{journal.name}</strong>
-                                    <span><SchoolYearDisplay schoolYearId={journal.school_year_id} /></span>
-                                </div>
-                                <div className="journal-actions">
-                                    <button onClick={() => selectJournal(journal)} className="btn-select">Sélectionner</button>
-                                    <button onClick={() => handleClear(journal)} className="btn-clear">Vider</button>
-                                    <button onClick={() => handleArchive(journal)} className="btn-archive" disabled={activeJournals.length <= 1}>Archiver</button>
-                                </div>
-                            </div>
-                        ))
-                    ) : (
-                        <p>Aucun autre journal actif.</p>
-                    )}
+                    <h3>Autres journaux actifs</h3>
+                    {otherActiveJournals.length > 0 ?
+                        otherActiveJournals.map(j => <JournalCard key={j.id} journal={j} type="active" />)
+                        : <p>Aucun autre journal actif.</p>
+                    }
                 </div>
 
                 <div className="journal-list">
-                    <h3>Journaux Archivés</h3>
-                    {archivedJournals.length > 0 ? (
-                        archivedJournals.map(journal => (
-                            <div key={journal.id} className={`journal-card archived ${journal.id === currentJournal?.id ? 'current' : ''}`}>
-                                <div className="journal-info">
-                                    <strong>{journal.name}</strong>
-                                    <span><SchoolYearDisplay schoolYearId={journal.school_year_id} /></span>
-                                </div>
-                                <div className="journal-actions">
-                                    {journal.id === currentJournal?.id ? (
-                                        <span className="status-badge selected">Visualisé</span>
-                                    ) : (
-                                        <button onClick={() => selectJournal(journal)} className="btn-select">Visualiser</button>
-                                    )}
-                                    <button onClick={() => handleDelete(journal)} className="btn-delete">Supprimer</button>
-                                </div>
-                            </div>
-                        ))
-                    ) : (
-                        <p>Aucun journal archivé.</p>
-                    )}
+                    <h3>Journaux archivés</h3>
+                    {archivedJournals.length > 0 ?
+                        archivedJournals.map(j => <JournalCard key={j.id} journal={j} type="archived" />)
+                        : <p>Aucun journal archivé.</p>
+                    }
                 </div>
             </div>
 
+            {/* Modal de création identique */}
             {isModalOpen && (
                 <div className="modal-overlay">
                     <div className="modal">
                         <div className="modal-header">
                             <h3>Créer un nouveau journal</h3>
-                            <button className="modal-close" onClick={handleCloseModal}>✕</button>
+                            <button className="modal-close" onClick={() => setIsModalOpen(false)}>✕</button>
                         </div>
                         <form onSubmit={handleSubmit} className="class-form">
                             <div className="form-group">
@@ -299,28 +229,29 @@ const JournalManager = () => {
                                     onChange={handleFormChange}
                                     type="text"
                                     required
-                                    placeholder="Ex: Journal de classe 2024-2025"
+                                    placeholder="Ex: Journal 2024-2025"
                                 />
                             </div>
                             <div className="form-group">
                                 <label htmlFor="schoolYear">Année scolaire</label>
-                                {schoolYearsLoading ? <p>Chargement...</p> : schoolYearsError ? <p className="error-message">{schoolYearsError}</p> :
-                                    <select
-                                        id="schoolYear"
-                                        name="school_year_id"
-                                        value={formData.school_year_id}
-                                        onChange={handleFormChange}
-                                        required
-                                    >
-                                        <option value="">-- Sélectionnez une année --</option>
-                                        {schoolYears.map(sy => (
-                                            <option key={sy.id} value={sy.id}>{sy.start_date} - {sy.end_date}</option>
-                                        ))}
-                                    </select>}
+                                <select
+                                    id="schoolYear"
+                                    name="school_year_id"
+                                    value={formData.school_year_id}
+                                    onChange={handleFormChange}
+                                    required
+                                >
+                                    <option value="">-- Sélectionnez une année --</option>
+                                    {schoolYears.map(sy => (
+                                        <option key={sy.id} value={sy.id}>
+                                            {sy.label || `${sy.start_date} - ${sy.end_date}`}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
                             <div className="form-actions">
-                                <button type="button" className="btn-secondary" onClick={handleCloseModal}>Annuler</button>
-                                <button type="submit" className="btn-primary" disabled={schoolYearsLoading || !formData.name || !formData.school_year_id}>Créer</button>
+                                <button type="button" className="btn-secondary" onClick={() => setIsModalOpen(false)}>Annuler</button>
+                                <button type="submit" className="btn-primary" disabled={!formData.name || !formData.school_year_id}>Créer</button>
                             </div>
                         </form>
                     </div>
@@ -332,10 +263,16 @@ const JournalManager = () => {
                 title={confirmModal.title}
                 message={confirmModal.message}
                 onClose={closeConfirmModal}
-                onConfirm={confirmModal.onConfirm}
-                confirmText="Confirmer"
-                cancelText="Annuler"
-                type="danger"
+                onConfirm={async () => {
+                    try {
+                        await confirmModal.onConfirm();
+                        success(confirmModal.successMessage || 'Action effectuée avec succès.');
+                    } catch (err) {
+                        showError(err.message || 'Une erreur est survenue.');
+                    } finally {
+                        closeConfirmModal();
+                    }
+                }}
             />
         </div>
     );

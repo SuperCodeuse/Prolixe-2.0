@@ -17,25 +17,6 @@ import DocumentGenerator from "./components/DocumentGenerator/DocumentGenerator"
 import './App.scss';
 import ConseilDeClasse from "./components/cc/conseilClasse";
 
-
-if (typeof window !== 'undefined') {
-    const resizeObserverErr = 'ResizeObserver loop completed with undelivered notifications.';
-    const originalError = console.error;
-
-    console.error = (...args) => {
-        if (args[0]?.includes?.(resizeObserverErr) || args[0]?.message?.includes?.(resizeObserverErr)) {
-            return; // On ignore silencieusement
-        }
-        originalError.apply(console, args);
-    };
-
-    window.addEventListener('error', (e) => {
-        if (e.message === resizeObserverErr) {
-            e.stopImmediatePropagation();
-        }
-    });
-}
-
 const AuthenticatedAppContent = ({ isMenuOpen, toggleMenu }) => {
     const breakpoint = 1600;
 

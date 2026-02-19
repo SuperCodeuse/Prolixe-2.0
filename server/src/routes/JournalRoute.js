@@ -8,21 +8,24 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 router.get('/', JournalController.getAllJournals);
-/*
 router.post('/', JournalController.createJournal);
 router.post('/archive/:id', JournalController.archiveJournal);
-router.delete('/archive/:id', JournalController.deleteJournal); // Nouvelle route
+router.delete('/delete/:id', JournalController.deleteJournal);
+router.delete('/entries/clear/:journal_id', JournalController.clearJournal);
+
+/*
+router.post('/archive/:id', JournalController.archiveJournal);
 router.post('/import', upload.single('journalFile'), JournalController.importJournal);
 router.get('/current', JournalController.getCurrentJournal);
 router.get('/archived', JournalController.getArchivedJournals);
+*/
 
-
+/*
 // Routes pour les entrées de journal
 router.get('/entries', JournalController.getJournalEntries);
 router.put('/entries', JournalController.upsertJournalEntry); // Upsert (créer/mettre à jour)
 router.delete('/entries/:id', JournalController.deleteJournalEntry);
 // Nouvelle route pour vider un journal
-router.delete('/entries/clear/:journal_id', JournalController.clearJournal);
 
 
 // Routes pour les assignations (interros/devoirs)

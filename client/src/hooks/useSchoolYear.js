@@ -12,7 +12,6 @@ export const useSchoolYears = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // Utilisation de useCallback pour mémoriser la fonction et éviter des re-render inutiles.
     const fetchSchoolYears = useCallback(async () => {
         try {
             setLoading(true);
@@ -41,7 +40,7 @@ export const useSchoolYears = () => {
             return newSchoolYear;
         } catch (err) {
             setError(err.message);
-            throw err; // Propage l'erreur pour que le composant puisse la gérer (ex: afficher un toast)
+            throw err;
         }
     };
 
@@ -68,10 +67,7 @@ export const useSchoolYears = () => {
         }
     };
 
-    /**
-     * CORRIGÉ: Fonction robuste pour obtenir le nom d'une année scolaire par son ID.
-     * Cherche d'abord localement, puis fait un appel API si nécessaire.
-     */
+
     const getSchoolYearName = useCallback(async (id) => {
         if (!id) return '';
         try {
