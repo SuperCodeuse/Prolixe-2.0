@@ -165,7 +165,7 @@ const JournalManager = () => {
 
     const activeJournals = journals.filter(j => !j.is_archived);
 
-    if (journalLoading && !journals.length) return <p>Chargement des journaux...</p>;
+    if (journalLoading && journals.length) return <p>Chargement des journaux...</p>;
 
     return (
         <div className="journal-manager">

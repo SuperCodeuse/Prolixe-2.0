@@ -8,6 +8,7 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 router.get('/', JournalController.getAllJournals);
+/*
 router.post('/', JournalController.createJournal);
 router.post('/archive/:id', JournalController.archiveJournal);
 router.delete('/archive/:id', JournalController.deleteJournal); // Nouvelle route
@@ -28,5 +29,5 @@ router.delete('/entries/clear/:journal_id', JournalController.clearJournal);
 router.get('/assignments', JournalController.getAssignments);
 router.put('/assignments', JournalController.upsertAssignment); // Upsert
 router.delete('/assignments/:id', JournalController.deleteAssignment);
-
+*/
 module.exports = router;

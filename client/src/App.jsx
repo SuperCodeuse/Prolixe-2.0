@@ -14,11 +14,27 @@ import Toast from './components/Toast';
 import CorrectionList from "./components/Correction/CorrectionList";
 import CorrectionView from "./components/Correction/CorrectionView";
 import DocumentGenerator from "./components/DocumentGenerator/DocumentGenerator";
-
-
-
 import './App.scss';
 import ConseilDeClasse from "./components/cc/conseilClasse";
+
+
+if (typeof window !== 'undefined') {
+    const resizeObserverErr = 'ResizeObserver loop completed with undelivered notifications.';
+    const originalError = console.error;
+
+    console.error = (...args) => {
+        if (args[0]?.includes?.(resizeObserverErr) || args[0]?.message?.includes?.(resizeObserverErr)) {
+            return; // On ignore silencieusement
+        }
+        originalError.apply(console, args);
+    };
+
+    window.addEventListener('error', (e) => {
+        if (e.message === resizeObserverErr) {
+            e.stopImmediatePropagation();
+        }
+    });
+}
 
 const AuthenticatedAppContent = ({ isMenuOpen, toggleMenu }) => {
     const breakpoint = 1600;
@@ -61,12 +77,22 @@ const App = () => {
 
 
     useEffect(() => {
+        let timeoutId;
+
         const handleResize = () => {
-            setIsMenuOpen(window.innerWidth >= breakpoint);
+            clearTimeout(timeoutId);
+
+            timeoutId = setTimeout(() => {
+                setIsMenuOpen(window.innerWidth >= breakpoint);
+            }, 100);
         };
+
         window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            clearTimeout(timeoutId);
+        };
+    }, [breakpoint]);
 
     const toggleMenu = () => {
         if(window.innerWidth < breakpoint){

@@ -23,7 +23,7 @@ class SchoolYearController {
     static async getAllSchoolYears(req, res) {
         try {
             const [rows] = await pool.execute(
-                'SELECT id, start_date, end_date FROM SCHOOL_YEAR ORDER BY start_date DESC'
+                'SELECT id, start_date, end_date FROM SCHOOL_YEARS ORDER BY start_date DESC'
             );
             res.json({ success: true, data: rows });
         } catch (error) {

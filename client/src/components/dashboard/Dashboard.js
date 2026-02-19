@@ -16,7 +16,7 @@ const Dashboard = () => {
         loadAllJournals();
     }, [loadAllJournals]);
 
-    if (!user || loadingJournal) {
+    if (!user) {
         return (
             <div className="dashboard-page">
                 <div className="loading-message">Chargement de votre session...</div>
@@ -45,7 +45,7 @@ const Dashboard = () => {
                         </p>
                         <button
                             className="btn-primary"
-                            onClick={() => navigate('/settings/journals')}
+                            onClick={() => navigate('/settings', { state: { activeTab: 'journals' } })}
                         >
                             📁 Sélectionner un journal
                         </button>

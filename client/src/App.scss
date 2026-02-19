@@ -93,7 +93,7 @@
   border-radius: 1rem;
   padding: 1.5rem;
   border: 1px solid var(--border-color);
-  transition: all 0.3s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
   overflow: overlay;
 
   &:hover {
@@ -398,7 +398,6 @@
   display: flex;
   min-height: 100vh;
   background-color: var(--bg-dark-blue); /* Couleur de fond principale */
-  transition: padding-left 0.3s ease; /* Transition pour l'ouverture/fermeture du menu */
 }
 
 .app.menu-open{
@@ -416,9 +415,9 @@
   top: 0;
   background: var(--bg-dark-secondary);
   border-right: 1px solid var(--border-color);
-  transform: translateX(0); /* Le menu est visible par défaut */
-  transition: transform 0.3s ease-in-out;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 1000;
+  backface-visibility: hidden;
 
   .sidemenu-header {
     padding: 1.5rem;
@@ -458,7 +457,7 @@
   flex-grow: 1; /* Prend tout l'espace restant */
   padding: 2rem; /* Padding uniforme */
   width: 100%; /* S'assure de prendre toute la largeur disponible */
-  transition: all 0.3s ease;
+  transition: padding 0.3s ease, margin 0.3s ease;
   overflow-y: auto; /* Ajouté pour gérer le défilement vertical interne */
   position: relative;
 }

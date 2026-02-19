@@ -2,47 +2,65 @@ import React, { useState } from 'react';
 import ClassesManager from "./Class/ClassManager";
 import ScheduleManager from "./Schedule/ScheduleManager";
 import HolidaysManager from "./holidays/HolidaysManager";
-import './Settings.scss';
 import JournalManager from "../journal/JournalManager";
 import AttributionManager from "./Attribution/AttributionManager";
 import StudentManager from "./Student/StudentManager";
-import Horaire from "../horaire/Horaire";
-import ScheduleCreator from "./Schedule/ScheduleCreator"; // Importez le nouveau composant
-import {useAuth} from "../../hooks/useAuth";
+import ScheduleCreator from "./Schedule/ScheduleCreator";
+import { useAuth } from "../../hooks/useAuth";
+import './Settings.scss';
 
 const Settings = () => {
-    const [activeTab, setActiveTab] = useState('classes');
     const { user } = useAuth();
 
-    let settingsTabs = [
-        { id: 'classes', label: 'Classes', icon: '🏫' },
-        { id: 'students', label: 'Élèves', icon: '👥' },
-        { id: 'journals', label: 'Journaux', icon: '📚' },
-        { id: 'attributions', label: 'Attributions', icon: '💼' },
-    ];
+    const [collapsed, setCollapsed] = useState({
+        admin: false,
+        user: user?.role === "ADMIN"
+    });
 
-    if(user?.role === "ADMIN"){
-        settingsTabs = settingsTabs.concat([
-            { id: 'schedule', label: 'Heures de cours', icon: '⏰' },
-            { id: 'holidays', label: 'Calendrier', icon: '📅' },
-            { id: 'horaire', label: 'Horaire', icon: '🗓️' }
-        ]);
+    const toggleSection = (section) => {
+        setCollapsed(prev => ({ ...prev, [section]: !prev[section] }));
+    };
+
+    const initialTab = user?.role === "ADMIN" ? 'horaire' : 'classes';
+    const [activeTab, setActiveTab] = useState(initialTab);
+
+    // Définition des sections de manière structurée
+    const sections = [];
+    if (user?.role === "ADMIN") {
+        sections.push({
+            id: 'admin',
+            title: 'Administration',
+            tabs: [
+                { id: 'schedule', label: 'Heures de cours', icon: '⏰' },
+                { id: 'holidays', label: 'Calendrier', icon: '📅' },
+                { id: 'horaire', label: 'Horaire', icon: '🗓️' }
+            ]
+        });
     }
 
+    sections.push({
+        id: 'user',
+        title: 'Ma Classe',
+        tabs: [
+            { id: 'journals', label: 'Journaux', icon: '📚' },
+            { id: 'classes', label: 'Classes', icon: '🏫' },
+            { id: 'students', label: 'Élèves', icon: '👥' },
+            { id: 'attributions', label: 'Attributions', icon: '💼' },
+        ]
+    });
 
     const renderTabContent = () => {
         switch (activeTab) {
+            case 'journals': return <JournalManager />;
             case 'classes': return <ClassesManager />;
             case 'students': return <StudentManager />;
             case 'schedule': return <ScheduleManager />;
             case 'holidays': return <HolidaysManager />;
-            case 'journals': return <JournalManager />;
             case 'attributions': return <AttributionManager />;
-            case 'horaire': return <ScheduleCreator />; // Affiche le composant ScheduleCreator
+            case 'horaire': return <ScheduleCreator />;
             default: return <ClassesManager />;
         }
     };
-
     return (
         <div className="settings-page">
             <div className="settings-header">
@@ -53,15 +71,29 @@ const Settings = () => {
             <div className="settings-content">
                 <div className="settings-sidebar">
                     <nav className="settings-nav">
-                        {settingsTabs.map(tab => (
-                            <button
-                                key={tab.id}
-                                className={`settings-tab ${activeTab === tab.id ? 'active' : ''}`}
-                                onClick={() => setActiveTab(tab.id)}
+                        {sections.map((section) => (
+                            <div
+                                key={section.id}
+                                className={`nav-section ${section.id}-section ${collapsed[section.id] ? 'collapsed' : ''}`}
                             >
-                                <span className="tab-icon">{tab.icon}</span>
-                                <span className="tab-label">{tab.label}</span>
-                            </button>
+                                <div className="section-header-toggle" onClick={() => toggleSection(section.id)}>
+                                    <h3 className="section-title">{section.title}</h3>
+                                    <span className="toggle-arrow">{collapsed[section.id] ? '▶' : '▼'}</span>
+                                </div>
+
+                                <div className="section-content">
+                                    {section.tabs.map(tab => (
+                                        <button
+                                            key={tab.id}
+                                            className={`settings-tab ${activeTab === tab.id ? 'active' : ''}`}
+                                            onClick={() => setActiveTab(tab.id)}
+                                        >
+                                            <span className="tab-icon">{tab.icon}</span>
+                                            <span className="tab-label">{tab.label}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
                         ))}
                     </nav>
                 </div>

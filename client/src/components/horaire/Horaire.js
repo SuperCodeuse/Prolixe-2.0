@@ -55,7 +55,7 @@ const Horaire = () => {
     const [resizeHandle, setResizeHandle] = useState(null);
     const [resizingCourse, setResizingCourse] = useState(null);
 
-
+/*
     useEffect(() => {
         const handleResize = () => {
             setIsMobile(window.innerWidth <= 768);
@@ -63,7 +63,7 @@ const Horaire = () => {
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
-
+*/
     // Gérer la sélection du premier emploi du temps par défaut
     useEffect(() => {
         if (schedules && schedules.length > 0) {
