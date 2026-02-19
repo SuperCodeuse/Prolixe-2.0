@@ -4,26 +4,14 @@ const router = express.Router();
 const HolidayController = require('../controllers/HolidayController');
 const authMiddleware = require('../middleware/authMiddleware');
 const multer = require('multer');
-const path = require('path');
 
-// Configuration de multer pour le stockage
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const uploadPath = path.join(__dirname, '..', '..', 'uploads');
-        cb(null, uploadPath);
-    },
-    filename: (req, file, cb) => {
-        // Nomme le fichier holidays.json, en écrasant l'ancien
-        cb(null, 'holidays.json');
-    }
-});
+// On utilise le dossier temporaire par défaut ou la mémoire
+const upload = multer({ dest: 'uploads/temp/' });
 
-const upload = multer({ storage: storage });
-
-// Route pour l'upload (admin uniquement)
+// Upload lié à une année
 router.post('/upload', authMiddleware, upload.single('holidaysFile'), HolidayController.uploadHolidays);
 
-// Route pour la récupération (pour tous les utilisateurs authentifiés)
-router.get('/', authMiddleware, HolidayController.getHolidays);
+// Récupération par année scolaire
+router.get('/:schoolYearId', authMiddleware, HolidayController.getHolidaysByYear);
 
 module.exports = router;

@@ -73,7 +73,6 @@ class ScheduleHoursController {
     }
 
     static async updateHour(req, res) {
-        console.log(req.body);
         const { id } = req.params;
         const { libelle } = req.body;
 

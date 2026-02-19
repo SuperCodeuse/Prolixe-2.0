@@ -61,6 +61,7 @@ class ScheduleModelController {
      */
 
     static async getSchedules(req, res) {
+        /*
         const userId = req.user.id; // L'ID de l'utilisateur est extrait du token JWT
         const { journalId } = req.query;
 
@@ -91,7 +92,7 @@ class ScheduleModelController {
             });
         } finally {
             if (connection) connection.release();
-        }
+        }*/
     }
 }
 

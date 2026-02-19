@@ -1,80 +1,148 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../../hooks/useAuth';
-import HolidaysManagerService from '../../../services/HolidaysManagerService'; // Importez le nouveau service
+import HolidaysManagerService from '../../../services/HolidaysManagerService';
+import SchoolYearService from '../../../services/SchoolYearService';
 import { useToast } from '../../../hooks/useToast';
 
 import './HolidaysManager.scss';
 
 const HolidaysManager = () => {
     const { user } = useAuth();
-    const { success: showSuccess, error : showError } = useToast();
-    const [fileName, setFileName] = useState('');
+    const { success: showSuccess, error: showError } = useToast();
+
+    const [schoolYears, setSchoolYears] = useState([]);
+    const [selectedYearId, setSelectedYearId] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+
+    // Charger les années scolaires
+    const fetchYears = useCallback(async () => {
+        try {
+            const response = await SchoolYearService.getAll();
+            if (response) {
+                setSchoolYears(response);
+            }
+        } catch (err) {
+            showError("Erreur lors du chargement des années.");
+        }
+    }, [showError]);
+
+    useEffect(() => {
+        fetchYears();
+    }, [fetchYears]);
+
+    const selectedYearData = schoolYears.find(y => y.id === parseInt(selectedYearId));
+
+    const currentHolidays = selectedYearData?.holidays
+        ? (typeof selectedYearData.holidays === 'string' ? JSON.parse(selectedYearData.holidays) : selectedYearData.holidays)
+        : null;
 
     const handleFileChange = async (event) => {
         const file = event.target.files[0];
-        if (!file) {
-            setFileName('');
-            return;
-        }
+        if (!file || !selectedYearId) return;
 
-        setFileName(file.name);
-        setIsLoading(true);
+        const formData = new FormData();
+        formData.append('holidaysFile', file);
+        formData.append('schoolYearId', selectedYearId);
 
         try {
-            await HolidaysManagerService.uploadHolidaysFile(file);
-            showSuccess(`Le calendrier "${file.name}" a été importé avec succès !`);
+            setIsLoading(true);
+            await HolidaysManagerService.uploadHolidaysFile(formData);
+            showSuccess(`Calendrier mis à jour avec succès.`);
+            await fetchYears(); // Rafraîchissement pour voir la pastille changer
         } catch (error) {
-            console.error('Erreur lors de l\'envoi du fichier:', error);
-            showError(error.message || 'Erreur lors du téléchargement du fichier.');
-            setFileName('');
+            showError("Erreur lors de l'importation.");
         } finally {
             setIsLoading(false);
         }
     };
 
     return (
-        <div className="holidays-manager">
-            <h2>📅 Gestion des Congés Scolaires</h2>
-            <p>Importez un fichier JSON contenant la liste des congés pour les synchroniser avec l'agenda.</p>
+        <div className="holidays-manager container-fluid">
+            <div className="header-section">
+                <h2>📅 Gestion des Congés Scolaires</h2>
+                <p className="subtitle">Liez les calendriers JSON aux années académiques</p>
+            </div>
 
-            {user?.role === 'ADMIN' ? (
-                <div className="import-area">
-                    <label htmlFor="holiday-file-input" className={`btn-primary ${isLoading ? 'disabled' : ''}`}>
-                        <span>📤</span>
-                        {isLoading ? 'Importation en cours...' : 'Importer un fichier JSON'}
-                    </label>
-                    <input
-                        id="holiday-file-input"
-                        type="file"
-                        accept=".json"
-                        onChange={handleFileChange}
-                        style={{ display: 'none' }}
-                        disabled={isLoading}
-                    />
-                    {fileName && <span className="file-name">Fichier sélectionné : {fileName}</span>}
+            <div className="main-grid">
+                {/* Colonne Gauche : Liste et Sélection */}
+                <div className="config-card card">
+                    <h3>Configuration</h3>
+
+                    <div className="custom-select-wrapper">
+                        <label>Choisir l'année académique</label>
+                        <select
+                            className="prolixe-select"
+                            value={selectedYearId}
+                            onChange={(e) => setSelectedYearId(e.target.value)}
+                        >
+                            <option value="">-- Sélectionner une année --</option>
+                            {schoolYears.map(year => (
+                                <option key={year.id} value={year.id}>
+                                    {new Date(year.start_date).getFullYear()} - {new Date(year.end_date).getFullYear()}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {selectedYearId && user?.role === 'ADMIN' && (
+                        <div className="upload-box">
+                            <input
+                                id="file-upload"
+                                type="file"
+                                accept=".json"
+                                onChange={handleFileChange}
+                                disabled={isLoading}
+                            />
+                            <label htmlFor="file-upload" className="btn-upload">
+                                {isLoading ? 'Traitement...' : '📤 Remplacer le JSON'}
+                            </label>
+                        </div>
+                    )}
+
+                    <div className="status-summary">
+                        <h4>Statut des imports :</h4>
+                        <ul>
+                            {schoolYears.map(year => (
+                                <li key={year.id} className={year.holidays ? 'status-done' : 'status-empty'}>
+                                    <span className="dot"></span>
+                                    {year.start_date} - {year.end_date} :
+                                     <strong> {year.holidays ? 'Configuré' : 'Non configuré'}</strong>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
                 </div>
-            ) : (
-                <p>Cette fonctionnalité est réservée aux administrateurs.</p>
-            )}
 
-            <div className="help-box">
-                <h4>Format attendu du fichier JSON</h4>
-                <p>Le fichier doit être un tableau d'objets, où chaque objet représente une période de congé et contient les clés "name", "start" et "end" (format YYYY-MM-DD).</p>
-                <pre>
-{`[
-  {
-    "name": "Congé d'automne",
-    "start": "2024-10-21",
-    "end": "2024-11-03"
-  },
-  {
-    "name": "Armistice",
-    "start": "2024-11-11",
-    "end": "2024-11-11"
-  }
-]`}
-                </pre>
+                {/* Colonne Droite : Visualisation */}
+                <div className="view-card card">
+                    <h3>Aperçu des congés</h3>
+                    {currentHolidays ? (
+                        <div className="table-responsive">
+                            <table className="prolixe-table">
+                                <thead>
+                                <tr>
+                                    <th>Nom</th>
+                                    <th>Début</th>
+                                    <th>Fin</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {currentHolidays.map((h, i) => (
+                                    <tr key={i}>
+                                        <td>{h.name}</td>
+                                        <td>{new Date(h.start).toLocaleDateString()}</td>
+                                        <td>{new Date(h.end).toLocaleDateString()}</td>
+                                    </tr>
+                                ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    ) : (
+                        <div className="empty-state">
+                            <p>{selectedYearId ? "Aucune donnée JSON pour cette année." : "Sélectionnez une année pour voir les détails."}</p>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );

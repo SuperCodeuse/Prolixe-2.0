@@ -2,12 +2,12 @@
 import api from '../api/axiosConfig';
 
 const HolidaysManagerService = {
-    uploadHolidaysFile: async (file) => {
-        const formData = new FormData();
-        formData.append('holidaysFile', file);
+    uploadHolidaysFile: async (formData) => {
         try {
             const response = await api.post('/holidays/upload', formData, {
                 headers: {
+                    // Très important : ne pas définir manuellement le Content-Type ici
+                    // Axios et le navigateur le feront automatiquement avec le bon "boundary"
                     'Content-Type': 'multipart/form-data',
                 },
             });
