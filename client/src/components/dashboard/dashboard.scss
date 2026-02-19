@@ -855,3 +855,105 @@ textarea, .note-state-select, .note-date-input {
     }
   }
 }
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2.5rem;
+  padding: 1.5rem 2rem;
+  background: var(--bg-dark-secondary);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+
+  .header-greeting {
+    h1 {
+      margin: 0;
+      font-size: 1.8rem;
+      color: var(--text-light);
+    }
+    .subtitle {
+      margin: 0.25rem 0 0;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+  }
+
+  // --- LE SELECTEUR ADAPTÉ ---
+  .journal-context-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 250px;
+
+    .selector-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--accent-blue);
+      font-weight: 700;
+    }
+
+    .select-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+
+      .custom-journal-select {
+        width: 100%;
+        appearance: none; // Cache la flèche par défaut du navigateur
+        background: var(--bg-dark);
+        color: var(--text-light);
+        border: 1px solid var(--border-color);
+        padding: 0.7rem 2.5rem 0.7rem 1rem;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        option {
+          background-color: var(--bg-dark-secondary); // Couleur de fond de l'option
+        }
+
+        &:focus {
+          border-color: var(--accent-blue);
+          box-shadow: 0 0 0 2px rgba(var(--accent-blue-rgb), 0.2);
+          outline: none;
+        }
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+      }
+
+      .select-arrow {
+        position: absolute;
+        right: 1rem;
+        color: var(--text-muted);
+        pointer-events: none;
+        font-size: 1.2rem;
+      }
+    }
+  }
+}
+
+// --- BANNIÈRE ARCHIVE ---
+.archive-banner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: rgba(var(--accent-orange-rgb), 0.1);
+  border: 1px solid rgba(var(--accent-orange-rgb), 0.3);
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  color: var(--accent-orange);
+
+  .icon { font-size: 1.5rem; }
+
+  .banner-text {
+    strong { display: block; font-size: 0.9rem; }
+    p { margin: 0; font-size: 0.85rem; opacity: 0.8; }
+  }
+}
