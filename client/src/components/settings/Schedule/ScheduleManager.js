@@ -141,7 +141,6 @@ const ScheduleManager = () => {
             </div>
         );
     }
-
     const sortedHours = hours.sort((a, b) => a.libelle.localeCompare(b.libelle));
 
     return (

@@ -13,17 +13,20 @@ class ScheduleHoursService {
 
     // Créer un nouveau créneau horaire
     static async createHour(hourData) {
-        return ApiService.request('/hours', {
+        return ApiService.request({
+            url: '/hours',
             method: 'POST',
-            body: JSON.stringify(hourData),
+            data: hourData,
         });
     }
 
     // Modifier un créneau horaire
-    static async updateHour(id, hourData) { // Changé de updateHours à updateHour
-        return ApiService.request(`/hours/${id}`, {
+    static async updateHour(id, hourData) {
+        console.log("Données envoyées à Axios :", hourData);
+        return ApiService.request({
+            url: `/hours/${id}`,
             method: 'PUT',
-            body: JSON.stringify(hourData),
+            data: hourData,
         });
     }
 

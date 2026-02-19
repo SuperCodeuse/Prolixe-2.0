@@ -30,6 +30,7 @@ const Dashboard = () => {
         if (selected) {
             selectJournal(selected);
         }
+
     };
 
     if (!user) {
@@ -68,7 +69,7 @@ const Dashboard = () => {
             <div className="dashboard-header">
                 <div className="header-greeting">
                     <h1>Bonjour {user.firstname} !</h1>
-                    <p className="subtitle">Heureux de vous revoir sur votre espace de travail.</p>
+                    <p className="subtitle">Heureux de vous revoir sur votre espace de travail : <strong className="school_year">{currentJournal?.year_label}</strong></p>
                 </div>
 
                 <div className="journal-context-selector">

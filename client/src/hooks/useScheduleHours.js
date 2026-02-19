@@ -41,7 +41,7 @@ export const useScheduleHours = () => {
         try {
             const response = await ScheduleHoursService.updateHour(id, hourData);
             setHours(prev => prev.map(hour =>
-                hour.id === id ? response.data : hour
+                hour.id === id ? response.data.data : hour
             ));
             return response.data;
         } catch (err) {
