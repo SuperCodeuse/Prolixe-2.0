@@ -3,6 +3,7 @@ import { useAuth } from '../../../hooks/useAuth';
 import HolidaysManagerService from '../../../services/HolidaysManagerService';
 import SchoolYearService from '../../../services/SchoolYearService';
 import { useToast } from '../../../hooks/useToast';
+import {CalendarDays} from "lucide-react";
 
 import './HolidaysManager.scss';
 
@@ -59,7 +60,7 @@ const HolidaysManager = () => {
     return (
         <div className="holidays-manager container-fluid">
             <div className="header-section">
-                <h2>📅 Gestion des Congés Scolaires</h2>
+                <h2> <CalendarDays /> Gestion des Congés Scolaires</h2>
                 <p className="subtitle">Liez les calendriers JSON aux années académiques</p>
             </div>
 

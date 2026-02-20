@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useScheduleHours } from '../../../hooks/useScheduleHours';
 import './ScheduleManager.scss';
+import {Clock} from "lucide-react";
 
 const ScheduleManager = () => {
     const { hours, loading, error, addHour, updateHour, removeHour } = useScheduleHours();
@@ -54,9 +55,11 @@ const ScheduleManager = () => {
         <div className="schedule-manager-container">
             <header className="manager-header">
                 <div className="title-wrapper">
-                    <div className="icon-box">⏰</div>
                     <div>
-                        <h2>Gestion de l'Horaire</h2>
+                        <h2>
+                            <Clock className="icon-lucid"/>
+                            Gestion de l'Horaire
+                        </h2>
                         <p>Configurez les créneaux de l'établissement</p>
                     </div>
                 </div>

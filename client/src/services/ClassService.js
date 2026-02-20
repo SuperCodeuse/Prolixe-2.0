@@ -1,37 +1,36 @@
-// client/src/services/classService.js
-import apiClient from '../api/axiosConfig'; // <-- Utiliser apiClient
+import apiClient from '../api/axiosConfig';
 
 const ClassService = {
-    getClasses: (journal_id) => {
-        if (!journal_id) {
-            return Promise.resolve({ data: [] });
-        }
-        // Utiliser apiClient et passer les paramètres correctement
-        return apiClient.get('/classes', { params: { journal_id } });
-    },
-
-    getClass: (id) => {
-        return apiClient.get(`/classes/${id}`);
-    },
-
-    createClass: (classData) => {
-        return apiClient.post('/classes', classData);
-    },
-
-    updateClass: (id, classData) => {
-        return apiClient.put(`/classes/${id}`, classData);
-    },
-
-    deleteClass: (id) => {
-        return apiClient.delete(`/classes/${id}`);
-    },
-
-    /*
-     * NOTE: La méthode getActiveClasses a été commentée car elle ne peut pas fonctionner
-     * sans un `journal_id`. La logique métier pour filtrer les classes actives
-     * devrait probablement être implémentée dans le composant qui utilise ce service,
-     * où le `journal_id` est disponible.
+    /**
+     * Récupère les classes rattachées à un journal spécifique.
+     * Le contrôleur renvoie maintenant aussi le 'student_count' calculé.
      */
+    getClasses: async (journal_id) => {
+        if (!journal_id) return { data: { data: [] } };
+        return await apiClient.get('/classes', { params: { journal_id } });
+    },
+
+    getClass: async (id) => {
+        return await apiClient.get(`/classes/${id}`);
+    },
+
+    /**
+     * @param {Object} classData - Doit contenir { name, level, journal_id }
+     */
+    createClass: async (classData) => {
+        return await apiClient.post('/classes', classData);
+    },
+
+    /**
+     * @param {Object} classData - Peut contenir { name, level }
+     */
+    updateClass: async (id, classData) => {
+        return await apiClient.put(`/classes/${id}`, classData);
+    },
+
+    deleteClass: async (id) => {
+        return await apiClient.delete(`/classes/${id}`);
+    }
 };
 
 export default ClassService;

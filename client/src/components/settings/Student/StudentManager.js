@@ -4,6 +4,7 @@ import StudentService from '../../../services/StudentService';
 import { useToast } from '../../../hooks/useToast';
 import { useJournal } from '../../../hooks/useJournal';
 import ConfirmModal from '../../ConfirmModal';
+import { Users } from 'lucide-react';
 import './StudentManager.scss';
 
 const StudentManager = () => {
@@ -100,13 +101,13 @@ const StudentManager = () => {
 
     return (
         <div className="student-manager">
-            <h2>👥 Gestion des Élèves par Classe</h2>
+            <h2><Users className="icon-lucid"/> Gestion des élèves</h2>
 
             {currentJournal ? (
-                <p className="current-year-info">
+                <div className="current-year-info">
                     Gestion pour le journal : <strong>{currentJournal.name}</strong>
                     {currentJournal.is_archived ? (<span className="archived-tag"> (Archivé)</span>) : null}
-                </p>
+                </div>
             ) : (
                 <div className="error-message">Aucun journal de classe sélectionné.</div>
             )}
@@ -114,7 +115,7 @@ const StudentManager = () => {
             <div className="form-group">
                 <label>Sélectionnez une classe</label>
                 <select
-                    className="btn-select"
+                    className="glass-select" // Changé ici
                     value={selectedClass}
                     onChange={(e) => setSelectedClass(e.target.value)}
                     disabled={isUiDisabled || classesLoading || (Array.isArray(classes) && classes.length === 0)}
@@ -127,30 +128,42 @@ const StudentManager = () => {
 
             {selectedClass && !isUiDisabled && (
                 <>
-                    <form onSubmit={handleAddStudent} className="add-student-form form-group">
+                    <form onSubmit={handleAddStudent} className="add-student-form">
                         <input
-                            type="text" value={formData.firstname}
+                            type="text"
+                            className="glass-input" // Changé ici
+                            value={formData.firstname}
                             onChange={(e) => setFormData({ ...formData, firstname: e.target.value })}
                             placeholder="Prénom" required
                         />
                         <input
-                            type="text" value={formData.lastname}
+                            type="text"
+                            className="glass-input" // Changé ici
+                            value={formData.lastname}
                             onChange={(e) => setFormData({ ...formData, lastname: e.target.value })}
                             placeholder="Nom" required
                         />
-                        <button type="submit" className="btn-primary">Ajouter Élève</button>
+                        <button type="submit" className="btn-primary">Ajouter</button>
                     </form>
 
                     <div className="student-list">
-                        {isLoading ? <p>Chargement des élèves...</p> : (
+                        {isLoading ? (
+                            <p className="loading-text">Chargement des élèves...</p>
+                        ) : (
                             <>
                                 {students.map(student => (
                                     <div key={student.id} className="student-item">
                                         <span>{student.lastname.toUpperCase()} {student.firstname}</span>
-                                        <button onClick={() => handleDeleteStudent(student.id, `${student.firstname} ${student.lastname}`)} className="btn-delete" title="Supprimer">🗑️</button>
+                                        <button
+                                            onClick={() => handleDeleteStudent(student.id, `${student.firstname} ${student.lastname}`)}
+                                            className="btn-delete"
+                                            title="Supprimer"
+                                        >
+                                            🗑️
+                                        </button>
                                     </div>
                                 ))}
-                                {students.length === 0 && <p>Aucun élève dans cette classe pour ce journal.</p>}
+                                {students.length === 0 && <p className="empty-text">Aucun élève dans cette classe.</p>}
                             </>
                         )}
                     </div>
@@ -163,11 +176,10 @@ const StudentManager = () => {
                 message={confirmModal.message}
                 onClose={closeConfirmModal}
                 onConfirm={confirmModal.onConfirm}
-                confirmText="Confirmer la suppression"
+                confirmText="Supprimer"
                 cancelText="Annuler"
                 type="danger"
             />
-
         </div>
     );
 };

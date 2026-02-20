@@ -5,6 +5,7 @@ import { useSchoolYears } from '../../hooks/useSchoolYear';
 import { useToast } from '../../hooks/useToast';
 import ConfirmModal from '../ConfirmModal';
 import JournalService from '../../services/JournalService';
+import { BookMarked } from 'lucide-react';
 import './JournalManager.scss';
 
 const JournalManager = () => {
@@ -165,7 +166,7 @@ const JournalManager = () => {
         <div className="journal-manager">
             {/* ... section-header et journal-lists identiques ... */}
             <div className="section-header">
-                <h2>📚 Gestion des Journaux</h2>
+                <h2><BookMarked /> Gestion des Journaux</h2>
                 <div className="file-container">
                     <div className="import-section">
                         <select

@@ -1,0 +1,291 @@
+// frontend/src/components/ClassesManager.scss
+@import '../../../App';
+
+.btn-center {
+  margin: auto;
+}
+
+.class-manager-container {
+  // Synchronisation des variables avec ScheduleCreator
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-blur: blur(12px);
+  --accent-color: #3b82f6;
+  --success-color: #10b981;
+  --danger-color: #ef4444;
+  --text-main: #e2e8f0;
+  --text-muted: #94a3b8;
+
+  padding: 1.5rem;
+  color: var(--text-main);
+  animation: fadeIn 0.4s ease-out;
+
+  .manager-header {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+
+    .title-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+
+      .icon-box {
+        font-size: 1.25rem;
+        background: linear-gradient(135deg, var(--accent-color), #1e40af);
+        width: 42px;
+        height: 42px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      }
+
+      h2 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+      }
+      p { margin: 0; color: var(--text-muted); font-size: 0.85rem; }
+    }
+  }
+
+  .archived-banner {
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+    padding: 0.75rem;
+    border-radius: 10px;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    font-size: 0.9rem;
+    backdrop-filter: var(--glass-blur);
+  }
+
+  // Utilisation de la structure .glass-btn pour la cohérence
+  .add-glass-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.2rem;
+    border-radius: 10px;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    background: rgba(59, 130, 246, 0.15);
+    color: white;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+    backdrop-filter: var(--glass-blur);
+
+    &:hover:not(:disabled) {
+      background: var(--accent-color);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+  }
+
+  .schedule-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.2rem;
+  }
+
+  .schedule-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: var(--glass-blur);
+    padding: 1.25rem;
+    border-radius: 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    transition: all 0.3s ease;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(255, 255, 255, 0.15);
+      transform: translateY(-3px);
+    }
+
+    .card-index {
+      background: rgba(59, 130, 246, 0.1);
+      color: var(--accent-color);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.7rem;
+      font-weight: 800;
+    }
+
+    .card-info {
+      flex: 1;
+      .time {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: white;
+        display: block;
+      }
+      .duration {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+      }
+
+      .margin-top-2{
+        margin-top: 0.5rem;
+      }
+      .student-count {
+        font-size: 0.75rem;
+        background: rgba(0, 0, 0, 0.2);
+        padding: 4px 10px;
+        border-radius: 6px;
+        width: fit-content;
+        color: var(--text-main);
+        border: 1px solid var(--glass-border);
+      }
+    }
+
+    .card-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+
+      .action-btn {
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid var(--glass-border);
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        &:hover.edit {
+          background: var(--accent-color);
+          color: white;
+          border-color: var(--accent-color);
+        }
+        &:hover.delete {
+          background: var(--danger-color);
+          color: white;
+          border-color: var(--danger-color);
+        }
+      }
+    }
+  }
+
+  .state-message, .no-data {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: var(--glass-bg);
+    border: 1px dashed var(--glass-border);
+    border-radius: 16px;
+    color: var(--text-muted);
+  }
+
+  /* Modale alignée sur le style ScheduleCreator */
+  .glass-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+
+    .glass-modal {
+      background: #0f172a; // Fond plus sombre pour contraste
+      border: 1px solid var(--glass-border);
+      padding: 2rem;
+      border-radius: 16px;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+
+      h3 {
+        margin: 0 0 1.5rem 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+      }
+
+      .input-group {
+        margin-bottom: 1.25rem;
+
+        label {
+          display: block;
+          margin-bottom: 0.5rem;
+          color: var(--text-muted);
+          font-size: 0.85rem;
+        }
+
+        input, select {
+          width: 95%;
+          background: rgba(0, 0, 0, 0.3);
+          border: 1px solid var(--glass-border);
+          border-radius: 10px;
+          padding: 0.7rem 1rem;
+          color: white;
+          font-size: 0.95rem;
+          outline: none;
+          transition: all 0.2s;
+
+          &:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+          }
+        }
+      }
+
+      .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        margin-top: 2rem;
+
+        button {
+          padding: 0.6rem 1.2rem;
+          border-radius: 10px;
+          border: none;
+          cursor: pointer;
+          font-weight: 500;
+          transition: all 0.2s;
+        }
+
+        .cancel-btn { // Renommé pour clarté
+          background: rgba(255, 255, 255, 0.05);
+          color: var(--text-muted);
+          border: 1px solid var(--glass-border);
+          &:hover { background: rgba(255, 255, 255, 0.1); color: white; }
+        }
+
+        .confirm-btn {
+          background: var(--accent-color);
+          color: white;
+          &:hover { filter: brightness(1.1); transform: translateY(-1px); }
+        }
+      }
+    }
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

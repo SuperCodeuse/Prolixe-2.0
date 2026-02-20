@@ -400,6 +400,11 @@
   background-color: var(--bg-dark-blue); /* Couleur de fond principale */
 }
 
+.icon-lucid{
+  margin-right: 0.5rem;
+}
+
+
 .app.menu-open{
   @media (min-width: 1600px) {
     padding-left: 280px;

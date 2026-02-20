@@ -3,9 +3,6 @@ const pool = require('../../config/database');
 class ClassController {
     /**
      * Méthode utilitaire pour acquérir et libérer une connexion de pool.
-     * Gère automatiquement la connexion et la libération.
-     * @param {function(Connection): Promise<any>} operation - Fonction asynchrone qui prend la connexion en paramètre.
-     * @returns {Promise<any>} Le résultat de l'opération.
      */
     static async withConnection(operation) {
         let connection;
@@ -16,19 +13,12 @@ class ClassController {
             console.error('Erreur SQL dans withConnection:', error.message);
             throw error;
         } finally {
-            if (connection) {
-                connection.release();
-            }
+            if (connection) connection.release();
         }
     }
 
     /**
      * Gère et standardise les réponses d'erreur HTTP.
-     * @param {Response} res - L'objet réponse Express.
-     * @param {Error} error - L'objet erreur.
-     * @param {string} defaultMessage - Message d'erreur par défaut pour l'utilisateur.
-     * @param {number} statusCode - Code de statut HTTP de l'erreur.
-     * @param {object} customErrors - Erreurs spécifiques à renvoyer (ex: validation).
      */
     static handleError(res, error, defaultMessage = 'Erreur serveur', statusCode = 500, customErrors = {}) {
         const errorMessage = process.env.NODE_ENV === 'development' ? error.message : defaultMessage;
@@ -43,44 +33,28 @@ class ClassController {
     }
 
     /**
-     * Valide les données d'entrée pour la création ou la mise à jour d'une classe.
-     * @param {object} data - Les données de la classe (name, students, level).
-     * @param {boolean} isUpdate - Indique si la validation est pour une mise à jour.
-     * @returns {object} Un objet contenant les erreurs de validation par champ.
+     * Valide les données d'entrée selon le diagramme (id, journal_id, name, level).
      */
     static validateClassData(data, isUpdate = false) {
         const errors = {};
-        const validLevels = [3, 4, 5, 6];
 
         if (!isUpdate || data.name !== undefined) {
             if (!data.name || typeof data.name !== 'string' || !data.name.trim()) {
                 errors.name = 'Le nom de la classe est requis.';
-            } else if (data.name.trim().length < 2) {
-                errors.name = 'Le nom de la classe doit contenir au moins 2 caractères.';
             } else if (data.name.trim().length > 100) {
-                errors.name = 'Le nom de la classe ne peut pas dépasser 100 caractères.';
+                errors.name = 'Le nom ne peut pas dépasser 100 caractères.';
             }
         }
 
         if (!isUpdate || data.journal_id !== undefined) {
             if (!data.journal_id || isNaN(parseInt(data.journal_id))) {
-                errors.journal_id = "L'année scolaire est requise.";
-            }
-        }
-
-        if (!isUpdate || data.students !== undefined) {
-            const studentsNum = parseInt(data.students);
-            if (isNaN(studentsNum) || studentsNum < 0) {
-                errors.students = "Le nombre d'étudiants doit être un nombre entier positif ou zéro.";
-            } else if (studentsNum > 1000) {
-                errors.students = "Le nombre d'étudiants ne peut pas dépasser 1000.";
+                errors.journal_id = "Le journal associé est requis.";
             }
         }
 
         if (!isUpdate || data.level !== undefined) {
-            const levelNum = parseInt(data.level);
-            if (isNaN(levelNum) || !validLevels.includes(levelNum)) {
-                errors.level = `Le niveau est requis et doit être l'une des valeurs suivantes : ${validLevels.join(', ')}.`;
+            if (!data.level || !data.level.trim()) {
+                errors.level = "Le niveau (ex: 3ème, Terminale) est requis.";
             }
         }
 
@@ -88,25 +62,27 @@ class ClassController {
     }
 
     /**
-     * Récupère toutes les classes pour un journal donné, appartenant à l'utilisateur.
-     * @param {Request} req - L'objet requête Express.
-     * @param {Response} res - L'objet réponse Express.
+     * Récupère toutes les classes pour un journal donné.
+     * Vérifie que le journal appartient à l'utilisateur via la table JOURNALS.
      */
     static async getAllClasses(req, res) {
         const { journal_id } = req.query;
         const userId = req.user.id;
 
         if (!journal_id) {
-            return ClassController.handleError(res, new Error('ID du journal manquant'), 'Un ID de journal est requis.', 400);
+            return ClassController.handleError(res, new Error('ID journal manquant'), 'Un ID de journal est requis.', 400);
         }
 
         try {
             const data = await ClassController.withConnection(async (connection) => {
+                // On joint JOURNALS pour vérifier la propriété du journal
                 const [rows] = await connection.execute(`
-                    SELECT id, name, students, level
-                    FROM CLASS
-                    WHERE journal_id = ? AND user_id = ?
-                    ORDER BY name ASC
+                    SELECT c.id, c.name, c.level, c.journal_id,
+                    (SELECT COUNT(*) FROM STUDENTS s WHERE s.class_id = c.id) as student_count
+                    FROM CLASSES c
+                    INNER JOIN JOURNALS j ON c.journal_id = j.id
+                    WHERE c.journal_id = ? AND j.user_id = ?
+                    ORDER BY c.name ASC
                 `, [journal_id, userId]);
                 return rows;
             });
@@ -114,8 +90,7 @@ class ClassController {
             res.json({
                 success: true,
                 data: data,
-                count: data.length,
-                message: data.length === 0 ? 'Aucune classe trouvée pour ce journal.' : `${data.length} classe(s) récupérée(s).`
+                count: data.length
             });
         } catch (error) {
             ClassController.handleError(res, error, 'Erreur lors de la récupération des classes.');
@@ -123,35 +98,27 @@ class ClassController {
     }
 
     /**
-     * Récupère une classe par son ID.
-     * @param {Request} req - L'objet requête Express.
-     * @param {Response} res - L'objet réponse Express.
+     * Récupère une classe par son ID (avec vérification de propriété via Journal).
      */
     static async getClassById(req, res) {
         const { id } = req.params;
         const userId = req.user.id;
 
-        if (!id || isNaN(parseInt(id))) {
-            return ClassController.handleError(res, new Error('ID de classe invalide'), 'ID de classe invalide.', 400);
-        }
-
         try {
             const classData = await ClassController.withConnection(async (connection) => {
                 const [rows] = await connection.execute(`
-                    SELECT id, name, students, level FROM CLASS WHERE id = ? AND user_id = ?
+                    SELECT c.* FROM CLASSES c
+                    INNER JOIN JOURNALS j ON c.journal_id = j.id
+                    WHERE c.id = ? AND j.user_id = ?
                 `, [parseInt(id), userId]);
                 return rows[0] || null;
             });
 
             if (!classData) {
-                return ClassController.handleError(res, new Error('Classe non trouvée'), 'Classe non trouvée ou non autorisée.', 404);
+                return ClassController.handleError(res, new Error('Non trouvé'), 'Classe non trouvée.', 404);
             }
 
-            res.json({
-                success: true,
-                data: classData,
-                message: 'Classe récupérée avec succès.'
-            });
+            res.json({ success: true, data: classData });
         } catch (error) {
             ClassController.handleError(res, error, 'Erreur lors de la récupération de la classe.');
         }
@@ -159,255 +126,124 @@ class ClassController {
 
     /**
      * Crée une nouvelle classe.
-     * @param {Request} req - L'objet requête Express.
-     * @param {Response} res - L'objet réponse Express.
      */
     static async createClass(req, res) {
-        const { name, students, level, journal_id, subject } = req.body;
+        const { name, level, journal_id } = req.body;
         const userId = req.user.id;
 
-        const validationErrors = ClassController.validateClassData({ name, students, level, journal_id, subject });
-
+        const validationErrors = ClassController.validateClassData({ name, level, journal_id });
         if (Object.keys(validationErrors).length > 0) {
-            return ClassController.handleError(res, new Error('Données invalides'), 'Données invalides.', 400, validationErrors);
+            return ClassController.handleError(res, new Error('Validation'), 'Données invalides.', 400, validationErrors);
         }
 
         try {
             const newClass = await ClassController.withConnection(async (connection) => {
+                // 1. Vérifier si le journal appartient bien à l'utilisateur
+                const [journal] = await connection.execute(
+                    'SELECT id FROM JOURNALS WHERE id = ? AND user_id = ?',
+                    [journal_id, userId]
+                );
+
+                if (journal.length === 0) {
+                    throw new Error('Journal non trouvé ou accès refusé.');
+                }
+
+                // 2. Vérifier l'unicité du nom dans ce journal
                 const [existing] = await connection.execute(
-                    'SELECT id FROM CLASS WHERE LOWER(name) = LOWER(?) AND journal_id = ? AND user_id = ?',
-                    [name.trim(), journal_id, userId]
+                    'SELECT id FROM CLASSES WHERE LOWER(name) = LOWER(?) AND journal_id = ?',
+                    [name.trim(), journal_id]
                 );
 
                 if (existing.length > 0) {
-                    const err = new Error('Une classe avec ce nom existe déjà pour ce journal.');
-                    err.name = 'DUPLICATE_NAME';
+                    const err = new Error('Une classe avec ce nom existe déjà dans ce journal.');
+                    err.name = 'DUPLICATE';
                     throw err;
                 }
 
-
-
+                // 3. Insertion (champs conformes au diagramme : journal_id, name, level)
                 const [result] = await connection.execute(
-                    'INSERT INTO CLASS (name, students, level, journal_id, user_id) VALUES (?, ?, ?, ?, ?)',
-                    [name.trim(), parseInt(students), parseInt(level), parseInt(journal_id), userId]
+                    'INSERT INTO CLASSES (journal_id, name, level) VALUES (?, ?, ?)',
+                    [parseInt(journal_id), name.trim(), level.trim()]
                 );
 
-                const [newClassData] = await connection.execute(
-                    'SELECT id, name, students, level FROM CLASS WHERE id = ?',
-                    [result.insertId]
-                );
-
-                return newClassData[0];
+                return { id: result.insertId, name, level, journal_id };
             });
 
-            res.status(201).json({
-                success: true,
-                data: newClass,
-                message: 'Classe créée avec succès.'
-            });
-
+            res.status(201).json({ success: true, data: newClass, message: 'Classe créée.' });
         } catch (error) {
-            if (error.name === 'DUPLICATE_NAME') {
-                return ClassController.handleError(res, error, error.message, 409, { name: error.message });
-            }
-            ClassController.handleError(res, error, 'Erreur lors de la création de la classe.');
+            const status = error.name === 'DUPLICATE' ? 409 : 500;
+            ClassController.handleError(res, error, error.message, status);
         }
     }
 
     /**
-     * Met à jour une classe existante par son ID.
-     * @param {Request} req - L'objet requête Express.
-     * @param {Response} res - L'objet réponse Express.
+     * Met à jour une classe (nom et niveau uniquement).
      */
     static async updateClass(req, res) {
         const { id } = req.params;
-        const updateData = req.body;
+        const { name, level } = req.body;
         const userId = req.user.id;
 
-        if (!id || isNaN(parseInt(id))) {
-            return ClassController.handleError(res, new Error('ID de classe invalide'), 'ID de classe invalide.', 400);
-        }
-
-        const validationErrors = ClassController.validateClassData(updateData, true);
-        if (Object.keys(validationErrors).length > 0) {
-            return ClassController.handleError(res, new Error('Données de validation invalides'), 'Données invalides pour la mise à jour.', 400, validationErrors);
-        }
-
         try {
-            const updatedClass = await ClassController.withConnection(async (connection) => {
-                const [existingRows] = await connection.execute(
-                    'SELECT id, journal_id FROM CLASS WHERE id = ? AND user_id = ?',
-                    [parseInt(id), userId]
+            const updated = await ClassController.withConnection(async (connection) => {
+                // Vérifier propriété via Journal
+                const [current] = await connection.execute(
+                    'SELECT c.id, c.journal_id FROM CLASSES c INNER JOIN JOURNALS j ON c.journal_id = j.id WHERE c.id = ? AND j.user_id = ?',
+                    [id, userId]
                 );
 
-                if (existingRows.length === 0) {
-                    const err = new Error('Classe non trouvée ou non autorisée.');
-                    err.name = 'CLASS_NOT_FOUND';
-                    throw err;
+                if (current.length === 0) throw new Error('Classe non trouvée.');
+
+                const fields = [];
+                const params = [];
+
+                if (name) {
+                    fields.push('name = ?');
+                    params.push(name.trim());
                 }
-                const existingClass = existingRows[0];
-
-                const fieldsToUpdate = [];
-                const values = [];
-
-                if (updateData.name !== undefined) {
-                    const trimmedName = updateData.name.trim();
-                    const journalIdForCheck = updateData.journal_id || existingClass.journal_id;
-
-                    const [duplicate] = await connection.execute(
-                        'SELECT id FROM CLASS WHERE LOWER(name) = LOWER(?) AND id != ? AND journal_id = ? AND user_id = ?',
-                        [trimmedName, parseInt(id), journalIdForCheck, userId]
-                    );
-
-                    if (duplicate.length > 0) {
-                        const err = new Error('Une autre classe avec ce nom existe déjà pour ce journal.');
-                        err.name = 'DUPLICATE_NAME';
-                        throw err;
-                    }
-                    fieldsToUpdate.push('name = ?');
-                    values.push(trimmedName);
+                if (level) {
+                    fields.push('level = ?');
+                    params.push(level.trim());
                 }
 
-                if (updateData.students !== undefined) {
-                    fieldsToUpdate.push('students = ?');
-                    values.push(parseInt(updateData.students));
-                }
+                if (fields.length === 0) throw new Error('Rien à modifier.');
 
-                if (updateData.journal_id !== undefined) {
-                    fieldsToUpdate.push('journal_id = ?');
-                    values.push(parseInt(updateData.journal_id));
-                }
+                params.push(id);
+                await connection.execute(`UPDATE CLASSES SET ${fields.join(', ')} WHERE id = ?`, params);
 
-                if (updateData.level !== undefined) {
-                    fieldsToUpdate.push('level = ?');
-                    values.push(parseInt(updateData.level));
-                }
-
-                if (updateData.subject !== undefined) {
-                    fieldsToUpdate.push('subject = ?');
-                    values.push(updateData.subject);
-                }
-
-                if (fieldsToUpdate.length === 0) {
-                    const err = new Error('Aucune donnée à mettre à jour.');
-                    err.name = 'NO_UPDATE_DATA';
-                    throw err;
-                }
-
-                values.push(parseInt(id), userId);
-
-                await connection.execute(
-                    `UPDATE CLASS SET ${fieldsToUpdate.join(', ')} WHERE id = ? AND user_id = ?`,
-                    values
-                );
-
-                const [updatedData] = await connection.execute(
-                    'SELECT id, name, students, level, subject FROM CLASS WHERE id = ?',
-                    [parseInt(id)]
-                );
-
-                return updatedData[0];
+                return { id, name, level };
             });
 
-            res.json({
-                success: true,
-                data: updatedClass,
-                message: 'Classe mise à jour avec succès.'
-            });
-
+            res.json({ success: true, data: updated });
         } catch (error) {
-            if (error.name === 'CLASS_NOT_FOUND') {
-                return ClassController.handleError(res, error, 'Classe non trouvée.', 404);
-            }
-            if (error.name === 'DUPLICATE_NAME') {
-                return ClassController.handleError(res, error, error.message, 409, { name: error.message });
-            }
-            if (error.name === 'NO_UPDATE_DATA') {
-                return ClassController.handleError(res, error, 'Aucune donnée à mettre à jour.', 400);
-            }
-            ClassController.handleError(res, error, 'Erreur lors de la mise à jour de la classe.');
+            ClassController.handleError(res, error, 'Erreur de mise à jour.');
         }
     }
 
     /**
-     * Supprime une classe par son ID.
-     * @param {Request} req - L'objet requête Express.
-     * @param {Response} res - L'objet réponse Express.
+     * Supprime une classe.
      */
     static async deleteClass(req, res) {
         const { id } = req.params;
         const userId = req.user.id;
 
-        if (!id || isNaN(parseInt(id))) {
-            return ClassController.handleError(res, new Error('ID de classe invalide'), 'ID de classe invalide.', 400);
-        }
-
         try {
-            const deletedClassInfo = await ClassController.withConnection(async (connection) => {
-                const [classToDelete] = await connection.execute(
-                    'SELECT id, name FROM CLASS WHERE id = ? AND user_id = ?',
-                    [parseInt(id), userId]
+            await ClassController.withConnection(async (connection) => {
+                // Vérifier propriété
+                const [check] = await connection.execute(
+                    'SELECT c.id FROM CLASSES c INNER JOIN JOURNALS j ON c.journal_id = j.id WHERE c.id = ? AND j.user_id = ?',
+                    [id, userId]
                 );
 
-                if (classToDelete.length === 0) {
-                    const err = new Error('Classe non trouvée ou non autorisée.');
-                    err.name = 'CLASS_NOT_FOUND';
-                    throw err;
-                }
+                if (check.length === 0) throw new Error('Classe non trouvée.');
 
-                await connection.execute('DELETE FROM CLASS WHERE id = ? AND user_id = ?', [parseInt(id), userId]);
-                return classToDelete[0];
+                // Note : Les relations (STUDENTS, EVALUATIONS, SCHEDULES) devraient être en CASCADE dans la BD
+                await connection.execute('DELETE FROM CLASSES WHERE id = ?', [id]);
             });
 
-            res.json({
-                success: true,
-                message: 'Classe supprimée avec succès.',
-                data: {
-                    id: deletedClassInfo.id,
-                    name: deletedClassInfo.name
-                }
-            });
-
+            res.json({ success: true, message: 'Classe supprimée.' });
         } catch (error) {
-            if (error.name === 'CLASS_NOT_FOUND') {
-                return ClassController.handleError(res, error, 'Classe non trouvée.', 404);
-            }
-            ClassController.handleError(res, error, 'Erreur lors de la suppression de la classe.');
-        }
-    }
-
-    /**
-     * Récupère les statistiques agrégées des classes de l'utilisateur.
-     * @param {Request} req - L'objet requête Express.
-     * @param {Response} res - L'objet réponse Express.
-     */
-    static async getClassesStats(req, res) {
-        const userId = req.user.id;
-        try {
-            const stats = await ClassController.withConnection(async (connection) => {
-                const [result] = await connection.execute(`
-                    SELECT
-                        COUNT(*) as total_classes,
-                        SUM(students) as total_students,
-                        AVG(students) as avg_students_per_class
-                    FROM CLASS
-                    WHERE user_id = ?
-                `, [userId]);
-                return result[0];
-            });
-
-            res.json({
-                success: true,
-                data: {
-                    totalClasses: stats.total_classes || 0,
-                    totalStudents: stats.total_students || 0,
-                    averageStudentsPerClass: Math.round(stats.avg_students_per_class || 0)
-                },
-                message: 'Statistiques récupérées avec succès.'
-            });
-
-        } catch (error) {
-            ClassController.handleError(res, error, 'Erreur lors de la récupération des statistiques des classes.');
+            ClassController.handleError(res, error, 'Erreur de suppression.');
         }
     }
 }
