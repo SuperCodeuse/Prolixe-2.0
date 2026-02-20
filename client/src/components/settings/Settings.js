@@ -9,6 +9,7 @@ import StudentManager from "./Student/StudentManager";
 import ScheduleCreator from "./Schedule/ScheduleCreator";
 import { useAuth } from "../../hooks/useAuth";
 import './Settings.scss';
+import SubjectManager from "./Subject/SubjectManager";
 
 const Settings = () => {
     const location = useLocation();
@@ -57,6 +58,7 @@ const Settings = () => {
         title: 'Ma Classe',
         tabs: [
             { id: 'journals', label: 'Journaux', icon: '📚' },
+            { id: 'subjects', label: 'Matières', icon: '📖' },
             { id: 'classes', label: 'Classes', icon: '🏫' },
             { id: 'horaire', label: 'Horaire', icon: '🗓️' },
             { id: 'students', label: 'Élèves', icon: '👥' },
@@ -67,6 +69,7 @@ const Settings = () => {
     const renderTabContent = () => {
         switch (activeTab) {
             case 'journals': return <JournalManager />;
+            case 'subjects': return <SubjectManager />;
             case 'classes': return <ClassesManager />;
             case 'students': return <StudentManager />;
             case 'schedule': return <ScheduleManager />;

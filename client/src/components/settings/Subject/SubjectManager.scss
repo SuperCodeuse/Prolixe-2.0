@@ -1,0 +1,281 @@
+// client/src/components/settings/Subject/SubjectManager.scss
+@import '../../../App';
+
+.subject-manager {
+    position: relative; // Nécessaire pour l'overlay
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+
+    // --- Overlay de clic extérieur ---
+    // S'affiche uniquement quand editingId n'est pas nul
+    .edit-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: transparent;
+        z-index: 100;
+        cursor: default;
+    }
+
+    .header-section {
+        margin-bottom: 1rem;
+
+        h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-light);
+            margin-bottom: 0.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .subtitle {
+            color: #9ca3af;
+            font-size: 0.9rem;
+        }
+    }
+
+    .main-grid {
+        display: grid;
+        grid-template-columns: 350px 1fr;
+        gap: 1.5rem;
+        align-items: start;
+
+        @media (max-width: 1100px) {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .card {
+        background: var(--bg-dark-secondary);
+        border: 1px solid #333333;
+        border-radius: 12px;
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+
+        h3 {
+            color: var(--text-light);
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1.25rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid #333333;
+        }
+    }
+
+    // --- Mode Édition dans le tableau ---
+    .is-editing-row {
+        position: relative;
+        z-index: 101; // Passe au dessus de l'overlay
+        background: rgba(59, 130, 246, 0.05) !important;
+
+        td {
+            border-bottom: 1px solid var(--accent-blue) !important;
+        }
+    }
+
+    .edit-mode-content {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+
+        .color-picker-mini {
+            position: relative;
+            border-radius: 8px;
+            width: 32px;
+            height: 32px;
+            overflow: hidden;
+            background: var(--selected-color);
+            cursor: pointer;
+            flex-shrink: 0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+
+            input[type="color"] {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                opacity: 0; // Cache l'input natif et sa bordure grise
+                cursor: pointer;
+            }
+        }
+
+        .edit-input {
+            flex: 1;
+            background: var(--bg-dark-tertiary);
+            border: 1px solid #444444;
+            border-radius: 6px;
+            padding: 5px 10px;
+            color: white;
+            font-size: 0.9rem;
+            outline: none;
+
+            &:focus {
+                border-color: var(--accent-blue);
+            }
+        }
+    }
+
+    // --- Formulaire d'ajout ---
+    .subject-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+
+        .input-wrapper {
+            label {
+                display: block;
+                color: #9ca3af;
+                font-size: 0.8rem;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                margin-bottom: 0.5rem;
+            }
+
+            input[type="text"] {
+                width: 91%;
+                padding: 0.75rem;
+                background: var(--bg-dark-tertiary);
+                border: 1px solid #333333;
+                border-radius: 8px;
+                color: var(--text-light);
+                outline: none;
+
+                &:focus {
+                    border-color: var(--accent-blue);
+                }
+            }
+
+            .color-selector {
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+                background: var(--bg-dark-tertiary);
+                padding: 0.5rem 0.75rem;
+                border: 1px solid #333333;
+                border-radius: 8px;
+
+                input[type="color"] {
+                    border: none;
+                    width: 30px;
+                    height: 30px;
+                    background: none;
+                    cursor: pointer;
+                }
+
+                span {
+                    font-size: 0.85rem;
+                    color: #9ca3af;
+                }
+            }
+        }
+
+        .btn-submit {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-dark-blue));
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+
+            &:hover:not(:disabled) {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+            }
+
+            &:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+            }
+        }
+    }
+
+    // --- Tableau Prolixe ---
+    .table-responsive {
+        border-radius: 8px;
+        border: 1px solid #333333;
+        overflow: hidden;
+    }
+
+    .prolixe-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+
+        th {
+            background: rgba(255, 255, 255, 0.03);
+            color: #9ca3af;
+            text-align: left;
+            padding: 1rem;
+            font-weight: 500;
+            border-bottom: 1px solid #333333;
+        }
+
+        td {
+            padding: 1rem;
+            color: var(--text-light);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+
+            .color-dot {
+                width: 10px;
+                height: 10px;
+                border-radius: 50%;
+                display: inline-block;
+                margin-right: 10px;
+            }
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 4px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            &:hover { background: rgba(255, 255, 255, 0.05); }
+            &.save { color: #10b981; }
+            &.cancel { color: #ef4444; }
+        }
+
+        .btn-delete {
+            background: none;
+            border: none;
+            color: #64748b;
+            cursor: pointer;
+            padding: 5px;
+            transition: color 0.2s;
+
+            &:hover {
+                color: #ef4444;
+            }
+        }
+
+        tbody tr:not(.is-editing-row):hover {
+            background: rgba(59, 130, 246, 0.08);
+            td { color: var(--text-light); }
+        }
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #64748b;
+        font-style: italic;
+    }
+}

@@ -97,6 +97,7 @@ apiRouter.use('/conseilDeClasse', require('./routes/ConseilRoutes'));
 apiRouter.use('/notes', require('./routes/NoteRoute'));
 apiRouter.use('/school-years', require('./routes/SchoolYearRoute'));
 apiRouter.use('/holidays', require('./routes/HolidayRoute'));
+apiRouter.use('/subjects', require('./routes/SubjectsRoute'));
 
 // Attachement du routeur centralisé
 app.use('/api', apiRouter);

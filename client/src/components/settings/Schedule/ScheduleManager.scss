@@ -1,184 +1,200 @@
-@import '../../../App';
+.subject-manager {
+    --glass-bg: rgba(255, 255, 255, 0.03);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-hover: rgba(255, 255, 255, 0.06);
 
-.schedule-manager {
-    /* On garde le conteneur mais on adapte les couleurs au thème sombre */
     background: var(--bg-dark-secondary);
-    border: 1px solid #333333;
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin-top: 1.5rem;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    border-radius: 20px;
+    padding: 2rem;
+    color: #e2e8f0;
 
-    .section-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1.5rem;
-        padding-bottom: 1rem;
-        border-bottom: 1px solid #333333;
+    .manager-header {
+        margin-bottom: 2rem;
 
-        h3 {
-            margin: 0;
-            color: var(--text-light);
-            font-size: 1.2rem;
-            font-weight: 600;
+        .title-wrapper {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 1rem;
+
+            .icon-box {
+                background: linear-gradient(135deg, var(--accent-blue), #1e40af);
+                padding: 10px;
+                border-radius: 12px;
+                box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            }
+
+            h2 { margin: 0; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.5px; }
+            p { margin: 0; color: #94a3b8; font-size: 0.9rem; }
         }
     }
 
-    /* --- BOUTONS --- */
-    .btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 0.6rem 1.2rem;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 0.875rem;
-        font-weight: 500;
-        transition: all 0.3s ease;
-        border: 1px solid transparent;
-    }
-
-    .btn-primary {
-        background: linear-gradient(135deg, var(--accent-blue), var(--accent-dark-blue));
-        color: white;
-        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
-
-        &:hover {
-            filter: brightness(1.1);
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
-        }
-    }
-
-    .btn-secondary {
-        background: var(--bg-dark-tertiary);
-        color: #9ca3af;
-        border-color: #333333;
-
-        &:hover {
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--text-light);
-        }
-    }
-
-    /* --- GRILLE D'HORAIRES --- */
-    .schedule-grid {
-        display: grid;
-        gap: 0.75rem;
-        max-height: 450px;
-        overflow-y: auto;
-        padding-right: 5px;
-
-        /* Scrollbar discrète style "glass" */
-        &::-webkit-scrollbar { width: 6px; }
-        &::-webkit-scrollbar-track { background: transparent; }
-        &::-webkit-scrollbar-thumb {
-            background: #333333;
-            border-radius: 10px;
-            &:hover { background: #444444; }
-        }
-    }
-
-    .schedule-item {
+    /* --- FORMULAIRE GLASS --- */
+    .glass-add-form {
         display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 1rem 1.25rem;
-        background: var(--bg-dark-tertiary); // Fond plus sombre pour l'item
-        border: 1px solid #333333;
-        border-radius: 10px;
-        transition: all 0.3s ease;
-
-        &:hover {
-            /* Effet Glassmorphism au survol sans mouvement */
-            background: rgba(59, 130, 246, 0.08);
-            backdrop-filter: blur(4px);
-            border-color: rgba(98, 151, 241, 0.3);
-        }
-    }
-
-    .schedule-info {
-        display: flex;
-        align-items: center;
+        flex-wrap: wrap;
         gap: 1rem;
-    }
+        padding: 1rem;
+        background: var(--glass-bg);
+        backdrop-filter: blur(10px);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        margin-bottom: 2.5rem;
 
-    .schedule-number {
-        background: rgba(66, 153, 225, 0.15);
-        color: var(--accent-blue);
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 700;
-        font-size: 0.85rem;
-        border: 1px solid rgba(66, 153, 225, 0.2);
-    }
+        .input-wrapper {
+            flex: 1;
+            min-width: 200px;
 
-    .schedule-time {
-        font-weight: 600;
-        color: var(--text-light);
-        font-size: 1rem;
-    }
+            input {
+                width: 100%;
+                background: rgba(0, 0, 0, 0.2);
+                border: 1px solid var(--glass-border);
+                border-radius: 10px;
+                padding: 0.8rem 1rem;
+                color: white;
+                outline: none;
+                transition: all 0.3s ease;
 
-    .schedule-duration {
-        color: #64748b;
-        font-size: 0.8rem;
-    }
-
-    /* --- ACTIONS --- */
-    .schedule-actions {
-        display: flex;
-        gap: 6px;
-
-        .btn-edit, .btn-delete {
-            @include btn-action-base;
-            padding: 6px;
-            color: #9ca3af;
-
-            &:hover {
-                background: rgba(255, 255, 255, 0.05);
+                &:focus {
+                    border-color: var(--accent-blue);
+                    background: rgba(0, 0, 0, 0.3);
+                    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+                }
             }
         }
 
-        .btn-edit:hover { color: var(--accent-orange); border-color: rgba(245, 158, 11, 0.3); }
-        .btn-delete:hover { color: var(--red-danger); border-color: rgba(239, 68, 68, 0.3); }
-    }
+        .color-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
 
-    /* --- ETAT VIDE --- */
-    .no-data {
-        text-align: center;
-        padding: 3rem 1rem;
-        color: #64748b;
-        background: rgba(15, 23, 42, 0.3);
-        border: 1px dashed #333333;
-        border-radius: 10px;
+            .color-input-wrapper {
+                position: relative;
+                width: 42px;
+                height: 42px;
+                border-radius: 10px;
+                overflow: hidden;
+                border: 2px solid var(--glass-border);
+                background: var(--selected-color);
+                cursor: pointer;
 
-        p { margin: 4px 0; }
-    }
+                input[type="color"] {
+                    position: absolute;
+                    top: -5px; left: -5px;
+                    width: 60px; height: 60px;
+                    cursor: pointer;
+                    opacity: 0;
+                }
+            }
+        }
 
-    /* --- FORMULAIRES & MODALES --- */
-    .modal-overlay { @include modal-overlay-base; }
-    .modal {
-        @include modal-base;
-        background: var(--bg-dark-secondary);
-        border: 1px solid #333333;
-    }
+        .add-button {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--accent-blue);
+            color: white;
+            border: none;
+            padding: 0 1.5rem;
+            height: 42px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
-    .form-group {
-        @include modal-form-group-base;
-        label { color: #9ca3af; }
-        input {
-            background: var(--bg-dark-tertiary);
-            border: 1px solid #333333;
-            &:focus { border-color: var(--accent-blue); }
+            &:hover:not(:disabled) {
+                transform: translateY(-2px);
+                box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
+                filter: brightness(1.1);
+            }
+
+            &:disabled { opacity: 0.5; cursor: not-allowed; }
         }
     }
 
-    .form-actions { @include modal-form-actions-base; }
+    /* --- GRILLE DES MATIÈRES --- */
+    .subjects-list {
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 1rem;
+        }
+
+        .subject-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 14px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+
+            &::before {
+                content: '';
+                position: absolute;
+                top: 0; left: 0; width: 4px; height: 100%;
+                background: var(--subject-color);
+                box-shadow: 2px 0 10px var(--subject-color);
+            }
+
+            &:hover {
+                background: var(--glass-hover);
+                transform: translateX(4px);
+                border-color: rgba(255, 255, 255, 0.15);
+            }
+
+            .card-content {
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+
+                .color-indicator {
+                    width: 12px;
+                    height: 12px;
+                    border-radius: 50%;
+                    background: var(--subject-color);
+                }
+
+                .name {
+                    font-weight: 500;
+                    font-size: 0.95rem;
+                }
+            }
+
+            .action-btn {
+                background: transparent;
+                border: none;
+                color: #64748b;
+                padding: 6px;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+
+                &:hover {
+                    background: rgba(239, 68, 68, 0.1);
+                    color: #ef4444;
+                }
+            }
+        }
+    }
+
+    .state-message {
+        text-align: center;
+        padding: 3rem;
+        color: #64748b;
+        background: var(--glass-bg);
+        border: 1px dashed var(--glass-border);
+        border-radius: 16px;
+    }
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }

@@ -204,13 +204,14 @@ const ScheduleCreator = () => {
                                                 {/* Sélecteur de Matière */}
                                                 <div className="input-wrapper">
                                                     <BookOpen size={12} />
+                                                    {/*
                                                     <select
                                                         value={cell.subject_id || ''}
                                                         onChange={(e) => updateCell(d.id, h.id, 'subject_id', e.target.value)}
                                                     >
                                                         <option value="">Matière...</option>
                                                         {availableSubjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                                                    </select>
+                                                    </select>*/}
                                                 </div>
 
                                                 {/* Sélecteur de Classe */}
@@ -221,7 +222,7 @@ const ScheduleCreator = () => {
                                                         onChange={(e) => updateCell(d.id, h.id, 'class_id', e.target.value)}
                                                     >
                                                         <option value="">Classe...</option>
-                                                        {availableClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                                        {/*availableClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)*/}
                                                     </select>
                                                 </div>
 
