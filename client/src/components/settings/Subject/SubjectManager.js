@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSubjects } from '../../../hooks/useSubjects';
 import { useJournal } from '../../../hooks/useJournal';
 import { Plus, Trash2, BookOpen, Loader2, Edit2, Check, X } from 'lucide-react';
+import ConfirmModal from '../../ConfirmModal'; // Importation de la modal
 import './SubjectManager.scss';
 
 const SubjectManager = () => {
@@ -16,6 +17,10 @@ const SubjectManager = () => {
     const [editingId, setEditingId] = useState(null);
     const [editName, setEditName] = useState('');
     const [editColor, setEditColor] = useState('');
+
+    // États pour la modal de confirmation
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [subjectToDelete, setSubjectToDelete] = useState(null);
 
     useEffect(() => {
         if (currentJournal?.id) {
@@ -57,9 +62,35 @@ const SubjectManager = () => {
         }
     };
 
+    // Fonctions pour gérer la suppression avec confirmation
+    const openDeleteModal = (subject) => {
+        setSubjectToDelete(subject);
+        setIsDeleteModalOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (subjectToDelete) {
+            await removeSubject(subjectToDelete.id);
+            setIsDeleteModalOpen(false);
+            setSubjectToDelete(null);
+            if (currentJournal?.id) loadSubjects(currentJournal.id);
+        }
+    };
+
     return (
         <div className="subject-manager">
             {editingId && <div className="edit-overlay" onClick={cancelEdit} />}
+
+            {/* Modal de confirmation */}
+            <ConfirmModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={handleConfirmDelete}
+                title="Supprimer la matière"
+                message={`Êtes-vous sûr de vouloir supprimer la matière "${subjectToDelete?.name}" ? Cette action est irréversible.`}
+                confirmText="Supprimer"
+                type="danger"
+            />
 
             <div className="header-section">
                 <h2><BookOpen size={24} /> Matières</h2>
@@ -135,7 +166,8 @@ const SubjectManager = () => {
                                             ) : (
                                                 <>
                                                     <button onClick={() => handleEditClick(subject)} className="btn-delete"><Edit2 size={16} /></button>
-                                                    <button onClick={() => removeSubject(subject.id)} className="btn-delete"><Trash2 size={16} /></button>
+                                                    {/* Appel de la modal au lieu de la suppression directe */}
+                                                    <button onClick={() => openDeleteModal(subject)} className="btn-delete"><Trash2 size={16} /></button>
                                                 </>
                                             )}
                                         </div>
