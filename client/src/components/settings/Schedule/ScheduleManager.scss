@@ -1,200 +1,199 @@
-.subject-manager {
+// frontend/src/components/ScheduleManager.scss
+@import '../../../App';
+
+.schedule-manager-container {
     --glass-bg: rgba(255, 255, 255, 0.03);
     --glass-border: rgba(255, 255, 255, 0.08);
-    --glass-hover: rgba(255, 255, 255, 0.06);
+    --accent-blue: #3b82f6;
+    --accent-red: #ef4444;
 
     background: var(--bg-dark-secondary);
-    border-radius: 20px;
+    border-radius: 24px;
     padding: 2rem;
-    color: #e2e8f0;
+    color: #f1f5f9;
+    min-height: 400px;
 
     .manager-header {
-        margin-bottom: 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2.5rem;
+        gap: 1rem;
 
         .title-wrapper {
             display: flex;
             align-items: center;
-            gap: 1rem;
+            gap: 1.2rem;
 
             .icon-box {
+                font-size: 1.5rem;
                 background: linear-gradient(135deg, var(--accent-blue), #1e40af);
-                padding: 10px;
-                border-radius: 12px;
-                box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
-            }
-
-            h2 { margin: 0; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.5px; }
-            p { margin: 0; color: #94a3b8; font-size: 0.9rem; }
-        }
-    }
-
-    /* --- FORMULAIRE GLASS --- */
-    .glass-add-form {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1rem;
-        padding: 1rem;
-        background: var(--glass-bg);
-        backdrop-filter: blur(10px);
-        border: 1px solid var(--glass-border);
-        border-radius: 16px;
-        margin-bottom: 2.5rem;
-
-        .input-wrapper {
-            flex: 1;
-            min-width: 200px;
-
-            input {
-                width: 100%;
-                background: rgba(0, 0, 0, 0.2);
-                border: 1px solid var(--glass-border);
-                border-radius: 10px;
-                padding: 0.8rem 1rem;
-                color: white;
-                outline: none;
-                transition: all 0.3s ease;
-
-                &:focus {
-                    border-color: var(--accent-blue);
-                    background: rgba(0, 0, 0, 0.3);
-                    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-                }
-            }
-        }
-
-        .color-controls {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-
-            .color-input-wrapper {
-                position: relative;
-                width: 42px;
-                height: 42px;
-                border-radius: 10px;
-                overflow: hidden;
-                border: 2px solid var(--glass-border);
-                background: var(--selected-color);
-                cursor: pointer;
-
-                input[type="color"] {
-                    position: absolute;
-                    top: -5px; left: -5px;
-                    width: 60px; height: 60px;
-                    cursor: pointer;
-                    opacity: 0;
-                }
-            }
-        }
-
-        .add-button {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: var(--accent-blue);
-            color: white;
-            border: none;
-            padding: 0 1.5rem;
-            height: 42px;
-            border-radius: 10px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-
-            &:hover:not(:disabled) {
-                transform: translateY(-2px);
-                box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
-                filter: brightness(1.1);
-            }
-
-            &:disabled { opacity: 0.5; cursor: not-allowed; }
-        }
-    }
-
-    /* --- GRILLE DES MATIÈRES --- */
-    .subjects-list {
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-            gap: 1rem;
-        }
-
-        .subject-card {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem;
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 14px;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-
-            &::before {
-                content: '';
-                position: absolute;
-                top: 0; left: 0; width: 4px; height: 100%;
-                background: var(--subject-color);
-                box-shadow: 2px 0 10px var(--subject-color);
-            }
-
-            &:hover {
-                background: var(--glass-hover);
-                transform: translateX(4px);
-                border-color: rgba(255, 255, 255, 0.15);
-            }
-
-            .card-content {
+                width: 50px;
+                height: 50px;
                 display: flex;
                 align-items: center;
-                gap: 0.75rem;
-
-                .color-indicator {
-                    width: 12px;
-                    height: 12px;
-                    border-radius: 50%;
-                    background: var(--subject-color);
-                }
-
-                .name {
-                    font-weight: 500;
-                    font-size: 0.95rem;
-                }
+                justify-content: center;
+                border-radius: 14px;
+                box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
             }
 
-            .action-btn {
-                background: transparent;
-                border: none;
+            h2 { margin: 0; font-size: 1.4rem; font-weight: 700; }
+            p { margin: 0; color: #94a3b8; font-size: 0.85rem; }
+        }
+    }
+
+    .add-glass-btn {
+        background: rgba(59, 130, 246, 0.15);
+        border: 1px solid rgba(59, 130, 246, 0.3);
+        color: white;
+        padding: 0.8rem 1.4rem;
+        border-radius: 12px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(5px);
+
+        &:hover {
+            background: var(--accent-blue);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+    }
+
+    /* Grille des créneaux */
+    .schedule-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1.2rem;
+    }
+
+    .schedule-card {
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        backdrop-filter: blur(10px);
+        padding: 1.2rem;
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+
+        &:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: scale(1.02);
+        }
+
+        .card-index {
+            font-size: 0.75rem;
+            color: var(--accent-blue);
+            font-weight: 800;
+            background: rgba(59, 130, 246, 0.1);
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+
+        .card-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+
+            .time {
+                font-weight: 600;
+                font-size: 1.1rem;
+                letter-spacing: 0.5px;
+            }
+
+            .duration {
+                font-size: 0.8rem;
                 color: #64748b;
-                padding: 6px;
+            }
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 0.5rem;
+
+            .action-btn {
+                background: rgba(255, 255, 255, 0.05);
+                border: none;
+                width: 34px;
+                height: 34px;
                 border-radius: 8px;
                 cursor: pointer;
-                transition: all 0.2s ease;
+                transition: all 0.2s;
+                display: flex;
+                align-items: center;
+                justify-content: center;
 
-                &:hover {
-                    background: rgba(239, 68, 68, 0.1);
-                    color: #ef4444;
-                }
+                &:hover.edit { background: rgba(59, 130, 246, 0.2); color: white; }
+                &:hover.delete { background: rgba(239, 68, 68, 0.2); color: white; }
             }
         }
     }
 
-    .state-message {
-        text-align: center;
-        padding: 3rem;
-        color: #64748b;
-        background: var(--glass-bg);
-        border: 1px dashed var(--glass-border);
-        border-radius: 16px;
+    /* Modal Glassmorphism */
+    .glass-modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(8px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        animation: fadeIn 0.3s ease;
+
+        .glass-modal {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid var(--glass-border);
+            padding: 2rem;
+            border-radius: 24px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+
+            h3 { margin-top: 0; margin-bottom: 1.5rem; }
+
+            .input-group {
+                margin-bottom: 1.5rem;
+                label { display: block; margin-bottom: 0.5rem; font-size: 0.9rem; color: #94a3b8; }
+
+                input {
+                    width: 100%;
+                    background: rgba(0, 0, 0, 0.2);
+                    border: 1px solid var(--glass-border);
+                    padding: 0.8rem;
+                    border-radius: 10px;
+                    color: white;
+                    outline: none;
+                    &:focus { border-color: var(--accent-blue); }
+                }
+
+                .error-text { color: var(--accent-red); font-size: 0.8rem; margin-top: 0.5rem; display: block; }
+            }
+
+            .modal-footer {
+                display: flex;
+                justify-content: flex-end;
+                gap: 1rem;
+
+                button {
+                    padding: 0.7rem 1.2rem;
+                    border-radius: 10px;
+                    border: none;
+                    cursor: pointer;
+                    font-weight: 500;
+                }
+
+                .confirm-btn {
+                    background: var(--accent-blue);
+                    color: white;
+                }
+            }
+        }
     }
 }
 
-.animate-spin {
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }

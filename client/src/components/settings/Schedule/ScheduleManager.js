@@ -4,257 +4,105 @@ import { useScheduleHours } from '../../../hooks/useScheduleHours';
 import './ScheduleManager.scss';
 
 const ScheduleManager = () => {
-    const {
-        hours,
-        loading,
-        error,
-        addHour,
-        updateHour,
-        removeHour,
-        getSortedHours
-    } = useScheduleHours();
-
+    const { hours, loading, error, addHour, updateHour, removeHour } = useScheduleHours();
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [modalData, setModalData] = useState({
-        id: null,
-        libelle: '',
-        isEdit: false
-    });
+    const [modalData, setModalData] = useState({ id: null, libelle: '', isEdit: false });
     const [validationError, setValidationError] = useState('');
 
-    // Validation du format HH:MM-HH:MM
     const validateTimeSlot = (timeSlot) => {
         const regex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]-([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
-        if (!regex.test(timeSlot)) {
-            return "Format invalide. Utilisez HH:MM-HH:MM";
-        }
-
+        if (!regex.test(timeSlot)) return "Format invalide. Utilisez HH:MM-HH:MM";
         const [start, end] = timeSlot.split('-');
-        const [startHour, startMin] = start.split(':').map(Number);
-        const [endHour, endMin] = end.split(':').map(Number);
-
-        const startTime = startHour * 60 + startMin;
-        const endTime = endHour * 60 + endMin;
-
-        if (startTime >= endTime) {
-            return "L'heure de fin doit être après l'heure de début";
-        }
-
+        const [startH, startM] = start.split(':').map(Number);
+        const [endH, endM] = end.split(':').map(Number);
+        if ((startH * 60 + startM) >= (endH * 60 + endM)) return "L'heure de fin doit être après le début";
         return null;
     };
 
-    // Ouvrir modal pour ajouter
-    const handleAdd = () => {
-        setModalData({
-            id: null,
-            libelle: '',
-            isEdit: false
-        });
+    const handleOpenModal = (hour = null) => {
+        setModalData(hour
+            ? { id: hour.id, libelle: hour.libelle, isEdit: true }
+            : { id: null, libelle: '', isEdit: false }
+        );
         setValidationError('');
         setIsModalOpen(true);
     };
 
-    // Ouvrir modal pour éditer
-    const handleEdit = (hour) => {
-        setModalData({
-            id: hour.id,
-            libelle: hour.libelle,
-            isEdit: true
-        });
-        setValidationError('');
-        setIsModalOpen(true);
-    };
-
-    // Fermer modal
-    const handleCloseModal = () => {
-        setIsModalOpen(false);
-        setModalData({ id: null, libelle: '', isEdit: false });
-        setValidationError('');
-    };
-
-    // Sauvegarder (ajouter ou modifier)
     const handleSave = async (e) => {
         e.preventDefault();
-
-        const trimmedLibelle = modalData.libelle.trim();
-
-        // Validation
-        const validationErr = validateTimeSlot(trimmedLibelle);
-        if (validationErr) {
-            setValidationError(validationErr);
-            return;
-        }
+        const error = validateTimeSlot(modalData.libelle.trim());
+        if (error) return setValidationError(error);
 
         try {
-            if (modalData.isEdit) {
-                await updateHour(modalData.id, { libelle: trimmedLibelle });
-            } else {
-                await addHour({ libelle: trimmedLibelle });
-            }
-            handleCloseModal();
-        } catch (error) {
-            setValidationError(error.message || 'Erreur lors de la sauvegarde');
-        }
+            if (modalData.isEdit) await updateHour(modalData.id, { libelle: modalData.libelle });
+            else await addHour({ libelle: modalData.libelle });
+            setIsModalOpen(false);
+        } catch (err) { setValidationError(err.message); }
     };
 
-    // Supprimer un créneau
-    const handleDelete = async (hour) => {
-        if (window.confirm(`Êtes-vous sûr de vouloir supprimer le créneau "${hour.libelle}" ?`)) {
-            try {
-                await removeHour(hour.id);
-            } catch (error) {
-                alert('Erreur lors de la suppression: ' + error.message);
-            }
-        }
-    };
-
-    // Calculer la durée d'un créneau
     const getSlotDuration = (libelle) => {
-        const [start, end] = libelle.split('-');
-        const [startHour, startMin] = start.split(':').map(Number);
-        const [endHour, endMin] = end.split(':').map(Number);
-
-        const startTime = startHour * 60 + startMin;
-        const endTime = endHour * 60 + endMin;
-
-        return endTime - startTime;
+        const [s, e] = libelle.split('-');
+        const parse = (t) => { const [h, m] = t.split(':'); return h * 60 + parseInt(m); };
+        return parse(e) - parse(s);
     };
 
-    if (loading) {
-        return (
-            <div className="settings-section">
-                <h2>⏰ Horaire</h2>
-                <div className="loading-message">
-                    Chargement des créneaux horaires...
-                </div>
-            </div>
-        );
-    }
+    if (loading) return <div className="schedule-manager-container loading"><span>⏳ Chargement...</span></div>;
 
-    if (error) {
-        return (
-            <div className="settings-section">
-                <h2>⏰ Horaire</h2>
-                <div className="error-message">
-                    Erreur: {error}
-                </div>
-            </div>
-        );
-    }
-    const sortedHours = hours.sort((a, b) => a.libelle.localeCompare(b.libelle));
+    const sortedHours = [...hours].sort((a, b) => a.libelle.localeCompare(b.libelle));
 
     return (
-        <div className="settings-section">
-            <h2>⏰ Gestion de l'Horaire</h2>
-            <p>Gestion des créneaux horaires de l'établissement</p>
-
-            <button className="btn btn-primary" onClick={handleAdd}>
-                ➕ Ajouter un créneau
-            </button>
-
-            <div className="schedule-manager">
-                <div className="section-header">
-                    <h3>Créneaux horaires ({hours.length})</h3>
+        <div className="schedule-manager-container">
+            <header className="manager-header">
+                <div className="title-wrapper">
+                    <div className="icon-box">⏰</div>
+                    <div>
+                        <h2>Gestion de l'Horaire</h2>
+                        <p>Configurez les créneaux de l'établissement</p>
+                    </div>
                 </div>
+                <button className="add-glass-btn" onClick={() => handleOpenModal()}>
+                    <span>+</span> Nouveau Créneau
+                </button>
+            </header>
 
+            <div className="schedule-grid">
                 {sortedHours.length === 0 ? (
-                    <div className="no-data">
-                        <p>Aucun créneau horaire configuré.</p>
-                        <p>Cliquez sur "Ajouter un créneau" pour commencer.</p>
-                    </div>
+                    <div className="empty-state">Aucun créneau configuré.</div>
                 ) : (
-                    <div className="schedule-grid">
-                        {sortedHours.map((hour, index) => (
-                            <div key={hour.id} className="schedule-item">
-                                <div className="schedule-info">
-                                    <div className="schedule-number">
-                                        #{index + 1}
-                                    </div>
-                                    <div className="schedule-details">
-                                        <div className="schedule-time">
-                                            {hour.libelle}
-                                        </div>
-                                        <div className="schedule-duration">
-                                            {getSlotDuration(hour.libelle)} minutes
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="schedule-actions">
-                                    <button
-                                        className="btn btn-edit"
-                                        onClick={() => handleEdit(hour)}
-                                        title="Modifier"
-                                    >
-                                        ✏️
-                                    </button>
-                                    <button
-                                        className="btn btn-delete"
-                                        onClick={() => handleDelete(hour)}
-                                        title="Supprimer"
-                                    >
-                                        🗑️
-                                    </button>
-                                </div>
+                    sortedHours.map((hour, index) => (
+                        <div key={hour.id} className="schedule-card">
+                            <div className="card-index">#{index + 1}</div>
+                            <div className="card-info">
+                                <span className="time">{hour.libelle}</span>
+                                <span className="duration">{getSlotDuration(hour.libelle)} min</span>
                             </div>
-                        ))}
-                    </div>
+                            <div className="card-actions">
+                                <button onClick={() => handleOpenModal(hour)} className="action-btn edit">✏️</button>
+                                <button onClick={() => removeHour(hour.id)} className="action-btn delete">🗑️</button>
+                            </div>
+                        </div>
+                    ))
                 )}
             </div>
 
-            {/* Modal pour ajouter/éditer */}
             {isModalOpen && (
-                <div className="modal-overlay">
-                    <div className="modal">
-                        <div className="modal-header">
-                            <h3>
-                                {modalData.isEdit ? 'Modifier le créneau' : 'Ajouter un créneau'}
-                            </h3>
-                            <button
-                                className="modal-close"
-                                onClick={handleCloseModal}
-                            >
-                                ✕
-                            </button>
-                        </div>
-
-                        <form onSubmit={handleSave} className="class-form">
-                            <div className="form-group">
-                                <label htmlFor="libelle">
-                                    Créneau horaire <span className="required">*</span>
-                                </label>
+                <div className="glass-modal-overlay">
+                    <div className="glass-modal">
+                        <h3>{modalData.isEdit ? 'Modifier' : 'Ajouter'} un créneau</h3>
+                        <form onSubmit={handleSave}>
+                            <div className="input-group">
+                                <label>Heures (HH:MM-HH:MM)</label>
                                 <input
-                                    type="text"
-                                    id="libelle"
+                                    autoFocus
+                                    placeholder="08:00-09:00"
                                     value={modalData.libelle}
-                                    onChange={(e) => setModalData(prev => ({
-                                        ...prev,
-                                        libelle: e.target.value
-                                    }))}
-                                    placeholder="Ex: 08:00-08:50"
-                                    className={validationError ? 'error' : ''}
+                                    onChange={e => setModalData({...modalData, libelle: e.target.value})}
                                 />
-                                <small className="form-hint">
-                                    Format: HH:MM-HH:MM (ex: 08:00-08:50)
-                                </small>
+                                {validationError && <span className="error-text">{validationError}</span>}
                             </div>
-
-                            {validationError && (
-                                <div className="validation-error">
-                                    {validationError}
-                                </div>
-                            )}
-
-                            <div className="form-actions">
-                                <button
-                                    type="button"
-                                    className="btn-secondary"
-                                    onClick={handleCloseModal}
-                                >
-                                    Annuler
-                                </button>
-                                <button type="submit" className="btn-primary">
-                                    {modalData.isEdit ? '✏️ Modifier' : '➕ Ajouter'}
-                                </button>
+                            <div className="modal-footer">
+                                <button type="button" onClick={() => setIsModalOpen(false)}>Annuler</button>
+                                <button type="submit" className="confirm-btn">Enregistrer</button>
                             </div>
                         </form>
                     </div>

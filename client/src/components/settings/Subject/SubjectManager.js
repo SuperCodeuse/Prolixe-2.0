@@ -166,7 +166,7 @@ const SubjectManager = () => {
                                             ) : (
                                                 <>
                                                     <button onClick={() => handleEditClick(subject)} className="btn-delete"><Edit2 size={16} /></button>
-                                                    {/* Appel de la modal au lieu de la suppression directe */}
+                                                    {}
                                                     <button onClick={() => openDeleteModal(subject)} className="btn-delete"><Trash2 size={16} /></button>
                                                 </>
                                             )}
