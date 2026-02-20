@@ -1,335 +1,123 @@
 // backend/controllers/ScheduleController.js
-const mysql = require('mysql2/promise');
 const pool = require('../../config/database');
-const JournalController = require('./JournalController');
 
 class ScheduleController {
-    static async withConnection(operation) {
-        let connection;
-        try {
-            connection = await pool.getConnection();
-            if (typeof connection.release !== 'function') {
-                console.error("DEBUG: L'objet de connexion n'a pas la méthode .release().");
-                throw new Error("L'objet de connexion obtenu du pool n'est pas valide.");
-            }
-            return await operation(connection);
-        } catch (error) {
-            console.error('Erreur SQL dans withConnection (ScheduleController):', error.message);
-            throw error;
-        } finally {
-            if (connection && typeof connection.release === 'function') {
-                connection.release();
-            }
-        }
-    }
 
-    static handleError(res, error, defaultMessage = 'Erreur serveur', statusCode = 500, customErrors = {}) {
-        const errorMessage = process.env.NODE_ENV === 'development' ? error.message : defaultMessage;
-        console.error(`❌ Erreur dans ScheduleController: ${defaultMessage}`, error);
-        res.status(statusCode).json({ success: false, message: defaultMessage, error: errorMessage, errors: customErrors });
-    }
-
-    static validateCourseData(data) {
-        const errors = {};
-        const validDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
-        if (!data.day || !validDays.includes(data.day)) errors.day = 'Jour de la semaine invalide.';
-        if (!data.time_slot_id || isNaN(parseInt(data.time_slot_id)) || parseInt(data.time_slot_id) <= 0) errors.time_slot_id = 'ID de créneau horaire invalide.';
-        if (!data.subject || typeof data.subject !== 'string' || !data.subject.trim()) errors.subject = 'La matière est requise.';
-        if (!data.class_id || isNaN(parseInt(data.class_id)) || parseInt(data.class_id) <= 0) errors.class_id = 'ID de classe invalide.';
-        if (!data.room || typeof data.room !== 'string' || !data.room.trim()) errors.room = 'Le local est requis.';
-        if (!data.journal_id || isNaN(parseInt(data.journal_id)) || parseInt(data.journal_id) <= 0) errors.journal_id = 'ID de journal invalide.';
-        if (!data.schedule_set_id || isNaN(parseInt(data.schedule_set_id)) || parseInt(data.schedule_set_id) <= 0) errors.schedule_set_id = 'ID de l\'ensemble d\'horaires invalide.';
-
-        return errors;
-    }
-
-    static async getScheduleData(journal_id, userId, schedule_set_id, connection = null) {
-        const executeQuery = async (conn) => {
-            const [rows] = await conn.execute(`
-                SELECT s.id, s.day, s.time_slot_id, h.libelle AS time_slot_libelle, s.subject, s.class_id, c.name AS class_name, c.level AS class_level, s.room, s.notes, s.start_date, s.end_date
-                FROM SCHEDULE s
-                JOIN SCHEDULE_HOURS h ON s.time_slot_id = h.id
-                JOIN CLASS c ON s.class_id = c.id
-                WHERE s.journal_id = ? AND s.user_id = ? AND s.schedule_set_id = ?
-            `, [journal_id, userId, schedule_set_id]);
-            return rows;
-        };
-        const scheduleData = connection ? await executeQuery(connection) : await ScheduleController.withConnection(executeQuery);
-        const formattedSchedule = {};
-        scheduleData.forEach(item => {
-            const slotKey = `${item.day}-${item.time_slot_libelle}`;
-            formattedSchedule[slotKey] = { id: item.id, day: item.day, time_slot_id: item.time_slot_id, time_slot_libelle: item.time_slot_libelle, subject: item.subject, classId: item.class_id, room: item.room, notes: item.notes, className: item.class_name, classLevel: item.class_level, startDate: item.start_date, endDate: item.end_date };
-        });
-        return formattedSchedule;
-    }
-
-    static async getSchedule(req, res) {
-        const { journal_id, schedule_set_id } = req.query;
+    static async createScheduleSet(req, res) {
+        const { name } = req.body;
         const userId = req.user.id;
 
-        if (!journal_id || !schedule_set_id) return ScheduleController.handleError(res, new Error('ID de journal ou d\'ensemble d\'horaires manquant'), "L'ID du journal et de l'ensemble d'horaires sont requis.", 400);
-        if (!userId) return ScheduleController.handleError(res, new Error('ID utilisateur manquant'), "L'authentification est requise.", 401);
+        if (!name) {
+            return res.status(400).json({ success: false, message: "Le nom de l'emploi du temps est requis." });
+        }
 
         try {
-            const formattedSchedule = await ScheduleController.getScheduleData(parseInt(journal_id), userId, parseInt(schedule_set_id));
-            res.json({ success: true, data: formattedSchedule, count: Object.keys(formattedSchedule).length, message: Object.keys(formattedSchedule).length === 0 ? 'Aucun créneau horaire trouvé pour ce journal.' : `${Object.keys(formattedSchedule).length} créneau(x) récupéré(s).` });
+            const [result] = await pool.execute(
+                'INSERT INTO SCHEDULE_SETS (user_id, name) VALUES (?, ?)',
+                [userId, name]
+            );
+            res.status(201).json({ success: true, id: result.insertId, name });
         } catch (error) {
-            ScheduleController.handleError(res, error, 'Erreur lors de la récupération de l\'emploi du temps.');
+            res.status(500).json({ success: false, message: error.message || 'Erreur lors de la création de l\'emploi du temps' });
         }
     }
 
-    static async changeCourse(req, res) {
-        const { source_day, source_time_slot_id, target_day, target_time_slot_id, subject, classId, room, notes, journal_id, schedule_set_id } = req.body;
+    /**
+     * Récupère la liste de tous les emplois du temps créés par l'utilisateur
+     */
+    static async getUserSchedules(req, res) {
         const userId = req.user.id;
-
-        if (!userId) {
-            return ScheduleController.handleError(res, new Error('ID utilisateur manquant'), "L'authentification est requise.", 401);
+        try {
+            const [rows] = await pool.execute(
+                'SELECT * FROM SCHEDULE_SETS WHERE user_id = ? ORDER BY created_at DESC',
+                [userId]
+            );
+            res.json({ success: true, data: rows });
+        } catch (error) {
+            res.status(500).json({ success: false, message: error.message || 'Erreur lors de la récupération des emplois du temps' });
         }
+    }
 
-        // Validation des données pour s'assurer que tout est présent
-        // Note: On réutilise la même validation en se basant sur la destination
-        const validationErrors = ScheduleController.validateCourseData({
-            day: target_day,
-            time_slot_id: target_time_slot_id,
-            subject,
-            class_id: classId,
-            room,
-            journal_id,
-            schedule_set_id
-        });
-
-        if (Object.keys(validationErrors).length > 0) {
-            return ScheduleController.handleError(res, new Error('Données de validation invalides'), 'Données invalides.', 400, validationErrors);
-        }
-
+    static async saveSlots(req, res) {
+        const { schedule_set_id, slots } = req.body;
         let connection;
+
+        if (!schedule_set_id) {
+            return res.status(400).json({ success: false, message: "ID de l'ensemble d'horaires manquant." });
+        }
+
         try {
             connection = await pool.getConnection();
             await connection.beginTransaction();
 
-            // 1. On vérifie si un cours existe déjà à l'emplacement de destination.
-            const [existingTargetCourse] = await connection.execute(
-                `SELECT id FROM SCHEDULE WHERE day = ? AND time_slot_id = ? AND journal_id = ? AND user_id = ? AND schedule_set_id = ?`,
-                [target_day, parseInt(target_time_slot_id), parseInt(journal_id), userId, parseInt(schedule_set_id)]
+            await connection.execute(
+                'DELETE FROM SCHEDULE_SLOTS WHERE schedule_set_id = ?',
+                [schedule_set_id]
             );
 
+            if (slots && slots.length > 0) {
+                const values = slots.map(s => [
+                    schedule_set_id,
+                    s.day_of_week,
+                    s.time_slot_id,
+                    s.attribution_id,
+                    s.room || null
+                ]);
 
-            if (existingTargetCourse.length > 0) {
-                await connection.rollback();
-                return ScheduleController.handleError(res, new Error('Le créneau de destination est déjà occupé.'), 'Impossible de déplacer le cours : le créneau de destination est déjà pris.', 409);
-            }
-
-            // 2. On met à jour le cours source avec les nouvelles informations de jour et d'heure.
-            // On ne touche pas aux champs 'start_date' ou 'end_date'
-            const [updateResult] = await connection.execute(
-                `UPDATE SCHEDULE SET day = ?, time_slot_id = ?, subject = ?, class_id = ?, room = ?, notes = ?
-             WHERE day = ? AND time_slot_id = ? AND journal_id = ? AND user_id = ? AND schedule_set_id = ?`,
-                [target_day, parseInt(target_time_slot_id), subject.trim(), parseInt(classId), room.trim(), notes || null, source_day, parseInt(source_time_slot_id), parseInt(journal_id), userId, parseInt(schedule_set_id)]
-            );
-
-            if (updateResult.affectedRows === 0) {
-                await connection.rollback();
-                return ScheduleController.handleError(res, new Error('Cours source non trouvé.'), 'Le cours à déplacer n\'a pas été trouvé.', 404);
+                await connection.query(
+                    'INSERT INTO SCHEDULE_SLOTS (schedule_set_id, day_of_week, time_slot_id, attribution_id, room) VALUES ?',
+                    [values]
+                );
             }
 
             await connection.commit();
-            res.status(200).json({ success: true, message: 'Cours déplacé avec succès.' });
+            res.json({ success: true, message: "Emploi du temps sauvegardé avec succès." });
+
         } catch (error) {
             if (connection) await connection.rollback();
-            ScheduleController.handleError(res, error, "Erreur lors du déplacement de l'emploi du temps.");
+            console.error("Erreur saveSlots:", error);
+            res.status(500).json({ success: false, message: "Erreur lors de la sauvegarde des créneaux", error: error.message });
         } finally {
             if (connection) connection.release();
         }
     }
 
-    static async upsertCourse(req, res) {
-
-        const { day, time_slot_id, subject, classId, room, notes, journal_id, effective_date, schedule_set_id } = req.body;
+    /**
+     * Récupère un emploi du temps complet avec les détails des attributions (Matière, Classe, etc.)
+     */
+    static async getFullSchedule(req, res) {
+        const { id } = req.params; // ID du SCHEDULE_SET
         const userId = req.user.id;
 
-        if (!userId) return ScheduleController.handleError(res, new Error('ID utilisateur manquant'), "L'authentification est requise.", 401);
-
-        const validationErrors = ScheduleController.validateCourseData({ day, time_slot_id, subject, class_id: classId, room, journal_id, schedule_set_id });
-        if (Object.keys(validationErrors).length > 0) return ScheduleController.handleError(res, new Error('Données de validation invalides'), 'Données invalides.', 400, validationErrors);
-
-        let connection;
         try {
-
-            connection = await pool.getConnection();
-            await connection.beginTransaction();
-
-            const today = effective_date ? new Date(effective_date) : new Date();
-            today.setHours(0, 0, 0, 0);
-
-            // D'abord, fermer tous les cours existants pour ce créneau exact avant la date effective
-            const dayBefore = new Date(today);
-            dayBefore.setDate(today.getDate() - 1);
-
-            await connection.execute(`
-                UPDATE SCHEDULE 
-                SET end_date = ? 
-                WHERE day = ? AND time_slot_id = ? AND journal_id = ? AND user_id = ? AND schedule_set_id = ? 
-                AND (end_date IS NULL OR end_date >= ?) AND start_date < ?
-            `, [dayBefore, day, parseInt(time_slot_id), parseInt(journal_id), userId, parseInt(schedule_set_id), today, today]);
-
-            // Vérifier s'il existe déjà un cours actif exactement à la date effective
-            const [existingAtDate] = await connection.execute(`
-                SELECT id FROM SCHEDULE 
-                WHERE day = ? AND time_slot_id = ? AND journal_id = ? AND user_id = ? AND schedule_set_id = ? 
-                AND start_date = ?
-            `, [day, parseInt(time_slot_id), parseInt(journal_id), userId, parseInt(schedule_set_id), today]);
-
-            if (existingAtDate.length > 0) {
-                // Mettre à jour le cours existant à cette date
-                const courseId = existingAtDate[0].id;
-                await connection.execute(`
-                    UPDATE SCHEDULE 
-                    SET subject = ?, class_id = ?, room = ?, notes = ?
-                    WHERE id = ?
-                `, [subject.trim(), parseInt(classId), room.trim(), notes || null, courseId]);
-
-                await connection.commit();
-                const updatedSchedule = await ScheduleController.getScheduleData(journal_id, userId, parseInt(schedule_set_id));
-                return res.status(200).json({
-                    success: true,
-                    message: 'Cours mis à jour avec succès.',
-                    data: {
-                        course: { id: courseId, day, time_slot_id, subject, classId, room, notes },
-                        schedule: updatedSchedule
-                    },
-                    count: Object.keys(updatedSchedule).length
-                });
-            } else {
-
-                const [courseId] = await connection.execute(`SELECT id FROM SCHEDULE WHERE day = ? AND time_slot_id = ? AND journal_id = ? AND user_id = ? AND schedule_set_id = ?`, [day, parseInt(time_slot_id), parseInt(journal_id), userId, parseInt(schedule_set_id)]);
-
-                console.log(courseId[0].id);
-                const [insertResult] = await connection.execute(`
-                    UPDATE SCHEDULE SET day = ?, time_slot_id=?, subject=?, class_id=?, room=?, notes=?
-                    WHERE id = ?
-                `, [day, parseInt(time_slot_id), subject.trim(), parseInt(classId), room.trim(), notes || null, courseId[0].id]);
-
-                await connection.commit();
-
-                const updatedSchedule = await ScheduleController.getScheduleData(journal_id, userId, parseInt(schedule_set_id));
-                return res.status(201).json({
-                    success: true,
-                    message: 'Cours créé avec succès.',
-                    data: {
-                        course: { id: insertResult.insertId, day, time_slot_id, subject, classId, room, notes },
-                        schedule: updatedSchedule
-                    },
-                    count: Object.keys(updatedSchedule).length
-                });
-            }
-        } catch (error) {
-            if (connection) await connection.rollback();
-
-            if (error.code === 'ER_DUP_ENTRY') {
-                // Cela ne devrait plus arriver avec notre logique, mais au cas où
-                return ScheduleController.handleError(res, error, 'Un conflit de contrainte unique s\'est produit. Un cours identique existe peut-être déjà.', 409);
-            }
-            if (error.code === 'ER_NO_REFERENCED_ROW_2' || error.code === 'ER_NO_REFERENCED_PARENT_2') {
-                return ScheduleController.handleError(res, error, 'Classe, créneau horaire ou journal inexistant.', 400, { general: 'Classe, créneau horaire ou journal invalide.' });
-            }
-            ScheduleController.handleError(res, error, 'Erreur lors de la sauvegarde du cours.');
-        } finally {
-            if (connection) connection.release();
-        }
-    }
-
-    static async deleteCourse(req, res) {
-        const { journal_id, day, time_slot_id } = req.params;
-        const { schedule_set_id } = req.query; // effective_date et delete_all ne sont plus nécessaires
-        const userId = req.user.id;
-
-        // Validation des paramètres
-        if (!userId) {
-            return ScheduleController.handleError(res, new Error('ID utilisateur manquant'), "L'authentification est requise.", 401);
-        }
-        if (!day || !time_slot_id || isNaN(parseInt(time_slot_id)) || !journal_id || isNaN(parseInt(journal_id)) || !schedule_set_id || isNaN(parseInt(schedule_set_id))) {
-            return ScheduleController.handleError(res, new Error('Paramètres de suppression invalides'), 'Paramètres de suppression invalides.', 400);
-        }
-
-        let connection;
-        try {
-            connection = await pool.getConnection();
-
-            // Requête de suppression simplifiée
-            const [deleteResult] = await connection.execute(
-                `DELETE FROM SCHEDULE
-             WHERE day = ? AND time_slot_id = ? AND journal_id = ? AND user_id = ? AND schedule_set_id = ?`,
-                [day, parseInt(time_slot_id), parseInt(journal_id), userId, parseInt(schedule_set_id)]
+            const [sets] = await pool.execute(
+                'SELECT id FROM SCHEDULE_SETS WHERE id = ? AND user_id = ?',
+                [id, userId]
             );
 
-            // Si aucune ligne n'a été affectée, le cours n'a pas été trouvé ou l'utilisateur n'a pas les droits.
-            if (deleteResult.affectedRows === 0) {
-                return ScheduleController.handleError(res, new Error('Cours non trouvé'), 'Cours non trouvé pour suppression (ou vous n\'avez pas les droits).', 404);
+            if (sets.length === 0) {
+                return res.status(404).json({ success: false, message: "Emploi du temps non trouvé." });
             }
 
-            // Récupérer le nouvel emploi du temps pour le renvoyer au client
-            const updatedSchedule = await ScheduleController.getScheduleData(journal_id, userId, parseInt(schedule_set_id), connection);
+            const [rows] = await pool.execute(`
+                SELECT 
+                    ss.id as slot_id,
+                    ss.day_of_week,
+                    ss.time_slot_id,
+                    ss.room,
+                    sh.libelle as time_label,
+                    a.subject,
+                    a.class,
+                    a.color
+                FROM SCHEDULE_SLOTS ss
+                JOIN SCHEDULE_HOURS sh ON ss.time_slot_id = sh.id
+                JOIN ATTRIBUTIONS a ON ss.attribution_id = a.id
+                WHERE ss.schedule_set_id = ?
+            `, [id]);
 
-            res.json({
-                success: true,
-                message: 'Cours supprimé avec succès.',
-                data: {
-                    schedule: updatedSchedule,
-                    deletedCourse: { day, time_slot_id }
-                },
-                count: Object.keys(updatedSchedule).length
-            });
+            res.json({ success: true, data: rows });
         } catch (error) {
-            ScheduleController.handleError(res, error, 'Erreur lors de la suppression du cours.');
-        } finally {
-            if (connection) {
-                connection.release();
-            }
-        }
-    }
-
-    static async duplicateSchedule(req, res) {
-        const { source_schedule_set_id, target_schedule_set_id, journal_id } = req.body;
-        const userId = req.user.id;
-
-        if (!userId) {
-            return ScheduleController.handleError(res, new Error('ID utilisateur manquant'), "L'authentification est requise.", 401);
-        }
-
-        if (!source_schedule_set_id || !target_schedule_set_id || !journal_id) {
-            return ScheduleController.handleError(res, new Error('ID d\'ensemble d\'horaires source, cible ou journal manquant'), "L'ID de l'ensemble d'horaires source, cible et du journal sont requis.", 400);
-        }
-
-        let connection;
-        try {
-            connection = await pool.getConnection();
-            await connection.beginTransaction();
-
-            // 1. Récupérer tous les cours de l'horaire source
-            const sourceSchedule = await ScheduleController.getScheduleData(parseInt(journal_id), userId, parseInt(source_schedule_set_id), connection);
-
-            if (Object.keys(sourceSchedule).length === 0) {
-                await connection.rollback();
-                return res.status(200).json({ success: true, message: 'Aucun cours à dupliquer.' });
-            }
-
-            // 2. Insérer chaque cours dans le nouvel horaire (target)
-            const insertPromises = Object.values(sourceSchedule).map(course => {
-                return connection.execute(`
-                    INSERT INTO SCHEDULE (day, time_slot_id, subject, class_id, room, notes, journal_id, user_id, start_date, schedule_set_id)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                `, [course.day, course.time_slot_id, course.subject, course.classId, course.room, course.notes, parseInt(journal_id), userId, new Date(), parseInt(target_schedule_set_id)]);
-            });
-
-            await Promise.all(insertPromises);
-            await connection.commit();
-
-            res.status(201).json({ success: true, message: `${insertPromises.length} cours dupliqué(s) avec succès.` });
-        } catch (error) {
-            if (connection) await connection.rollback();
-            ScheduleController.handleError(res, error, "Erreur lors de la duplication de l'emploi du temps.");
-        } finally {
-            if (connection) connection.release();
+            res.status(500).json({ success: false, message: "Erreur lors de la récupération du détail de l'horaire", error: error.message });
         }
     }
 }

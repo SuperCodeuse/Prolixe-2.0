@@ -9,7 +9,7 @@ const useScheduleModel = (journalId) => { // On accepte journalId ici
 
     // Utilisation de useCallback pour éviter de recréer la fonction à chaque rendu
     const fetchSchedules = useCallback(async () => {
-        if (!journalId) return; // Ne rien faire si journalId n'est pas encore défini
+        if (!journalId) return;
 
         setLoading(true);
         setError(null);

@@ -1,16 +1,17 @@
-// backend/routes/scheduleRoutes.js
+// server/src/routes/ScheduleRoute.js
 const express = require('express');
 const router = express.Router();
 const ScheduleController = require('../controllers/ScheduleController');
-const verifyToken = require('../middleware/authMiddleware'); // Importer le middleware
+const verifyToken = require('../middleware/authMiddleware');
 
-// Appliquer le middleware à toutes les routes de ce fichier
 router.use(verifyToken);
 
-router.get('/', ScheduleController.getSchedule);
-router.put('/', ScheduleController.upsertCourse);
-router.put('/change', ScheduleController.changeCourse);
-router.post('/duplicate', ScheduleController.duplicateSchedule); // Nouvelle route pour la duplication
-router.delete('/:journal_id/:day/:time_slot_id', ScheduleController.deleteCourse);
+// Gestion des ensembles d'horaires
+router.get('/sets', ScheduleController.getUserSchedules);
+router.post('/sets', ScheduleController.createScheduleSet);
+
+// Gestion des créneaux (Slots)
+router.get('/:id/full', ScheduleController.getFullSchedule);
+router.post('/slots/save', ScheduleController.saveSlots);
 
 module.exports = router;

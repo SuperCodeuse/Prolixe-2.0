@@ -14,8 +14,9 @@ const ScheduleCreator = () => {
         endDate: '',
     });
     const { success, error: showError } = useToast();
-    const { createSchedule, loading } = useScheduleModel(currentJournal?.id); // Utilisation du nouveau hook
+    const { createSchedule, loading } = useScheduleModel(currentJournal?.id);
     const navigate = useNavigate();
+
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -50,7 +51,7 @@ const ScheduleCreator = () => {
 
     return (
         <div className="settings-section schedule-creator">
-            <h2>➕ Créer un nouvel emploi du temps</h2>
+            <h2>Créer un nouvel emploi du temps</h2>
             <p>Remplissez les informations pour créer un nouvel emploi du temps.</p>
 
             <form onSubmit={handleSubmit} className="schedule-creator-form">

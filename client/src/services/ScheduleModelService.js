@@ -10,7 +10,7 @@ const ScheduleModelService = {
      * @returns {Promise<object>} - L'objet de réponse de l'API.
      */
     createSchedule: (name, startDate, endDate) => {
-        return apiClient.post('/schedules/models', { name, startDate, endDate });
+        return apiClient.post('/schedules/', { name, startDate, endDate });
     },
 
     /**
@@ -18,7 +18,7 @@ const ScheduleModelService = {
      * @returns {Promise<object>} - L'objet de réponse de l'API contenant la liste des emplois du temps.
      */
     getSchedules: (journalId) => {
-        return apiClient.get('/schedules/models', {
+        return apiClient.get('/schedules/', {
             params: { journalId }
         });
     }
