@@ -51,10 +51,22 @@ export const ToastProvider = ({ children }) => {
     );
 };
 
+// client/src/hooks/useToast.js (Extrait final)
+
 export const useToast = () => {
     const context = useContext(ToastContext);
     if (!context) {
         throw new Error('useToast must be used within a ToastProvider');
     }
-    return context;
+
+    const showToast = (message, type = 'info') => {
+        switch (type) {
+            case 'success': context.success(message); break;
+            case 'error': context.error(message); break;
+            case 'warning': context.warning(message); break;
+            default: context.info(message);
+        }
+    };
+
+    return { ...context, showToast };
 };
