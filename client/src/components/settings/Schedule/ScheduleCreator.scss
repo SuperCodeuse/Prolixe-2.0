@@ -1,94 +1,171 @@
-// client/src/components/settings/Schedule/ScheduleCreator.scss
-.schedule-creator-container {
-  padding: 20px;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+.schedule-creator-glass {
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-blur: blur(12px);
+  --accent-color: #3b82f6;
+  --success-color: #10b981;
+  --text-main: #e2e8f0;
+  --text-muted: #94a3b8;
 
-  .header-controls {
+  padding: 1.5rem;
+  color: var(--text-main);
+  animation: fadeIn 0.4s ease-out;
+
+  .glass-header {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
     display: flex;
-    gap: 15px;
-    margin-bottom: 25px;
+    justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 1.5rem;
 
-    select {
-      padding: 10px 15px;
-      border-radius: 8px;
-      border: 1px solid #ddd;
-      min-width: 200px;
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      h2 { font-size: 1.25rem; margin: 0; font-weight: 600; letter-spacing: -0.02em; }
     }
 
-    .btn-save {
-      background: #4a90e2;
-      color: white;
-      border: none;
-      padding: 10px 25px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 600;
-      transition: background 0.3s;
-
-      &:hover { background: #357abd; }
+    .actions-bar {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      flex-wrap: wrap;
     }
   }
 
-  .schedule-table-wrapper {
+  // Éléments de formulaire Glass
+  .glass-form {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .selector-group{
+    display: flex;
+  }
+
+  .glass-input, .glass-select {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    padding: 0.6rem 1rem;
+    color: white;
+    outline: none;
+    transition: all 0.2s;
+
+
+    option{
+      background-color: var(--bg-dark-tertiary);
+    }
+    &:focus {
+      border-color: var(--accent-color);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    }
+  }
+
+  .glass-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.2rem;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+
+    &.primary { background: var(--accent-color); color: white; }
+    &.success { background: var(--success-color); color: white; margin-left: 1rem;
+    }
+
+    &:hover { filter: brightness(1.1); transform: translateY(-1px); }
+    &:active { transform: translateY(0); }
+  }
+
+  // Grille d'emploi du temps
+  .table-container {
     overflow-x: auto;
+    border-radius: 16px;
+    border: 1px solid var(--glass-border);
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
   }
 
-  .schedule-table {
+  .glass-table {
     width: 100%;
-    border-collapse: separate;
-    border-spacing: 8px;
+    border-collapse: collapse;
 
     th {
-      background: #f8f9fa;
-      padding: 12px;
-      border-radius: 6px;
-      color: #555;
-      font-weight: 600;
-    }
-
-    .time-cell {
-      font-weight: bold;
-      color: #777;
+      padding: 1rem;
+      background: rgba(255, 255, 255, 0.02);
       text-align: center;
-      background: #f1f3f5;
-      border-radius: 6px;
-      width: 100px;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--glass-border);
     }
 
-    .slot-cell {
-      background: #ffffff;
-      border: 1px solid #eee;
-      border-radius: 6px;
-      padding: 8px;
-      min-width: 150px;
-      transition: transform 0.2s, box-shadow 0.2s;
+    .time-label {
+      background: rgba(0, 0, 0, 0.1);
+      font-weight: 600;
+      color: var(--accent-color);
+      text-align: center;
+      width: 80px;
+      border-right: 1px solid var(--glass-border);
+    }
 
-      &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-      }
+    .grid-cell {
+      padding: 0.5rem;
+      border: 1px solid var(--glass-border);
+      min-width: 140px;
 
-      select {
-        width: 100%;
-        border: none;
-        font-size: 0.9rem;
-        font-weight: 600;
-        margin-bottom: 5px;
-        background: transparent;
-        outline: none;
-      }
+      .input-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 4px;
+        background: rgba(0,0,0,0.15);
+        padding: 2px 8px;
+        border-radius: 6px;
 
-      input {
-        width: 100%;
-        border: none;
-        font-size: 0.8rem;
-        color: #888;
-        background: transparent;
-        outline: none;
+        .icon { color: var(--text-muted); flex-shrink: 0; }
+
+        input {
+          background: transparent;
+          border: none;
+          color: white;
+          font-size: 0.85rem;
+          width: 100%;
+          outline: none;
+          &::placeholder { color: rgba(255,255,255,0.15); }
+        }
+
+        &:focus-within { background: rgba(0,0,0,0.3); }
       }
     }
   }
+
+  .empty-state {
+    text-align: center;
+    padding: 5rem;
+    color: var(--text-muted);
+    background: var(--glass-bg);
+    border-radius: 16px;
+    border: 1px dashed var(--glass-border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }

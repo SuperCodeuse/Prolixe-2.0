@@ -47,8 +47,7 @@ const Settings = () => {
             title: 'Administration',
             tabs: [
                 { id: 'schedule', label: 'Heures de cours', icon: '⏰' },
-                { id: 'holidays', label: 'Calendrier', icon: '📅' },
-                { id: 'horaire', label: 'Horaire', icon: '🗓️' }
+                { id: 'holidays', label: 'Calendrier', icon: '📅' }
             ]
         });
     }
@@ -59,8 +58,9 @@ const Settings = () => {
         tabs: [
             { id: 'journals', label: 'Journaux', icon: '📚' },
             { id: 'classes', label: 'Classes', icon: '🏫' },
+            { id: 'horaire', label: 'Horaire', icon: '🗓️' },
             { id: 'students', label: 'Élèves', icon: '👥' },
-            { id: 'attributions', label: 'Attributions', icon: '💼' },
+            { id: 'attributions', label: 'Attributions', icon: '💼' }
         ]
     });
 

@@ -4,21 +4,27 @@ const pool = require('../../config/database');
 class ScheduleController {
 
     static async createScheduleSet(req, res) {
-        const { name } = req.body;
+        const { name, journal_id } = req.body;
         const userId = req.user.id;
 
-        if (!name) {
-            return res.status(400).json({ success: false, message: "Le nom de l'emploi du temps est requis." });
+        if (!name || !journal_id) {
+            return res.status(400).json({
+                success: false,
+                message: "Le nom et l'ID du journal sont requis."
+            });
         }
 
         try {
             const [result] = await pool.execute(
-                'INSERT INTO SCHEDULE_SETS (user_id, name) VALUES (?, ?)',
-                [userId, name]
+                'INSERT INTO SCHEDULE_SETS (user_id, journal_id, name) VALUES (?, ?, ?)',
+                [userId, journal_id, name]
             );
-            res.status(201).json({ success: true, id: result.insertId, name });
+            res.status(201).json({ success: true, id: result.insertId, name, journal_id });
         } catch (error) {
-            res.status(500).json({ success: false, message: error.message || 'Erreur lors de la création de l\'emploi du temps' });
+            res.status(500).json({
+                success: false,
+                message: error.message || 'Erreur lors de la création'
+            });
         }
     }
 
@@ -29,7 +35,7 @@ class ScheduleController {
         const userId = req.user.id;
         try {
             const [rows] = await pool.execute(
-                'SELECT * FROM SCHEDULE_SETS WHERE user_id = ? ORDER BY created_at DESC',
+                'SELECT * FROM SCHEDULE_SETS WHERE user_id = ?',
                 [userId]
             );
             res.json({ success: true, data: rows });
@@ -60,12 +66,11 @@ class ScheduleController {
                     schedule_set_id,
                     s.day_of_week,
                     s.time_slot_id,
-                    s.attribution_id,
                     s.room || null
                 ]);
 
                 await connection.query(
-                    'INSERT INTO SCHEDULE_SLOTS (schedule_set_id, day_of_week, time_slot_id, attribution_id, room) VALUES ?',
+                    'INSERT INTO SCHEDULE_SLOTS (schedule_set_id, day_of_week, time_slot_id, room) VALUES ?',
                     [values]
                 );
             }
@@ -110,7 +115,7 @@ class ScheduleController {
                     a.class,
                     a.color
                 FROM SCHEDULE_SLOTS ss
-                JOIN SCHEDULE_HOURS sh ON ss.time_slot_id = sh.id
+                JOIN SCH_HOURS sh ON ss.time_slot_id = sh.id
                 JOIN ATTRIBUTIONS a ON ss.attribution_id = a.id
                 WHERE ss.schedule_set_id = ?
             `, [id]);

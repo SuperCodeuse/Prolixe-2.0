@@ -11,7 +11,7 @@ router.get('/sets', ScheduleController.getUserSchedules);
 router.post('/sets', ScheduleController.createScheduleSet);
 
 // Gestion des créneaux (Slots)
-router.get('/:id/full', ScheduleController.getFullSchedule);
+router.get('/:id', ScheduleController.getFullSchedule);
 router.post('/slots/save', ScheduleController.saveSlots);
 
 module.exports = router;

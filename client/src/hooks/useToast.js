@@ -52,20 +52,16 @@ export const ToastProvider = ({ children }) => {
 };
 
 // client/src/hooks/useToast.js (Extrait final)
-
 export const useToast = () => {
     const context = useContext(ToastContext);
-    if (!context) {
-        throw new Error('useToast must be used within a ToastProvider');
-    }
+    if (!context) throw new Error('useToast must be used within a ToastProvider');
 
+    // Ajout de la fonction attendue par le ScheduleCreator
     const showToast = (message, type = 'info') => {
-        switch (type) {
-            case 'success': context.success(message); break;
-            case 'error': context.error(message); break;
-            case 'warning': context.warning(message); break;
-            default: context.info(message);
-        }
+        if (type === 'success') context.success(message);
+        else if (type === 'error') context.error(message);
+        else if (type === 'warning') context.warning(message);
+        else context.info(message);
     };
 
     return { ...context, showToast };
