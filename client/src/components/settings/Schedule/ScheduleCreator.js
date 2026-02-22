@@ -257,7 +257,7 @@ const ScheduleCreator = () => {
                                         console.log("day : ", d);
                                         console.log("hours : ", h);
                                         return (
-                                            <td key={`${d.id}-${h.id}`} className="grid-cell" style={{ '--subject-color': cellColor }}>
+                                            <td key={`${d.id}-${h.id}`} className="grid-cell grid-cell-hover" style={{ '--subject-color': cellColor }}>
                                                 <div className="input-group">
                                                     <div className="input-wrapper main-select">
                                                         <BookOpen size={12} className="icon" />
