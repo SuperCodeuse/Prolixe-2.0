@@ -51,7 +51,6 @@ const ScheduleCreator = () => {
     // --- LOGIQUE DE COULEUR ---
     const getGradatedColor = (subjectId, classId) => {
         const subject = subjects.find(s => s.id == subjectId);
-        console.log(subject);
         if (!subject || !subject.color_code) return 'white';
 
         const cls = getClassesForSchedule().find(c => c.id == classId);
@@ -88,6 +87,7 @@ const ScheduleCreator = () => {
             const res = await ScheduleService.getScheduleById(setId);
             const formattedGrid = {};
             (res.data || []).forEach(slot => {
+                console.log(slot);
                 formattedGrid[`${slot.day_of_week}-${slot.time_slot_id}`] = {
                     subject_id: slot.subject_id || '',
                     class_id: slot.class_id || '',
@@ -95,7 +95,10 @@ const ScheduleCreator = () => {
                 };
             });
             setGrid(formattedGrid);
-        } catch (err) { showError('Erreur récupération'); }
+        } catch (err) {
+            console.error(err.message);
+            showError('Erreur récupération');
+        }
     };
 
     const updateCell = (dayId, hourId, field, value) => {

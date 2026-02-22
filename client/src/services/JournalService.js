@@ -8,7 +8,6 @@ class JournalService {
     }
 
     static async createJournal(data) {
-        console.log("createJournal data:", data);
         return ApiService.post(`${JOURNAL_API_URL}/`, data);
     }
 

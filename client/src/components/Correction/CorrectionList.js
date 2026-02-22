@@ -184,12 +184,9 @@ const CorrectionList = () => {
                 return html;
             };
 
-            console.log(students);
-
             const studentGrades = students.map(student => {
                 const studentId = student.id;
                 const isAbsent = grades.some(g => g.student_id === studentId && g.is_absent);
-                console.log(criteria);
                 const scores = criteria.map(criterion => {
                     const grade = grades.find(g => g.student_id === studentId && g.criterion_id === criterion.id);
                     let scoreValue;

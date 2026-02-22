@@ -56,21 +56,26 @@ class ScheduleController {
             connection = await pool.getConnection();
             await connection.beginTransaction();
 
+            // Suppression des anciens créneaux pour ce set
             await connection.execute(
                 'DELETE FROM SCHEDULE_SLOTS WHERE schedule_set_id = ?',
                 [schedule_set_id]
             );
 
             if (slots && slots.length > 0) {
+                // Préparation des données avec les nouvelles FK
                 const values = slots.map(s => [
                     schedule_set_id,
                     s.day_of_week,
                     s.time_slot_id,
+                    s.class_id || null,   // Nouvelle colonne
+                    s.subject_id || null, // Nouvelle colonne
                     s.room || null
                 ]);
 
+                // Insertion en masse
                 await connection.query(
-                    'INSERT INTO SCHEDULE_SLOTS (schedule_set_id, day_of_week, time_slot_id, room) VALUES ?',
+                    'INSERT INTO SCHEDULE_SLOTS (schedule_set_id, day_of_week, time_slot_id, class_id, subject_id, room) VALUES ?',
                     [values]
                 );
             }
@@ -95,6 +100,7 @@ class ScheduleController {
         const userId = req.user.id;
 
         try {
+            // Vérification de la propriété du set
             const [sets] = await pool.execute(
                 'SELECT id FROM SCHEDULE_SETS WHERE id = ? AND user_id = ?',
                 [id, userId]
@@ -104,25 +110,32 @@ class ScheduleController {
                 return res.status(404).json({ success: false, message: "Emploi du temps non trouvé." });
             }
 
+            // Récupération des slots avec les infos des classes et matières
             const [rows] = await pool.execute(`
-                SELECT 
+                SELECT
                     ss.id as slot_id,
                     ss.day_of_week,
                     ss.time_slot_id,
                     ss.room,
+                    ss.class_id,
+                    ss.subject_id,
                     sh.libelle as time_label,
-                    a.subject,
-                    a.class,
-                    a.color
+                    c.name as class_name,
+                    c.level as class_level,
+                    sbj.name as subject_name,
+                    sbj.color_code as subject_color
                 FROM SCHEDULE_SLOTS ss
-                JOIN SCH_HOURS sh ON ss.time_slot_id = sh.id
-                JOIN ATTRIBUTIONS a ON ss.attribution_id = a.id
+                         JOIN SCH_HOURS sh ON ss.time_slot_id = sh.id
+                         LEFT JOIN CLASSES c ON ss.class_id = c.id
+                         LEFT JOIN SUBJECTS sbj ON ss.subject_id = sbj.id
                 WHERE ss.schedule_set_id = ?
+                ORDER BY ss.day_of_week
             `, [id]);
 
             res.json({ success: true, data: rows });
         } catch (error) {
-            res.status(500).json({ success: false, message: "Erreur lors de la récupération du détail de l'horaire", error: error.message });
+            console.error("Erreur getFullSchedule:", error);
+            res.status(500).json({ success: false, message: "Erreur lors de la récupération", error: error.message });
         }
     }
 }
