@@ -1,99 +1,64 @@
 .schedule-creator-glass {
-  --glass-bg: rgba(255, 255, 255, 0.03);
-  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-bg: rgba(15, 23, 42, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.1);
   --glass-blur: blur(12px);
   --accent-color: #3b82f6;
   --success-color: #10b981;
-  --text-main: #e2e8f0;
+  --text-main: #f1f5f9;
   --text-muted: #94a3b8;
 
   padding: 1.5rem;
   color: var(--text-main);
-  animation: fadeIn 0.4s ease-out;
 
   .glass-header {
     background: var(--glass-bg);
     backdrop-filter: var(--glass-blur);
     border: 1px solid var(--glass-border);
-    border-radius: 16px;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
+    padding: 1.25rem;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 1rem;
     flex-wrap: wrap;
-    gap: 1.5rem;
 
     .section-title {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
-      h2 { font-size: 1.25rem; margin: 0; font-weight: 600; letter-spacing: -0.02em; }
+      gap: 10px;
+      h2 { margin: 0; font-size: 1.2rem; }
+      .accent-icon { color: var(--accent-color); }
     }
 
-    .actions-bar {
-      display: flex;
-      gap: 1rem;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-  }
-
-  // Éléments de formulaire Glass
-  .glass-form {
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  .selector-group{
-    display: flex;
+    .actions-bar { display: flex; gap: 10px; align-items: center; }
   }
 
   .glass-input, .glass-select {
-    background: rgba(0, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.3);
     border: 1px solid var(--glass-border);
-    border-radius: 10px;
-    padding: 0.6rem 1rem;
+    border-radius: 6px;
+    padding: 6px 12px;
     color: white;
     outline: none;
-    transition: all 0.2s;
-
-
-    option{
-      background-color: var(--bg-dark-tertiary);
-    }
-    &:focus {
-      border-color: var(--accent-color);
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-    }
+    &:focus { border-color: var(--accent-color); }
   }
 
   .glass-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.6rem 1.2rem;
-    border-radius: 10px;
-    border: none;
-    cursor: pointer;
-    font-weight: 500;
-    transition: all 0.2s;
-
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 16px; border-radius: 6px; border: none;
+    cursor: pointer; font-weight: 500; transition: 0.2s;
     &.primary { background: var(--accent-color); color: white; }
-    &.success { background: var(--success-color); color: white; margin-left: 1rem;
-    }
-
-    &:hover { filter: brightness(1.1); transform: translateY(-1px); }
-    &:active { transform: translateY(0); }
+    &.success { background: var(--success-color); color: white; }
+    &:hover { filter: brightness(1.2); }
   }
 
-  // Grille d'emploi du temps
   .table-container {
-    overflow-x: auto;
-    border-radius: 16px;
-    border: 1px solid var(--glass-border);
     background: var(--glass-bg);
     backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    overflow: hidden;
   }
 
   .glass-table {
@@ -101,71 +66,76 @@
     border-collapse: collapse;
 
     th {
-      padding: 1rem;
-      background: rgba(255, 255, 255, 0.02);
-      text-align: center;
-      font-size: 0.85rem;
+      background: rgba(255,255,255,0.03);
+      padding: 12px;
+      font-size: 0.75rem;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
       color: var(--text-muted);
       border-bottom: 1px solid var(--glass-border);
     }
 
     .time-label {
-      background: rgba(0, 0, 0, 0.1);
-      font-weight: 600;
-      color: var(--accent-color);
+      padding: 12px;
       text-align: center;
-      width: 80px;
       border-right: 1px solid var(--glass-border);
+      border-bottom: 1px solid var(--glass-border);
+      background: rgba(0,0,0,0.1);
+      strong { display: block; color: var(--accent-color); font-size: 0.9rem; }
+      small { color: var(--text-muted); font-size: 0.7rem; }
     }
 
     .grid-cell {
-      padding: 0.5rem;
-      border: 1px solid var(--glass-border);
-      min-width: 140px;
+      padding: 6px;
+      border-right: 1px solid var(--glass-border);
+      border-bottom: 1px solid var(--glass-border);
+      min-width: 150px;
+      transition: background 0.2s;
+
+      .input-group { display: flex; flex-direction: column; gap: 4px; }
 
       .input-wrapper {
         display: flex;
         align-items: center;
         gap: 6px;
-        margin-bottom: 4px;
-        background: rgba(0,0,0,0.15);
+        background: rgba(0, 0, 0, 0.2);
         padding: 2px 8px;
-        border-radius: 6px;
+        border-radius: 4px;
+        border-left: 3px solid transparent;
 
-        .icon { color: var(--text-muted); flex-shrink: 0; }
+        .icon { opacity: 0.4; flex-shrink: 0; }
 
-        input {
-          background: transparent;
-          border: none;
-          color: white;
-          font-size: 0.85rem;
-          width: 100%;
-          outline: none;
-          &::placeholder { color: rgba(255,255,255,0.15); }
+        select, input {
+          background: transparent; border: none; color: white;
+          font-size: 0.8rem; width: 100%; outline: none;
+          padding: 4px 0;
+          &::placeholder { color: rgba(255,255,255,0.2); }
         }
 
-        &:focus-within { background: rgba(0,0,0,0.3); }
+        // --- APPLICATION DE LA COULEUR ---
+        &.main-select {
+          border-left-color: var(--subject-color);
+          background: linear-gradient(90deg, rgba(255,255,255,0.05) 0%, transparent 100%);
+
+          select {
+            color: var(--subject-color);
+            font-weight: 600;
+            filter: brightness(1.4); // Pour assurer la lisibilité du texte
+          }
+        }
       }
+
+      &:hover { background: rgba(255,255,255,0.02); }
     }
   }
 
   .empty-state {
-    text-align: center;
-    padding: 5rem;
-    color: var(--text-muted);
-    background: var(--glass-bg);
-    border-radius: 16px;
-    border: 1px dashed var(--glass-border);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1rem;
+    padding: 80px; text-align: center; color: var(--text-muted);
+    border: 2px dashed var(--glass-border); border-radius: 12px;
+    display: flex; flex-direction: column; align-items: center; gap: 1rem;
   }
-}
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  .glass-loader {
+    height: 400px; display: flex; align-items: center; justify-content: center;
+    color: var(--accent-color);
+  }
 }

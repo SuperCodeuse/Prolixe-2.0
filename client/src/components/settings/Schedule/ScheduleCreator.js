@@ -2,9 +2,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import ScheduleService from '../../../services/ScheduleService';
 import { useToast } from '../../../hooks/useToast';
 import { useScheduleHours } from "../../../hooks/useScheduleHours";
+import { useJournal } from '../../../hooks/useJournal';
+import { useSubjects } from '../../../hooks/useSubjects';
+import { useClasses } from '../../../hooks/useClasses';
 import { Plus, Save, Calendar, MapPin, BookOpen, Users, Loader2 } from 'lucide-react';
 import './ScheduleCreator.scss';
-import { useJournal } from '../../../hooks/useJournal';
 
 const DAYS = [
     { id: 1, label: 'Lundi' }, { id: 2, label: 'Mardi' },
@@ -13,13 +15,14 @@ const DAYS = [
 ];
 
 const ScheduleCreator = () => {
-    // Hooks & Services
-    const { currentJournal } = useJournal(); // Assure-toi que l'import est présent
+    const { currentJournal } = useJournal();
     const journalId = currentJournal?.id;
     const { success, error: showError } = useToast();
-    const { hours, loading: loadingHours } = useScheduleHours();
 
-    // États
+    const { hours, loading: loadingHours } = useScheduleHours();
+    const { subjects, loadSubjects, loading: loadingSubs } = useSubjects();
+    const { getClassesForSchedule, loading: loadingCls } = useClasses(journalId);
+
     const [sets, setSets] = useState([]);
     const [newSetName, setNewSetName] = useState('');
     const [selectedSet, setSelectedSet] = useState('');
@@ -27,63 +30,72 @@ const ScheduleCreator = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [loadingSets, setLoadingSets] = useState(true);
 
-    // Chargement initial des modèles
-    const loadSets = useCallback(async () => {
+    const loadInitialData = useCallback(async () => {
+        if (!journalId) return;
         try {
             setLoadingSets(true);
-            const res = await ScheduleService.getScheduleSets();
-            setSets(res.data || []);
+            const [resSets] = await Promise.all([
+                ScheduleService.getScheduleSets(),
+                loadSubjects(journalId)
+            ]);
+            setSets(resSets.data || []);
         } catch (err) {
-            showError('Erreur de chargement des modèles');
+            showError('Erreur de chargement');
         } finally {
             setLoadingSets(false);
         }
-    }, [showError]);
+    }, [journalId, loadSubjects, showError]);
 
-    useEffect(() => {
-        if (journalId) loadSets();
-    }, [journalId, loadSets]);
+    useEffect(() => { loadInitialData(); }, [loadInitialData]);
 
-    // Actions
+    // --- LOGIQUE DE COULEUR ---
+    const getGradatedColor = (subjectId, classId) => {
+        const subject = subjects.find(s => s.id == subjectId);
+        console.log(subject);
+        if (!subject || !subject.color_code) return 'transparent';
+
+        const cls = getClassesForSchedule().find(c => c.id == classId);
+        const level = cls ? parseInt(cls.level) || 1 : 1;
+
+        // On ajuste la luminosité selon le niveau (1 = très clair, 6 = très foncé)
+        // 85% (clair) -> 30% (foncé)
+        const lightness = 85 - (level * 8);
+
+        // On utilise la couleur hex d'origine mais on force la luminosité CSS
+        // Note: On pourrait convertir en HSL, mais l'astuce color-mix ou hsl relative est plus simple
+        return `color-mix(in srgb, ${subject.color_code}, black ${level * 10}%)`;
+    };
+
     const handleCreateSet = async (e) => {
         e.preventDefault();
-        if (!newSetName.trim()) return;
-
+        if (!newSetName.trim() || !journalId) return;
         try {
             setIsSubmitting(true);
             const res = await ScheduleService.createScheduleSet(newSetName, journalId);
-            const newSet = { id: res.id || res.data?.id, name: newSetName, journal_id: journalId };
-            setSets(prev => [...prev, newSet]);
+            const newId = res.id || res.data?.id;
+            setSets(prev => [...prev, { id: newId, name: newSetName }]);
+            setSelectedSet(newId);
             setNewSetName('');
-            success('Nouvel emploi du temps créé');
-        } catch (err) {
-            showError('Erreur lors de la création');
-        } finally {
-            setIsSubmitting(false);
-        }
+            success('Modèle créé');
+        } catch (err) { showError('Erreur création'); }
+        finally { setIsSubmitting(false); }
     };
 
     const handleSelectSet = async (setId) => {
         setSelectedSet(setId);
-        if (!setId) {
-            setGrid({});
-            return;
-        }
-
+        if (!setId) { setGrid({}); return; }
         try {
             const res = await ScheduleService.getScheduleById(setId);
             const formattedGrid = {};
             (res.data || []).forEach(slot => {
                 formattedGrid[`${slot.day_of_week}-${slot.time_slot_id}`] = {
-                    subject: slot.subject || '',
-                    className: slot.class_name || slot.class || '',
+                    subject_id: slot.subject_id || '',
+                    class_id: slot.class_id || '',
                     room: slot.room || ''
                 };
             });
             setGrid(formattedGrid);
-        } catch (err) {
-            showError('Erreur de récupération des données');
-        }
+        } catch (err) { showError('Erreur récupération'); }
     };
 
     const updateCell = (dayId, hourId, field, value) => {
@@ -91,7 +103,7 @@ const ScheduleCreator = () => {
         setGrid(prev => ({
             ...prev,
             [key]: {
-                ...(prev[key] || { subject: '', className: '', room: '' }),
+                ...(prev[key] || { subject_id: '', class_id: '', room: '' }),
                 [field]: value
             }
         }));
@@ -99,84 +111,59 @@ const ScheduleCreator = () => {
 
     const handleSave = async () => {
         if (!selectedSet) return;
-
-        setIsSubmitting(true);
-        const slots = Object.entries(grid)
-            .map(([key, data]) => {
-                const [day, hourId] = key.split('-');
-                return {
-                    day_of_week: parseInt(day),
-                    time_slot_id: parseInt(hourId),
-                    subject: data.subject?.trim(),
-                    class_name: data.className?.trim(),
-                    room: data.room?.trim()
-                };
-            })
-            .filter(slot => slot.subject || slot.class_name); // On ne garde que les slots remplis
-
         try {
+            setIsSubmitting(true);
+            const slots = Object.entries(grid)
+                .map(([key, data]) => {
+                    const [day, hourId] = key.split('-');
+                    return {
+                        day_of_week: parseInt(day),
+                        time_slot_id: parseInt(hourId),
+                        subject_id: data.subject_id ? parseInt(data.subject_id) : null,
+                        class_id: data.class_id ? parseInt(data.class_id) : null,
+                        room: data.room?.trim() || ''
+                    };
+                })
+                .filter(slot => slot.subject_id || slot.class_id || slot.room);
             await ScheduleService.saveSlots(selectedSet, slots);
-            success('Enregistré avec succès');
-        } catch (err) {
-            showError('Erreur de sauvegarde');
-        } finally {
-            setIsSubmitting(false);
-        }
+            success('Enregistré');
+        } catch (err) { showError('Erreur sauvegarde'); }
+        finally { setIsSubmitting(false); }
     };
 
-    // États de chargement
-    if (loadingHours || loadingSets) {
-        return (
-            <div className="glass-loader">
-                <Loader2 className="animate-spin" />
-                <p>Chargement des ressources...</p>
-            </div>
-        );
+    if (loadingHours || loadingSets || loadingSubs || loadingCls) {
+        return <div className="glass-loader"><Loader2 className="animate-spin" /></div>;
     }
+
+    const availableClasses = getClassesForSchedule();
 
     return (
         <div className="schedule-creator-glass">
             <header className="glass-header">
                 <div className="section-title">
-                    <Calendar size={22} />
-                    <h2>Gestion des Emplois du Temps</h2>
+                    <Calendar size={22} className="accent-icon" />
+                    <h2>Gestion de l'Emploi du Temps</h2>
                 </div>
-
                 <div className="actions-bar">
                     <form onSubmit={handleCreateSet} className="glass-form">
                         <input
                             type="text"
-                            placeholder="Nom du modèle (ex: Semaine A)"
+                            placeholder="Nouveau modèle..."
                             value={newSetName}
                             onChange={(e) => setNewSetName(e.target.value)}
                             className="glass-input"
                         />
-                        <button type="submit" disabled={!newSetName.trim() || isSubmitting} className="glass-btn primary">
-                            <Plus size={18} />
-                        </button>
+                        <button type="submit" disabled={!newSetName.trim()} className="glass-btn primary"><Plus size={18}/></button>
                     </form>
-
-                    <div className="selector-group">
-                        <select
-                            value={selectedSet}
-                            onChange={(e) => handleSelectSet(e.target.value)}
-                            className="glass-select"
-                        >
-                            <option value="">Sélectionner un horaire</option>
-                            {sets.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                        </select>
-
-                        {selectedSet && (
-                            <button
-                                className="glass-btn success"
-                                onClick={handleSave}
-                                disabled={isSubmitting}
-                            >
-                                <Save size={18} />
-                                <span>{isSubmitting ? 'Enregistrement...' : 'Sauvegarder'}</span>
-                            </button>
-                        )}
-                    </div>
+                    <select value={selectedSet} onChange={(e) => handleSelectSet(e.target.value)} className="glass-select">
+                        <option value="">Sélectionner un horaire</option>
+                        {sets.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    </select>
+                    {selectedSet && (
+                        <button className="glass-btn success" onClick={handleSave} disabled={isSubmitting}>
+                            <Save size={18} /> <span>{isSubmitting ? '...' : 'Sauvegarder'}</span>
+                        </button>
+                    )}
                 </div>
             </header>
 
@@ -194,41 +181,37 @@ const ScheduleCreator = () => {
                             <tr key={h.id}>
                                 <td className="time-label">
                                     <strong>{h.libelle}</strong>
-                                    <small>{h.start_time} - {h.end_time}</small>
+                                    <small>{h.start_time?.substring(0,5)}</small>
                                 </td>
                                 {DAYS.map(d => {
                                     const cell = grid[`${d.id}-${h.id}`] || {};
+                                    const cellColor = getGradatedColor(cell.subject_id, cell.class_id);
+
                                     return (
-                                        <td className="grid-cell">
+                                        <td key={`${d.id}-${h.id}`} className="grid-cell" style={{ '--subject-color': cellColor }}>
                                             <div className="input-group">
-                                                {/* Sélecteur de Matière */}
-                                                <div className="input-wrapper">
-                                                    <BookOpen size={12} />
-                                                    {/*
+                                                <div className="input-wrapper main-select">
+                                                    <BookOpen size={12} className="icon" />
                                                     <select
                                                         value={cell.subject_id || ''}
                                                         onChange={(e) => updateCell(d.id, h.id, 'subject_id', e.target.value)}
                                                     >
-                                                        <option value="">Matière...</option>
-                                                        {availableSubjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                                                    </select>*/}
+                                                        <option value="">Matière</option>
+                                                        {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                                    </select>
                                                 </div>
-
-                                                {/* Sélecteur de Classe */}
                                                 <div className="input-wrapper">
-                                                    <Users size={12} />
+                                                    <Users size={12} className="icon" />
                                                     <select
                                                         value={cell.class_id || ''}
                                                         onChange={(e) => updateCell(d.id, h.id, 'class_id', e.target.value)}
                                                     >
-                                                        <option value="">Classe...</option>
-                                                        {/*availableClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)*/}
+                                                        <option value="">Classe</option>
+                                                        {availableClasses.map(c => <option key={c.id} value={c.id}>{c.shortName}</option>)}
                                                     </select>
                                                 </div>
-
-                                                {/* Local reste en texte libre car il change souvent */}
                                                 <div className="input-wrapper">
-                                                    <MapPin size={12} />
+                                                    <MapPin size={12} className="icon" />
                                                     <input
                                                         type="text"
                                                         placeholder="Local"
@@ -246,10 +229,7 @@ const ScheduleCreator = () => {
                     </table>
                 </div>
             ) : (
-                <div className="empty-state">
-                    <Calendar size={64} strokeWidth={1} />
-                    <p>Sélectionnez un modèle ou créez-en un nouveau pour éditer l'emploi du temps.</p>
-                </div>
+                <div className="empty-state"><Calendar size={48} /><p>Sélectionnez un modèle pour commencer.</p></div>
             )}
         </div>
     );
