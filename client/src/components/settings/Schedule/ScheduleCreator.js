@@ -5,7 +5,8 @@ import { useScheduleHours } from "../../../hooks/useScheduleHours";
 import { useJournal } from '../../../hooks/useJournal';
 import { useSubjects } from '../../../hooks/useSubjects';
 import { useClasses } from '../../../hooks/useClasses';
-import { Plus, Save, Calendar, MapPin, BookOpen, Users, Loader2 } from 'lucide-react';
+import ConfirmModal from '../../ConfirmModal';
+import { Plus, Save, Calendar, MapPin, BookOpen, Users, Loader2, Copy, Trash2 } from 'lucide-react';
 import './ScheduleCreator.scss';
 
 const DAYS = [
@@ -19,6 +20,15 @@ const ScheduleCreator = () => {
     const journalId = currentJournal?.id;
     const { success, error: showError } = useToast();
 
+    const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
+    const [duplicateName, setDuplicateName] = useState('');
+    const [confirmModal, setConfirmModal] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: null
+    });
+
     const { hours, loading: loadingHours } = useScheduleHours();
     const { subjects, loadSubjects, loading: loadingSubs } = useSubjects();
     const { getClassesForSchedule, loading: loadingCls } = useClasses(journalId);
@@ -30,6 +40,24 @@ const ScheduleCreator = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [loadingSets, setLoadingSets] = useState(true);
 
+    // Fonction pour charger les données d'un set spécifique
+    const handleSelectSet = useCallback(async (setId) => {
+        setSelectedSet(setId);
+        if (!setId) { setGrid({}); return; }
+        try {
+            const res = await ScheduleService.getScheduleById(setId);
+            const formattedGrid = {};
+            (res.data || []).forEach(slot => {
+                formattedGrid[`${slot.day_of_week}-${slot.time_slot_id}`] = {
+                    subject_id: slot.subject_id || '',
+                    class_id: slot.class_id || '',
+                    room: slot.room || ''
+                };
+            });
+            setGrid(formattedGrid);
+        } catch (err) { showError('Erreur récupération'); }
+    }, [showError]);
+
     const loadInitialData = useCallback(async () => {
         if (!journalId) return;
         try {
@@ -38,67 +66,82 @@ const ScheduleCreator = () => {
                 ScheduleService.getScheduleSets(),
                 loadSubjects(journalId)
             ]);
-            setSets(resSets.data || []);
+
+            const fetchedSets = resSets.data || [];
+            setSets(fetchedSets);
+
+            // Sélection par défaut du dernier de la liste
+            if (fetchedSets.length > 0) {
+                const lastSet = fetchedSets[fetchedSets.length - 1];
+                handleSelectSet(lastSet.id);
+            }
         } catch (err) {
             showError('Erreur de chargement');
         } finally {
             setLoadingSets(false);
         }
-    }, [journalId, loadSubjects, showError]);
+    }, [journalId, loadSubjects, showError, handleSelectSet]);
 
     useEffect(() => { loadInitialData(); }, [loadInitialData]);
 
-    // --- LOGIQUE DE COULEUR ---
+    const showConfirm = (title, message, onConfirm) => {
+        setConfirmModal({ isOpen: true, title, message, onConfirm });
+    };
+
+    const closeConfirmModal = () => setConfirmModal(prev => ({ ...prev, isOpen: false }));
+
+    const handleDelete = () => {
+        const currentSet = sets.find(s => s.id == selectedSet);
+        showConfirm(
+            "Supprimer l'emploi du temps",
+            `Êtes-vous sûr de vouloir supprimer définitivement "${currentSet?.name}" ?`,
+            async () => {
+                await ScheduleService.deleteScheduleSet(selectedSet);
+                const updatedSets = sets.filter(s => s.id != selectedSet);
+                setSets(updatedSets);
+
+                // Après suppression, on sélectionne le nouveau dernier ou on vide
+                if (updatedSets.length > 0) {
+                    handleSelectSet(updatedSets[updatedSets.length - 1].id);
+                } else {
+                    setSelectedSet('');
+                    setGrid({});
+                }
+            }
+        );
+    };
+
+    const handleOpenDuplicateModal = () => {
+        const currentSet = sets.find(s => s.id == selectedSet);
+        setDuplicateName(`${currentSet?.name || ''} - Copie`);
+        setIsDuplicateModalOpen(true);
+    };
+
+    const handleDuplicateSubmit = async (e) => {
+        e.preventDefault();
+        if (!duplicateName.trim()) return;
+        try {
+            setIsSubmitting(true);
+            const res = await ScheduleService.duplicateScheduleSet(selectedSet, duplicateName);
+            const newId = res.id;
+
+            setSets(prev => [...prev, { id: newId, name: duplicateName }]);
+            success('Horaire dupliqué avec succès !');
+            handleSelectSet(newId); // Sélectionne automatiquement le nouveau (qui est le dernier)
+            setIsDuplicateModalOpen(false);
+        } catch (err) {
+            showError('Erreur lors de la duplication.');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     const getGradatedColor = (subjectId, classId) => {
         const subject = subjects.find(s => s.id == subjectId);
         if (!subject || !subject.color_code) return 'white';
-
         const cls = getClassesForSchedule().find(c => c.id == classId);
         const level = cls ? parseInt(cls.level) || 1 : 1;
-
-        // On ajuste la luminosité selon le niveau (1 = très clair, 6 = très foncé)
-        // 85% (clair) -> 30% (foncé)
-        const lightness = 85 - (level * 8);
-
-        // On utilise la couleur hex d'origine mais on force la luminosité CSS
-        // Note: On pourrait convertir en HSL, mais l'astuce color-mix ou hsl relative est plus simple
         return `color-mix(in srgb, ${subject.color_code}, black ${level * 10}%)`;
-    };
-
-    const handleCreateSet = async (e) => {
-        e.preventDefault();
-        if (!newSetName.trim() || !journalId) return;
-        try {
-            setIsSubmitting(true);
-            const res = await ScheduleService.createScheduleSet(newSetName, journalId);
-            const newId = res.id || res.data?.id;
-            setSets(prev => [...prev, { id: newId, name: newSetName }]);
-            setSelectedSet(newId);
-            setNewSetName('');
-            success('Modèle créé');
-        } catch (err) { showError('Erreur création'); }
-        finally { setIsSubmitting(false); }
-    };
-
-    const handleSelectSet = async (setId) => {
-        setSelectedSet(setId);
-        if (!setId) { setGrid({}); return; }
-        try {
-            const res = await ScheduleService.getScheduleById(setId);
-            const formattedGrid = {};
-            (res.data || []).forEach(slot => {
-                console.log(slot);
-                formattedGrid[`${slot.day_of_week}-${slot.time_slot_id}`] = {
-                    subject_id: slot.subject_id || '',
-                    class_id: slot.class_id || '',
-                    room: slot.room || ''
-                };
-            });
-            setGrid(formattedGrid);
-        } catch (err) {
-            console.error(err.message);
-            showError('Erreur récupération');
-        }
     };
 
     const updateCell = (dayId, hourId, field, value) => {
@@ -138,8 +181,6 @@ const ScheduleCreator = () => {
         return <div className="glass-loader"><Loader2 className="animate-spin" /></div>;
     }
 
-    const availableClasses = getClassesForSchedule();
-
     return (
         <div className="schedule-creator-glass">
             <header className="glass-header">
@@ -148,7 +189,19 @@ const ScheduleCreator = () => {
                     <h2>Gestion de l'Emploi du Temps</h2>
                 </div>
                 <div className="actions-bar">
-                    <form onSubmit={handleCreateSet} className="glass-form">
+                    <form onSubmit={(e) => {
+                        e.preventDefault();
+                        if (newSetName.trim()) {
+                            ScheduleService.createScheduleSet(newSetName, journalId)
+                                .then(res => {
+                                    const newId = res.id || res.data?.id;
+                                    setSets(prev => [...prev, { id: newId, name: newSetName }]);
+                                    handleSelectSet(newId);
+                                    setNewSetName('');
+                                    success('Modèle créé');
+                                });
+                        }
+                    }} className="glass-form">
                         <input
                             type="text"
                             placeholder="Nouveau modèle..."
@@ -163,9 +216,17 @@ const ScheduleCreator = () => {
                         {sets.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                     </select>
                     {selectedSet && (
-                        <button className="glass-btn success" onClick={handleSave} disabled={isSubmitting}>
-                            <Save size={18} /> <span>{isSubmitting ? '...' : 'Sauvegarder'}</span>
-                        </button>
+                        <div className="button-group" style={{ display: 'flex', gap: '8px' }}>
+                            <button className="glass-btn success" onClick={handleSave} disabled={isSubmitting}>
+                                <Save size={18} /> <span>Sauvegarder</span>
+                            </button>
+                            <button className="glass-btn primary" onClick={handleOpenDuplicateModal} disabled={isSubmitting}>
+                                <Copy size={18} /> <span>Dupliquer</span>
+                            </button>
+                            <button className="glass-btn danger" onClick={handleDelete} disabled={isSubmitting} style={{ backgroundColor: 'rgba(220, 38, 38, 0.2)', color: '#ef4444' }}>
+                                <Trash2 size={18} />
+                            </button>
+                        </div>
                     )}
                 </div>
             </header>
@@ -176,64 +237,111 @@ const ScheduleCreator = () => {
                         <thead>
                         <tr>
                             <th>Heures</th>
-                            {DAYS.map(d => <th key={d.id}>{d.label}</th>)}
+                            {
+                                DAYS.map(d => <th key={d.id}>{d.label}
+                                </th>)}
                         </tr>
                         </thead>
                         <tbody>
-                        {hours.map(h => (
+                        {hours.map(h =>
                             <tr key={h.id}>
                                 <td className="time-label">
                                     <strong>{h.libelle}</strong>
                                     <small>{h.start_time?.substring(0,5)}</small>
                                 </td>
                                 {DAYS.map(d => {
+
                                     const cell = grid[`${d.id}-${h.id}`] || {};
                                     const cellColor = getGradatedColor(cell.subject_id, cell.class_id);
-
-                                    return (
-                                        <td key={`${d.id}-${h.id}`} className="grid-cell" style={{ '--subject-color': cellColor }}>
-                                            <div className="input-group">
-                                                <div className="input-wrapper main-select">
-                                                    <BookOpen size={12} className="icon" />
-                                                    <select
-                                                        value={cell.subject_id || ''}
-                                                        onChange={(e) => updateCell(d.id, h.id, 'subject_id', e.target.value)}
-                                                    >
-                                                        <option value="">Matière</option>
-                                                        {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                                                    </select>
+                                    if((d.id === 3 && h.id < 5) || (d.id !== 3)){
+                                        console.log("day : ", d);
+                                        console.log("hours : ", h);
+                                        return (
+                                            <td key={`${d.id}-${h.id}`} className="grid-cell" style={{ '--subject-color': cellColor }}>
+                                                <div className="input-group">
+                                                    <div className="input-wrapper main-select">
+                                                        <BookOpen size={12} className="icon" />
+                                                        <select value={cell.subject_id || ''} onChange={(e) => updateCell(d.id, h.id, 'subject_id', e.target.value)}>
+                                                            <option value="">Matière</option>
+                                                            {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                                        </select>
+                                                    </div>
+                                                    <div className="input-wrapper">
+                                                        <Users size={12} className="icon" />
+                                                        <select value={cell.class_id || ''} onChange={(e) => updateCell(d.id, h.id, 'class_id', e.target.value)}>
+                                                            <option value="">Classe</option>
+                                                            {getClassesForSchedule().map(c => <option key={c.id} value={c.id}>{c.shortName}</option>)}
+                                                        </select>
+                                                    </div>
+                                                    <div className="input-wrapper">
+                                                        <MapPin size={12} className="icon" />
+                                                        <input type="text" placeholder="Local" value={cell.room || ''} onChange={(e) => updateCell(d.id, h.id, 'room', e.target.value)} />
+                                                    </div>
                                                 </div>
-                                                <div className="input-wrapper">
-                                                    <Users size={12} className="icon" />
-                                                    <select
-                                                        value={cell.class_id || ''}
-                                                        onChange={(e) => updateCell(d.id, h.id, 'class_id', e.target.value)}
-                                                    >
-                                                        <option value="">Classe</option>
-                                                        {availableClasses.map(c => <option key={c.id} value={c.id}>{c.shortName}</option>)}
-                                                    </select>
-                                                </div>
-                                                <div className="input-wrapper">
-                                                    <MapPin size={12} className="icon" />
-                                                    <input
-                                                        type="text"
-                                                        placeholder="Local"
-                                                        value={cell.room || ''}
-                                                        onChange={(e) => updateCell(d.id, h.id, 'room', e.target.value)}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </td>
-                                    );
+                                            </td>
+                                        );
+                                    }else{
+                                        return (<td></td>)
+                                    }
                                 })}
                             </tr>
-                        ))}
+                        )}
                         </tbody>
                     </table>
                 </div>
             ) : (
                 <div className="empty-state"><Calendar size={48} /><p>Sélectionnez un modèle pour commencer.</p></div>
             )}
+
+            {/* Modale Duplication */}
+            {isDuplicateModalOpen && (
+                <div className="modal-overlay">
+                    <div className="modal">
+                        <div className="modal-header">
+                            <h3>Dupliquer l'emploi du temps</h3>
+                            <button className="modal-close" onClick={() => setIsDuplicateModalOpen(false)}>✕</button>
+                        </div>
+                        <form onSubmit={handleDuplicateSubmit} className="class-form">
+                            <div className="form-group">
+                                <label htmlFor="dupName">Nom du nouveau modèle</label>
+                                <input
+                                    id="dupName"
+                                    type="text"
+                                    value={duplicateName}
+                                    onChange={(e) => setDuplicateName(e.target.value)}
+                                    required
+                                    autoFocus
+                                    placeholder="Ex: Horaire Semaine B"
+                                />
+                            </div>
+                            <div className="form-actions">
+                                <button type="button" className="btn-secondary" onClick={() => setIsDuplicateModalOpen(false)}>Annuler</button>
+                                <button type="submit" className="btn-primary" disabled={isSubmitting || !duplicateName.trim()}>
+                                    {isSubmitting ? '...' : 'Dupliquer'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Modale Confirmation */}
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                onClose={closeConfirmModal}
+                onConfirm={async () => {
+                    try {
+                        await confirmModal.onConfirm();
+                        success('Action effectuée avec succès.');
+                    } catch (err) {
+                        showError(err.message || 'Une erreur est survenue.');
+                    } finally {
+                        closeConfirmModal();
+                    }
+                }}
+            />
         </div>
     );
 };

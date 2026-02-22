@@ -6,12 +6,13 @@ const verifyToken = require('../middleware/authMiddleware');
 
 router.use(verifyToken);
 
-// Gestion des ensembles d'horaires
 router.get('/sets', ScheduleController.getUserSchedules);
 router.post('/sets', ScheduleController.createScheduleSet);
 
-// Gestion des créneaux (Slots)
 router.get('/:id', ScheduleController.getFullSchedule);
 router.post('/slots/save', ScheduleController.saveSlots);
+
+router.post('/sets/:id/duplicate', ScheduleController.duplicateScheduleSet);
+router.delete('/sets/:id', ScheduleController.deleteScheduleSet);
 
 module.exports = router;

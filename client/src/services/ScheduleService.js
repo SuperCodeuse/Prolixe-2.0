@@ -28,6 +28,16 @@ const ScheduleService = {
         return response.data;
     },
 
+    duplicateScheduleSet: async (setId, newName) => {
+        const response = await axios.post(`/schedule/sets/${setId}/duplicate`, { newName });
+        return response.data;
+    },
+
+    deleteScheduleSet: async (setId) => {
+        const response = await axios.delete(`/schedule/sets/${setId}`);
+        return response.data;
+    },
+
     /**
      * Sauvegarde la grille complète pour un journal spécifique.
      * @param {number|string} setId - L'ID du modèle d'emploi du temps (schedule_set)
