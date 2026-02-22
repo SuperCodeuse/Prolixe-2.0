@@ -52,7 +52,7 @@ const ScheduleCreator = () => {
     const getGradatedColor = (subjectId, classId) => {
         const subject = subjects.find(s => s.id == subjectId);
         console.log(subject);
-        if (!subject || !subject.color_code) return 'transparent';
+        if (!subject || !subject.color_code) return 'white';
 
         const cls = getClassesForSchedule().find(c => c.id == classId);
         const level = cls ? parseInt(cls.level) || 1 : 1;
