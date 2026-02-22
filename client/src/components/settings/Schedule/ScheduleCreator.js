@@ -281,7 +281,7 @@ const ScheduleCreator = () => {
                                             </td>
                                         );
                                     }else{
-                                        return (<td></td>)
+                                        return (<td className="grid-cell"></td>)
                                     }
                                 })}
                             </tr>
