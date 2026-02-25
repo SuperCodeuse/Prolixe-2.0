@@ -1,314 +1,990 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import './Journal.scss';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+    format,
+    startOfWeek,
+    addDays,
+    subWeeks,
+    addWeeks,
+    isSameDay,
+    parseISO,
+    isAfter,
+    isBefore,
+    min,
+    max,
+} from 'date-fns';
+import { fr } from 'date-fns/locale';
+import {
+    ChevronLeft,
+    ChevronRight,
+    ChevronFirst,
+    ChevronLast,
+    Calendar as CalendarIcon,
+    Clock,
+    BookOpen,
+    AlertCircle,
+    Loader,
+    Plus,
+    Pencil,
+    Trash2,
+    X,
+    CheckSquare,
+    Square,
+} from 'lucide-react';
+
+import { useSchedule } from '../../hooks/useSchedule';
 import { useJournal } from '../../hooks/useJournal';
 import { useClasses } from '../../hooks/useClasses';
-import { useScheduleHours } from '../../hooks/useScheduleHours';
-import ScheduleService from '../../services/ScheduleService';
-import { useToast } from '../../hooks/useToast';
 import { useHolidays } from '../../hooks/useHolidays';
-import JournalPicker from './JournalPicker';
+import { useToast } from '../../hooks/useToast';
+import JournalService from '../../services/JournalService';
+import ScheduleService from '../../services/ScheduleService';
 import ConfirmModal from '../ConfirmModal';
-import { format, addDays, startOfWeek, endOfWeek, parseISO, isAfter, isBefore, min, max } from 'date-fns';
-import { fr } from 'date-fns/locale';
 
+import './Journal.scss';
+
+// ---------------------------------------------------------------------------
+// Root component – picks the right journal or shows picker
+// ---------------------------------------------------------------------------
 const Journal = () => {
-    const { currentJournal } = useJournal();
-    return currentJournal ? <JournalView /> : <JournalPicker />;
+    const navigate = useNavigate();
+    const { journals, loading: loadingJournals, currentJournal } = useJournal();
+    const journalId = currentJournal?.id;
+
+    useEffect(() => {
+        if (!loadingJournals && !journalId && journals?.length > 0) {
+            navigate(`/journal/${journals[0].id}`);
+        }
+    }, [journalId, journals, loadingJournals, navigate]);
+
+    if (loadingJournals) {
+        return (
+            <div className="journal-loading">
+                <Loader className="spinner" />
+                <p>Chargement des journaux…</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="journal-container">
+            <header className="journal-header">
+                <div className="journal-title">
+                    <BookOpen size={24} />
+                    <h1>{currentJournal ? currentJournal.name : 'Journal de classe'}</h1>
+                </div>
+            </header>
+
+            {journalId ? (
+                <JournalView journalId={journalId} isArchived={currentJournal?.is_archived} />
+            ) : (
+                <div className="no-journal-selected">
+                    <AlertCircle size={48} />
+                    <p>Veuillez sélectionner un journal dans les paramètres.</p>
+                </div>
+            )}
+        </div>
+    );
 };
 
-const JournalView = () => {
-    const {
-        currentJournal, upsertJournalEntry, deleteJournalEntry,
-        upsertAssignment, deleteAssignment, fetchJournalEntries,
-        fetchAssignments, journalEntries, assignments
-    } = useJournal();
+// ---------------------------------------------------------------------------
+// Helper – derive course status from actual_work string
+// ---------------------------------------------------------------------------
+const getStatusFromActualWork = (actualWork) => {
+    if (!actualWork) return 'given';
+    if (actualWork === '[CANCELLED]') return 'cancelled';
+    if (actualWork === '[EXAM]') return 'exam';
+    if (actualWork === '[HOLIDAY]') return 'holiday';
+    return 'given';
+};
 
-    const journalId = currentJournal?.id;
-    const { hours, loading: loadingHours } = useScheduleHours();
+const getClassColor = (subject, classLevel) => {
+    // Deterministic colour from subject name
+    const colours = [
+        '#4f86c6', '#e07b39', '#5ba85b', '#b05cc7',
+        '#c75c5c', '#5cbcb0', '#c7a35c', '#5c7bc7',
+    ];
+    let hash = 0;
+    for (let i = 0; i < (subject || '').length; i++) hash += (subject || '').charCodeAt(i);
+    return colours[hash % colours.length];
+};
+
+// ---------------------------------------------------------------------------
+// Main weekly view
+// ---------------------------------------------------------------------------
+const JournalView = ({ journalId, isArchived }) => {
     const { success, error: showError } = useToast();
+    const { classes } = useClasses(journalId);
     const { getHolidayForDate, holidays, loading: loadingHolidays } = useHolidays();
 
-    // --- STATES ---
-    const [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1, locale: fr }));
-    const [slots, setSlots] = useState([]);
-    const [loadingSlots, setLoadingSlots] = useState(false);
+    // --- week navigation state ---
+    const [currentDate, setCurrentDate] = useState(new Date());
+    const currentWeekStart = useMemo(
+        () => startOfWeek(currentDate, { weekStartsOn: 1 }),
+        [currentDate]
+    );
 
-    // États Modales & Formulaires
+    // --- schedule detection ---
+    const [activeSetId, setActiveSetId] = useState(null);
+    const [activeSetName, setActiveSetName] = useState('');
+    const { slots, loading: loadingSlots, fetchSlots } = useSchedule(activeSetId);
+
+    // --- journal entries (sessions) ---
+    const [sessions, setSessions] = useState([]);
+    const [loadingSessions, setLoadingSessions] = useState(false);
+
+    // --- assignments ---
+    const [assignments, setAssignments] = useState([]);
+    const [loadingAssignments, setLoadingAssignments] = useState(false);
+
+    // --- journal entry modal ---
     const [showJournalModal, setShowJournalModal] = useState(false);
-    const [selectedSlot, setSelectedSlot] = useState(null);
-    const [selectedDay, setSelectedDay] = useState(null);
-    const [journalForm, setJournalForm] = useState({ planned_work: '', actual_work: '', notes: '' });
+    const [selectedSlot, setSelectedSlot] = useState(null); // the schedule slot object
+    const [selectedDay, setSelectedDay] = useState(null);   // { key, label }
+    const [currentEntryId, setCurrentEntryId] = useState(null);
     const [courseStatus, setCourseStatus] = useState('given');
+    const [journalForm, setJournalForm] = useState({ planned_work: '', actual_work: '', notes: '' });
     const [isInterro, setIsInterro] = useState(false);
-    const [copyToNextSlot, setCopyToNextSlot] = useState(false);
-    const [nextCourseSlot, setNextCourseSlot] = useState(null);
     const [cancelEntireDay, setCancelEntireDay] = useState(false);
-    const [journalDebounce, setJournalDebounce] = useState({});
+    const [copyToNextSlot, setCopyToNextSlot] = useState(false);
+    const [nextSlot, setNextSlot] = useState(null);
 
+    // --- assignment modal ---
     const [showAssignmentModal, setShowAssignmentModal] = useState(false);
     const [selectedAssignment, setSelectedAssignment] = useState(null);
-    const [assignmentForm, setAssignmentForm] = useState({ id: null, class_id: '', subject: '', type: 'Devoir', description: '', due_date: '', is_completed: false, is_corrected: false });
+    const [assignmentForm, setAssignmentForm] = useState({
+        id: null, class_id: '', subject: '', type: 'Devoir',
+        description: '', due_date: '', is_completed: false, is_corrected: false,
+    });
+    const assignmentTypes = ['Interro', 'Devoir', 'Projet', 'Examen', 'Autre'];
+
+    // --- confirm modal ---
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
 
-    const isArchived = currentJournal?.is_archived;
-    const activeSetId = 1; // ID statique selon votre retour, ou à dynamiser via useScheduleModel
+    // --- debounce map ---
+    const [debounceMap, setDebounceMap] = useState({});
 
-    // --- LOADING DATA ---
-    const loadData = useCallback(async () => {
-        if (!activeSetId || !journalId) return;
-        setLoadingSlots(true);
+    // -----------------------------------------------------------------------
+    // Compute journal navigation bounds from holidays
+    // -----------------------------------------------------------------------
+    const journalBounds = useMemo(() => {
+        if (!holidays || holidays.length === 0) return null;
         try {
-            const [resSlots] = await Promise.all([
-                ScheduleService.getScheduleById(activeSetId),
-                fetchJournalEntries(format(currentWeekStart, 'yyyy-MM-dd'), format(addDays(currentWeekStart, 4), 'yyyy-MM-dd')),
-                fetchAssignments(null, format(currentWeekStart, 'yyyy-MM-dd'), format(addDays(currentWeekStart, 4), 'yyyy-MM-dd'))
-            ]);
-            console.log("resSlot : ", resSlots);
-            setSlots(resSlots.data || []);
-        } catch (err) {
-            showError('Erreur de chargement');
-        } finally {
-            setLoadingSlots(false);
-        }
-    }, [activeSetId, journalId, currentWeekStart, fetchJournalEntries, fetchAssignments, showError]);
+            const validDates = holidays
+                .filter(h => h.start && h.end)
+                .flatMap(h => [parseISO(h.start), parseISO(h.end)]);
+            if (validDates.length === 0) return null;
+            return {
+                start: startOfWeek(min(validDates), { weekStartsOn: 1 }),
+                end: startOfWeek(max(validDates), { weekStartsOn: 1 }),
+            };
+        } catch { return null; }
+    }, [holidays]);
 
-    useEffect(() => { loadData(); }, [loadData]);
+    const isPrevDisabled = !journalBounds || !isAfter(currentWeekStart, journalBounds.start);
+    const isNextDisabled = !journalBounds || !isBefore(currentWeekStart, journalBounds.end);
 
-    // --- LOGIQUE D'AFFICHAGE (FILTRAGE) ---
-    const visibleDays = useMemo(() => {
-        const labels = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'];
-        return labels.map((label, index) => {
-            const date = addDays(currentWeekStart, index);
-            const dayNum = index + 1;
-            const isoKey = format(date, 'yyyy-MM-dd');
-            const holiday = getHolidayForDate(date);
-            const daySlots = slots
-                .filter(s => s.day_of_week === dayNum)
-                .sort((a, b) => a.time_slot_id - b.time_slot_id);
+    // -----------------------------------------------------------------------
+    // Week days (Mon–Fri) with holiday info
+    // -----------------------------------------------------------------------
+    const weekDays = useMemo(() =>
+            Array.from({ length: 5 }).map((_, i) => {
+                const date = addDays(currentWeekStart, i);
+                const holidayInfo = getHolidayForDate(date);
+                return {
+                    date,
+                    key: format(date, 'yyyy-MM-dd'),
+                    label: format(date, 'EEEE dd/MM', { locale: fr }),
+                    dayIndex: date.getDay(), // 1=Mon … 5=Fri
+                    isHoliday: !!holidayInfo,
+                    holidayName: holidayInfo?.name || null,
+                };
+            }),
+        [currentWeekStart, getHolidayForDate]);
 
-            return { date, label: `${label} ${format(date, 'dd/MM')}`, isoKey, dayNum, slots: daySlots, holiday };
-        }).filter(d => d.slots.length > 0 || d.holiday);
-    }, [currentWeekStart, slots, getHolidayForDate]);
 
-    // --- GESTION DU JOURNAL ---
-    const getEntry = (slotId, date) => journalEntries?.find(e => e.schedule_id === slotId && format(parseISO(e.date), 'yyyy-MM-dd') === date);
+    const slotsByDay = useMemo(() => {
+        const map = {};
+        Object.values(slots || {}).forEach(slot => {
+            const d = slot.day_of_week; // 1-5 or 0-6 depending on API
+            if (!map[d]) map[d] = [];
+            map[d].push(slot);
+        });
+        Object.keys(map).forEach(d => map[d].sort((a, b) => (a.start_time || '').localeCompare(b.start_time || '')));
+        return map;
+    }, [slots]);
 
-    const debouncedSave = (entryData) => {
-        if (isArchived) return;
-        const key = `${entryData.schedule_id}-${entryData.date}`;
-        if (journalDebounce[key]) clearTimeout(journalDebounce[key]);
-        const timeout = setTimeout(async () => {
+    // Unique time rows for the grid
+    const timeRows = useMemo(() =>
+            [...new Map(
+                Object.values(slots || {}).map(s => [s.time_slot_id, s])
+            ).values()].sort((a, b) => (a.start_time || '').localeCompare(b.start_time || '')),
+        [slots]);
+
+    useEffect(() => {
+        setActiveSetId(null);
+        setActiveSetName('');
+
+        let cancelled = false;
+        const detect = async () => {
             try {
-                await upsertJournalEntry(entryData);
-            } catch (err) { showError('Erreur de sauvegarde'); }
-        }, 1000);
-        setJournalDebounce(prev => ({ ...prev, [key]: timeout }));
-    };
+                const dateStr = format(currentWeekStart, 'yyyy-MM-dd');
+                const res = await ScheduleService.getScheduleIdByDate(dateStr);
+                if (cancelled) return;
+                if (res?.success && res.id) {
+                    setActiveSetId(res.id);
+                    setActiveSetName(res.name || `Horaire : #${res.name}`);
+                }
+            } catch { }
+        };
+        detect();
+        return () => { cancelled = true; };
+    }, [currentWeekStart]);
 
+    // -----------------------------------------------------------------------
+    // Step 2 – Reload slots whenever activeSetId OR the week changes.
+    // Using the formatted week string as a dependency guarantees a fresh fetch
+    // even when the same model ID covers multiple consecutive weeks.
+    // -----------------------------------------------------------------------
+    const currentWeekKey = format(currentWeekStart, 'yyyy-MM-dd');
+    useEffect(() => {
+        if (activeSetId) fetchSlots();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeSetId, currentWeekKey]); // fetchSlots omitted: stable ref from hook
+
+    // -----------------------------------------------------------------------
+    // Fetch journal entries (sessions)
+    // -----------------------------------------------------------------------
+    const loadSessions = useCallback(async () => {
+        if (!journalId) return;
+        setLoadingSessions(true);
+        try {
+            const startDate = format(currentWeekStart, 'yyyy-MM-dd');
+            const endDate = format(addDays(currentWeekStart, 4), 'yyyy-MM-dd');
+            const response = await JournalService.getJournalEntries(startDate, endDate, journalId);
+            const entries = response?.data?.data || response?.data || [];
+            setSessions(entries);
+        } catch {
+            setSessions([]);
+        } finally {
+            setLoadingSessions(false);
+        }
+    }, [journalId, currentWeekStart]);
+
+    useEffect(() => { loadSessions(); }, [loadSessions]);
+
+    // -----------------------------------------------------------------------
+    // Fetch assignments
+    // -----------------------------------------------------------------------
+    const loadAssignments = useCallback(async () => {
+        if (!journalId) return;
+        setLoadingAssignments(true);
+        try {
+            const startDate = format(currentWeekStart, 'yyyy-MM-dd');
+            const endDate = format(addDays(currentWeekStart, 4), 'yyyy-MM-dd');
+            const response = await JournalService.getAssignments(journalId, startDate, endDate);
+            const data = response?.data?.data || response?.data || [];
+            setAssignments(data);
+        } catch {
+            setAssignments([]);
+        } finally {
+            setLoadingAssignments(false);
+        }
+    }, [journalId, currentWeekStart]);
+
+    useEffect(() => { loadAssignments(); }, [loadAssignments]);
+
+    // -----------------------------------------------------------------------
+    // Helper – find session for a slot + date
+    // -----------------------------------------------------------------------
+    const getSession = useCallback((slotId, dateKey) =>
+            sessions.find(s => s.schedule_slot_id === slotId && s.date && format(new Date(s.date), 'yyyy-MM-dd') === dateKey),
+        [sessions]);
+
+    // -----------------------------------------------------------------------
+    // Debounced save
+    // -----------------------------------------------------------------------
+    const debouncedSave = useCallback((entryData) => {
+        if (isArchived) return;
+        const key = `${entryData.schedule_slot_id}-${entryData.date}`;
+        setDebounceMap(prev => {
+            if (prev[key]) clearTimeout(prev[key]);
+            const id = setTimeout(async () => {
+                try {
+                    const saved = await JournalService.upsertJournalEntry({ ...entryData, journal_id: journalId });
+                    if (saved?.data?.id && entryData.schedule_slot_id === selectedSlot?.id) {
+                        setCurrentEntryId(saved.data.id);
+                    }
+                    // Refresh sessions silently
+                    loadSessions();
+                } catch (err) {
+                    showError('Erreur de sauvegarde : ' + err.message);
+                }
+                setDebounceMap(p => { const n = { ...p }; delete n[key]; return n; });
+            }, 900);
+            return { ...prev, [key]: id };
+        });
+    }, [isArchived, journalId, selectedSlot, loadSessions, showError]);
+
+    // -----------------------------------------------------------------------
+    // Open journal modal
+    // -----------------------------------------------------------------------
+    const handleOpenModal = useCallback((slot, day) => {
+        const entry = getSession(slot.id, day.key);
+        const aw = entry?.actual_work || '';
+        const status = getStatusFromActualWork(aw);
+        setCourseStatus(status);
+        setIsInterro(aw.startsWith('[INTERRO]'));
+        setJournalForm({
+            planned_work: entry?.planned_work || '',
+            actual_work: aw,
+            notes: entry?.notes || '',
+        });
+        setCurrentEntryId(entry?.id || null);
+        setSelectedSlot(slot);
+        setSelectedDay(day);
+        setCancelEntireDay(false);
+        setCopyToNextSlot(false);
+
+        // Determine next slot (same day, same class, next time)
+        const daySlots = (slotsByDay[day.dayIndex] || []);
+        const idx = daySlots.findIndex(s => s.id === slot.id);
+        const next = idx > -1 && idx + 1 < daySlots.length ? daySlots[idx + 1] : null;
+        setNextSlot(next && next.class_id === slot.class_id && next.subject === slot.subject ? next : null);
+
+        setShowJournalModal(true);
+    }, [getSession, slotsByDay]);
+
+    const handleCloseModal = useCallback(() => {
+        setShowJournalModal(false);
+        setCourseStatus('given');
+    }, []);
+
+    // -----------------------------------------------------------------------
+    // Form change (auto-save debounced)
+    // -----------------------------------------------------------------------
     const handleFormChange = (field, value) => {
         if (isArchived) return;
         const newForm = { ...journalForm, [field]: value };
+
+        let actualWorkToSave = newForm.actual_work;
+        if (field === 'actual_work') {
+            actualWorkToSave = isInterro ? `[INTERRO] ${value}` : value;
+        }
+
         setJournalForm(newForm);
-
-        let actualWork = (field === 'actual_work') ? value : newForm.actual_work;
-        if (isInterro && !actualWork.startsWith('[INTERRO]')) actualWork = `[INTERRO] ${actualWork}`;
-
-        const entryData = {
+        debouncedSave({
+            id: currentEntryId,
+            schedule_slot_id: selectedSlot.id,
+            date: selectedDay.key,
             ...newForm,
-            schedule_id: selectedSlot.slot_id,
-            date: selectedDay.isoKey,
-            actual_work: actualWork
-        };
-        debouncedSave(entryData);
+            actual_work: actualWorkToSave,
+        });
 
-        // Propagation (Holiday/Cancelled)
+        // Propagate cancel/holiday notes
         if ((courseStatus === 'holiday' || (courseStatus === 'cancelled' && cancelEntireDay)) && field === 'notes') {
-            const statusTag = courseStatus === 'holiday' ? '[HOLIDAY]' : '[CANCELLED]';
-            selectedDay.slots.filter(s => s.slot_id !== selectedSlot.slot_id).forEach(s => {
-                debouncedSave({ schedule_id: s.slot_id, date: selectedDay.isoKey, actual_work: statusTag, notes: value });
+            const tag = courseStatus === 'holiday' ? '[HOLIDAY]' : '[CANCELLED]';
+            (slotsByDay[selectedDay.dayIndex] || [])
+                .filter(s => s.id !== selectedSlot.id)
+                .forEach(s => {
+                    const ex = getSession(s.id, selectedDay.key);
+                    debouncedSave({ id: ex?.id || null, schedule_slot_id: s.id, date: selectedDay.key, planned_work: '', actual_work: tag, notes: value });
+                });
+        }
+
+        // Copy to next slot
+        if (copyToNextSlot && nextSlot) {
+            const nex = getSession(nextSlot.id, selectedDay.key);
+            debouncedSave({ id: nex?.id || null, schedule_slot_id: nextSlot.id, date: selectedDay.key, ...newForm, actual_work: actualWorkToSave });
+        }
+    };
+
+    // -----------------------------------------------------------------------
+    // Status change
+    // -----------------------------------------------------------------------
+    const handleStatusChange = (e) => {
+        if (isArchived) return;
+        const newStatus = e.target.value;
+        setCourseStatus(newStatus);
+
+        let newForm = { planned_work: '', actual_work: '', notes: journalForm.notes || '' };
+        if (newStatus === 'cancelled') newForm.actual_work = '[CANCELLED]';
+        else if (newStatus === 'exam') { newForm.actual_work = '[EXAM]'; newForm.notes = journalForm.notes || 'Sujet : '; }
+        else if (newStatus === 'holiday') { newForm.actual_work = '[HOLIDAY]'; newForm.notes = journalForm.notes || 'Férié'; }
+        else newForm = { planned_work: journalForm.planned_work, actual_work: '', notes: '' };
+
+        setJournalForm(newForm);
+        debouncedSave({ id: currentEntryId, schedule_slot_id: selectedSlot.id, date: selectedDay.key, ...newForm });
+
+        const daySlots = slotsByDay[selectedDay.dayIndex] || [];
+
+        if (newStatus === 'holiday') {
+            daySlots.filter(s => s.id !== selectedSlot.id).forEach(s => {
+                const ex = getSession(s.id, selectedDay.key);
+                debouncedSave({ id: ex?.id || null, schedule_slot_id: s.id, date: selectedDay.key, planned_work: '', actual_work: '[HOLIDAY]', notes: newForm.notes });
+            });
+            success('Toute la journée a été marquée comme "Vacances".');
+        }
+
+        if (newStatus === 'exam') {
+            daySlots.filter(s => s.class_id === selectedSlot.class_id && s.id !== selectedSlot.id).forEach(s => {
+                const ex = getSession(s.id, selectedDay.key);
+                debouncedSave({ id: ex?.id || null, schedule_slot_id: s.id, date: selectedDay.key, planned_work: '', actual_work: '[EXAM]', notes: newForm.notes });
             });
         }
     };
 
-    const handleStatusChange = (e) => {
-        const newStatus = e.target.value;
-        setCourseStatus(newStatus);
-        let work = '';
-        let notes = journalForm.notes;
-
-        if (newStatus === 'cancelled') work = '[CANCELLED]';
-        else if (newStatus === 'exam') { work = '[EXAM]'; notes = 'Sujet : '; }
-        else if (newStatus === 'holiday') { work = '[HOLIDAY]'; notes = 'Férié'; }
-
-        const newForm = { ...journalForm, actual_work: work, notes };
-        setJournalForm(newForm);
-        debouncedSave({ schedule_id: selectedSlot.slot_id, date: selectedDay.isoKey, ...newForm });
+    // -----------------------------------------------------------------------
+    // Cancel entire day
+    // -----------------------------------------------------------------------
+    const handleCancelEntireDayChange = (e) => {
+        const checked = e.target.checked;
+        setCancelEntireDay(checked);
+        if (checked) {
+            (slotsByDay[selectedDay.dayIndex] || [])
+                .filter(s => s.id !== selectedSlot.id)
+                .forEach(s => {
+                    const ex = getSession(s.id, selectedDay.key);
+                    debouncedSave({ id: ex?.id || null, schedule_slot_id: s.id, date: selectedDay.key, planned_work: '', actual_work: '[CANCELLED]', notes: journalForm.notes });
+                });
+            success('Toute la journée a été marquée comme "Annulée".');
+        }
     };
 
+    // -----------------------------------------------------------------------
+    // Interro toggle
+    // -----------------------------------------------------------------------
     const handleIsInterroChange = async (e) => {
         const checked = e.target.checked;
         setIsInterro(checked);
-        const work = checked ? `[INTERRO] ${journalForm.actual_work.replace('[INTERRO]', '').trim()}` : journalForm.actual_work.replace('[INTERRO]', '').trim();
-        handleFormChange('actual_work', work);
+        const baseWork = journalForm.actual_work.replace('[INTERRO]', '').trim();
+        const newAw = checked ? `[INTERRO] ${baseWork}` : baseWork;
+        const updForm = { ...journalForm, actual_work: newAw };
+        setJournalForm(updForm);
+        debouncedSave({ id: currentEntryId, schedule_slot_id: selectedSlot.id, date: selectedDay.key, ...updForm });
 
         if (checked) {
-            await upsertAssignment({
+            const newAssignment = {
                 class_id: selectedSlot.class_id,
-                subject: selectedSlot.subject_name,
+                subject: selectedSlot.subject,
                 type: 'Interro',
-                description: work.replace('[INTERRO]', '').trim(),
-                due_date: selectedDay.isoKey
-            });
-            success('Interro créée');
+                description: baseWork,
+                due_date: selectedDay.key,
+                is_completed: false,
+                is_corrected: false,
+                journal_id: journalId,
+            };
+            const existing = assignments.find(a =>
+                a.class_id === newAssignment.class_id &&
+                a.subject === newAssignment.subject &&
+                a.type === 'Interro' &&
+                a.due_date === newAssignment.due_date
+            );
+            if (existing) { newAssignment.id = existing.id; newAssignment.is_corrected = existing.is_corrected; }
+            try {
+                await JournalService.upsertAssignment(newAssignment);
+                await loadAssignments();
+                success('Assignation "Interro" créée ou mise à jour.');
+            } catch (err) { showError('Erreur : ' + err.message); }
+        } else {
+            const existing = assignments.find(a =>
+                a.class_id === selectedSlot.class_id && a.subject === selectedSlot.subject &&
+                a.type === 'Interro' && a.due_date === selectedDay.key
+            );
+            if (existing) {
+                try {
+                    await JournalService.deleteAssignment(existing.id);
+                    await loadAssignments();
+                    success('Assignation "Interro" supprimée.');
+                } catch (err) { showError('Erreur : ' + err.message); }
+            }
         }
     };
 
-    const handleOpenJournalModal = (slot, day) => {
-        setSelectedSlot(slot);
-        setSelectedDay(day);
-        const entry = getEntry(slot.slot_id, day.isoKey);
-
-        setJournalForm({
-            planned_work: entry?.planned_work || '',
-            actual_work: entry?.actual_work || '',
-            notes: entry?.notes || ''
-        });
-
-        const status = entry?.actual_work?.includes('[CANCELLED]') ? 'cancelled' :
-            entry?.actual_work?.includes('[EXAM]') ? 'exam' :
-                entry?.actual_work?.includes('[HOLIDAY]') ? 'holiday' : 'given';
-
-        setCourseStatus(status);
-        setIsInterro(entry?.actual_work?.startsWith('[INTERRO]') || false);
-
-        // Calcul du créneau suivant pour la copie
-        const next = day.slots[day.slots.findIndex(s => s.slot_id === slot.slot_id) + 1];
-        setNextCourseSlot(next && next.class_id === slot.class_id ? next : null);
-
-        setShowJournalModal(true);
+    // -----------------------------------------------------------------------
+    // Copy to next slot
+    // -----------------------------------------------------------------------
+    const handleCopyToNextSlotChange = async (e) => {
+        if (isArchived) return;
+        const checked = e.target.checked;
+        setCopyToNextSlot(checked);
+        if (checked && nextSlot) {
+            try {
+                const nex = getSession(nextSlot.id, selectedDay.key);
+                await JournalService.upsertJournalEntry({ id: nex?.id || null, schedule_slot_id: nextSlot.id, date: selectedDay.key, journal_id: journalId, ...journalForm });
+                await loadSessions();
+                success('Notes copiées sur le créneau suivant.');
+            } catch (err) { showError('Erreur : ' + err.message); setCopyToNextSlot(false); }
+        }
     };
 
-    // --- UI HELPERS ---
-    const navigateWeek = (dir) => setCurrentWeekStart(prev => addDays(prev, dir * 7));
+    // -----------------------------------------------------------------------
+    // Delete journal entry
+    // -----------------------------------------------------------------------
+    const handleDeleteJournalEntry = async () => {
+        if (!currentEntryId || isArchived) return;
+        try {
+            await JournalService.deleteJournalEntry(currentEntryId);
+            await loadSessions();
+            success('Entrée supprimée.');
+            handleCloseModal();
+        } catch (err) { showError(err.message); }
+    };
 
-    if (loadingHours || loadingSlots) return <div className="loading-message">Chargement du journal...</div>;
+    // -----------------------------------------------------------------------
+    // Assignments CRUD
+    // -----------------------------------------------------------------------
+    const handleSaveAssignment = async (e) => {
+        e.preventDefault();
+        if (isArchived) return;
+        if (!assignmentForm.class_id || !assignmentForm.subject || !assignmentForm.type || !assignmentForm.due_date) {
+            return showError('Veuillez remplir tous les champs obligatoires.');
+        }
+        try {
+            await JournalService.upsertAssignment({ ...assignmentForm, journal_id: journalId });
+            await loadAssignments();
+            success('Assignation sauvegardée !');
+            setShowAssignmentModal(false);
+        } catch (err) { showError(err.message); }
+    };
+
+    const handleDeleteAssignment = async () => {
+        if (!selectedAssignment?.id || isArchived) return;
+        try {
+            await JournalService.deleteAssignment(selectedAssignment.id);
+            await loadAssignments();
+            success('Assignation supprimée.');
+            setShowAssignmentModal(false);
+            setConfirmModal({ isOpen: false });
+        } catch (err) { showError(err.message); }
+    };
+
+    const availableDueDates = useMemo(() => {
+        if (!assignmentForm.class_id) return [];
+        const dates = [];
+        for (let i = 0; i < 5; i++) {
+            const date = addDays(currentWeekStart, i);
+            const dayIdx = date.getDay();
+            const hasClass = (slotsByDay[dayIdx] || []).some(s => String(s.class_id) === String(assignmentForm.class_id));
+            if (hasClass && !getHolidayForDate(date)) {
+                dates.push({ value: format(date, 'yyyy-MM-dd'), label: format(date, 'EEEE dd MMMM', { locale: fr }) });
+            }
+        }
+        return dates;
+    }, [assignmentForm.class_id, currentWeekStart, slotsByDay, getHolidayForDate]);
+
+    // -----------------------------------------------------------------------
+    // Navigation helpers
+    // -----------------------------------------------------------------------
+    const prevWeek = () => setCurrentDate(subWeeks(currentDate, 1));
+    const nextWeek = () => setCurrentDate(addWeeks(currentDate, 1));
+    const goToToday = () => setCurrentDate(new Date());
+    const goToStart = () => { if (journalBounds) setCurrentDate(journalBounds.start); };
+    const goToEnd = () => { if (journalBounds) setCurrentDate(journalBounds.end); };
+
+    // -----------------------------------------------------------------------
+    // Render helpers
+    // -----------------------------------------------------------------------
+    const renderSlotCard = (slot, day) => {
+        const entry = getSession(slot.id, day.key);
+        const aw = entry?.actual_work || '';
+        const isCancelled = aw === '[CANCELLED]';
+        const isExam = aw === '[EXAM]';
+        const isManualHoliday = aw === '[HOLIDAY]';
+        const isInterroSlot = aw.startsWith('[INTERRO]');
+
+        const color = getClassColor(slot.subject, slot.class_level);
+        const borderColor = isCancelled ? 'var(--red-danger, #e05252)'
+            : (isExam || isManualHoliday) ? 'var(--accent-orange, #e09639)' : color;
+
+        let previewText = null;
+        let previewClass = '';
+        if (entry && !isCancelled && !isExam && !isManualHoliday) {
+            const wt = entry.actual_work || entry.planned_work;
+            previewText = isInterroSlot ? wt.replace('[INTERRO]', '').trim() : wt;
+            previewClass = entry.actual_work ? 'actual-work' : 'planned-work';
+        }
+
+        return (
+            <div
+                key={slot.id}
+                className={`journal-slot has-course${isCancelled ? ' is-cancelled' : ''}${isExam ? ' is-exam' : ''}${isManualHoliday ? ' is-holiday-slot' : ''}${isInterroSlot ? ' is-interro' : ''}`}
+                style={{ borderLeftColor: borderColor }}
+                onClick={() => handleOpenModal(slot, day)}
+            >
+                {isManualHoliday ? (
+                    <div className="status-display holiday-display">
+                        <span>🌴</span>
+                        <p className="status-label">Vacances – Férié</p>
+                        <p className="status-reason">{entry?.notes}</p>
+                    </div>
+                ) : isCancelled ? (
+                    <div className="status-display cancelled-display">
+                        <span>🚫</span>
+                        <p className="status-label">ANNULÉ</p>
+                        <p className="status-reason">{entry?.notes}</p>
+                    </div>
+                ) : isExam ? (
+                    <div className="status-display exam-display">
+                        <span>✍️</span>
+                        <p className="status-label">EXAMEN</p>
+                        <p className="status-reason">{entry?.notes}</p>
+                    </div>
+                ) : (
+                    <div className="course-summary">
+                        <div className="course-header-row">
+                            <span className="course-time">{slot.start_time?.substring(0, 5)}–{slot.end_time?.substring(0, 5)}</span>
+                            <span className="course-class-badge" style={{ backgroundColor: color + '22', color }}>{slot.class_name || slot.className || '—'}</span>
+                        </div>
+                        <div className="course-subject">{slot.subject}</div>
+                        {slot.room && <div className="course-room">📍 {slot.room}</div>}
+                        {previewText && (
+                            <div className={`entry-preview ${previewClass}`}>
+                                {isInterroSlot && <span className="interro-badge">Interro · </span>}
+                                <span className="preview-text">{previewText}</span>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    const isLoading = loadingSlots || loadingHolidays;
+
+    if (isLoading) {
+        return <div className="loading-state"><Loader className="spinner" /> Chargement…</div>;
+    }
 
     return (
-        <div className="journal-page">
-            <div className="journal-header">
-                <div className="journal-header-left">
-                    <h1>{currentJournal?.name}</h1>
-                </div>
+        <div className="journal-view">
+            {/* ---- Controls ---- */}
+            <div className="journal-controls">
                 <div className="week-navigation">
-                    <button className="btn-secondary" onClick={() => navigateWeek(-1)}>Précédent</button>
-                    <button className="btn-today" onClick={() => setCurrentWeekStart(startOfWeek(new Date(), {weekStartsOn: 1}))}>Aujourd'hui</button>
-                    <span>{format(currentWeekStart, 'dd/MM/yyyy')} - {format(addDays(currentWeekStart, 4), 'dd/MM/yyyy')}</span>
-                    <button className="btn-secondary" onClick={() => navigateWeek(1)}>Suivant</button>
+                    <button className="nav-btn" onClick={goToStart} disabled={isPrevDisabled} title="Début"><ChevronLeft size={16} /><ChevronLeft size={16} /></button>
+                    <button className="nav-btn" onClick={prevWeek} disabled={isPrevDisabled} title="Semaine précédente"><ChevronLeft size={20} /></button>
+                    <button className="today-btn" onClick={goToToday}>Aujourd'hui</button>
+                    <button className="nav-btn" onClick={nextWeek} disabled={isNextDisabled} title="Semaine suivante"><ChevronRight size={20} /></button>
+                    <button className="nav-btn" onClick={goToEnd} disabled={isNextDisabled} title="Fin"><ChevronRight size={16} /><ChevronRight size={16} /></button>
+                </div>
+
+                <div className="current-range">
+                    <CalendarIcon size={16} />
+                    <span>
+                        Semaine du {format(currentWeekStart, 'd MMM', { locale: fr })} au{' '}
+                        {format(addDays(currentWeekStart, 4), 'd MMM yyyy', { locale: fr })}
+                    </span>
+                </div>
+
+                <div className="schedule-indicator">
+                    <Clock size={14} />
+                    <span>Horaire : <strong>{activeSetId ? activeSetName : 'Aucun modèle actif'}</strong></span>
                 </div>
             </div>
 
+            {/* ---- Main content ---- */}
             <div className="journal-content">
-                <div className="weekly-agenda-section">
-                    <div className="journal-days-container">
-                        {visibleDays.map(day => (
-                            <div key={day.isoKey} className={`day-column ${day.holiday ? 'is-holiday' : ''}`}>
-                                <div className="day-header-journal">{day.label}</div>
-                                <div className="day-content">
-                                    {day.holiday ? (
-                                        <div className="holiday-card">🎉 {day.holiday.name}</div>
-                                    ) : (
-                                        day.slots.map(slot => {
-                                            const entry = getEntry(slot.slot_id, day.isoKey);
-                                            const isInterroSlot = entry?.actual_work?.startsWith('[INTERRO]');
-                                            const isCancelled = entry?.actual_work === '[CANCELLED]';
+                {/* Weekly agenda */}
+                <div className="weekly-section">
+                    <h2>Journal des cours</h2>
 
-                                            return (
-                                                <div
-                                                    key={slot.slot_id}
-                                                    className={`journal-slot ${isCancelled ? 'is-cancelled' : ''} ${isInterroSlot ? 'is-interro' : ''}`}
-                                                    style={{ borderLeft: `4px solid ${slot.subject_color}` }}
-                                                    onClick={() => handleOpenJournalModal(slot, day)}
-                                                >
-                                                    <div className="course-info-header">
-                                                        <span>{slot.time_label}</span>
-                                                        <span>{slot.class_name}</span>
-                                                    </div>
-                                                    <div className="course-title-display">{slot.subject_name}</div>
-                                                    {entry?.actual_work && (
-                                                        <div className="journal-entry-preview">
-                                                            {isInterroSlot && <span className="interro-badge">Interro</span>}
-                                                            {entry.actual_work.replace('[INTERRO]', '')}
-                                                        </div>
-                                                    )}
+                    {!activeSetId ? (
+                        <div className="error-box">
+                            <AlertCircle size={20} />
+                            <p>Aucun emploi du temps n'est défini pour cette période ({format(currentWeekStart, 'dd/MM/yyyy', { locale: fr })} – {format(addDays(currentWeekStart, 4), 'dd/MM/yyyy', { locale: fr })}).</p>
+                        </div>
+                    ) : (
+                        <div className="days-grid">
+                            {weekDays.map(day => {
+                                const daySlots = (slotsByDay[day.dayIndex] || []).filter(s => s.id != null);
+                                const hasContent = daySlots.length > 0 || day.isHoliday;
+                                if (!hasContent) return null;
+
+                                return (
+                                    <div key={day.key} className={`day-column${day.isHoliday ? ' is-holiday-day' : ''}`}>
+                                        <div className="day-header">{day.label}</div>
+                                        <div className="day-body">
+                                            {day.isHoliday ? (
+                                                <div className="holiday-card">
+                                                    <span className="holiday-icon">🎉</span>
+                                                    <span className="holiday-name">{day.holidayName}</span>
                                                 </div>
-                                            );
-                                        })
-                                    )}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                                            ) : (
+                                                daySlots.map(slot => renderSlotCard(slot, day))
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
 
-                {/* Section Assignations (simplifiée) */}
+                {/* Assignments section */}
                 <div className="assignments-section">
-                    <h2>Assignations & Devoirs</h2>
-                    <button className="btn-primary" onClick={() => setShowAssignmentModal(true)}>+ Nouveau</button>
-                    {assignments.map(a => (
-                        <div key={a.id} className="assignment-item">
-                            <input type="checkbox" checked={a.is_completed} onChange={() => upsertAssignment({...a, is_completed: !a.is_completed})} />
-                            <div>{a.subject} - {a.type}</div>
+                    <div className="assignments-header">
+                        <h2>Assignations &amp; Évaluations</h2>
+                        {!isArchived && (
+                            <button className="btn-primary" onClick={() => {
+                                setSelectedAssignment(null);
+                                setAssignmentForm({ id: null, class_id: '', subject: '', type: 'Devoir', description: '', due_date: '', is_completed: false, is_corrected: false });
+                                setShowAssignmentModal(true);
+                            }}>
+                                <Plus size={14} /> Nouvelle
+                            </button>
+                        )}
+                    </div>
+                    {loadingAssignments ? (
+                        <p className="loading-small">Chargement…</p>
+                    ) : assignments.length === 0 ? (
+                        <p className="empty-note">Aucune assignation prévue cette semaine.</p>
+                    ) : (
+                        <div className="assignment-list">
+                            {assignments.filter(a => a.id != null).map(assign => {
+                                const cls = classes.find(c => c.id === assign.class_id);
+                                return (
+                                    <div key={assign.id} className={`assignment-item${assign.is_completed && assign.is_corrected ? ' fully-done' : ''}`}>
+                                        <button className="check-btn" disabled={isArchived} onClick={() => {
+                                            if (isArchived) return;
+                                            const payload = { ...assign, is_completed: !assign.is_completed };
+                                            if (!payload.is_completed) payload.is_corrected = false;
+                                            JournalService.upsertAssignment(payload).then(loadAssignments);
+                                        }}>
+                                            {assign.is_completed ? <CheckSquare size={18} /> : <Square size={18} />}
+                                        </button>
+                                        <div className="assignment-details">
+                                            <strong>{assign.subject} <span className="type-badge">{assign.type}</span></strong>
+                                            {assign.due_date && (
+                                                <small>Pour le {format(parseISO(assign.due_date), 'dd/MM/yy', { locale: fr })} · {cls?.name || '—'}</small>
+                                            )}
+                                            {assign.description && <p className="assign-desc">{assign.description}</p>}
+                                        </div>
+                                        {assign.is_completed && (
+                                            <label className="corrected-label">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={!!assign.is_corrected}
+                                                    disabled={isArchived}
+                                                    onChange={() => {
+                                                        if (!isArchived) JournalService.upsertAssignment({ id: assign.id, is_corrected: !assign.is_corrected }).then(loadAssignments);
+                                                    }}
+                                                />
+                                                Corrigé
+                                            </label>
+                                        )}
+                                        {!isArchived && (
+                                            <button className="btn-icon" onClick={() => {
+                                                setSelectedAssignment(assign);
+                                                setAssignmentForm({ ...assign, due_date: assign.due_date ? format(parseISO(assign.due_date), 'yyyy-MM-dd') : '' });
+                                                setShowAssignmentModal(true);
+                                            }}><Pencil size={14} /></button>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
-                    ))}
+                    )}
                 </div>
             </div>
 
-            {/* MODALE JOURNAL */}
-            {showJournalModal && (
-                <div className="modal-overlay">
-                    <div className="modal">
+            {/* ================================================================
+                JOURNAL ENTRY MODAL
+            ================================================================ */}
+            {showJournalModal && selectedSlot && selectedDay && (
+                <div className="modal-overlay" onClick={handleCloseModal}>
+                    <div className="modal" onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
-                            <h3>{selectedSlot.subject_name} - {selectedDay.label}</h3>
-                            <button onClick={() => setShowJournalModal(false)}>×</button>
+                            <h3>
+                                {selectedSlot.subject} &middot; {format(parseISO(selectedDay.key), 'EEEE dd/MM', { locale: fr })}
+                            </h3>
+                            <button className="modal-close" onClick={handleCloseModal}><X size={18} /></button>
                         </div>
-                        <div className="modal-body-content">
+                        <div className="modal-body">
+                            {/* Status */}
                             <div className="form-group">
-                                <label>Statut</label>
-                                <select value={courseStatus} onChange={handleStatusChange}>
+                                <label>Statut du cours</label>
+                                <select value={courseStatus} onChange={handleStatusChange} disabled={isArchived}>
                                     <option value="given">Cours donné</option>
-                                    <option value="cancelled">Annulé</option>
-                                    <option value="exam">Examen</option>
-                                    <option value="holiday">Vacances</option>
+                                    <option value="cancelled">Cours annulé</option>
+                                    <option value="exam">Période d'examen</option>
+                                    <option value="holiday">Vacances / Férié</option>
                                 </select>
                             </div>
 
+                            {/* Planned work (given or cancelled) */}
+                            {(courseStatus === 'given' || courseStatus === 'cancelled') && (
+                                <div className="form-group">
+                                    <label>Travail prévu</label>
+                                    <textarea
+                                        value={journalForm.planned_work}
+                                        onChange={e => handleFormChange('planned_work', e.target.value)}
+                                        placeholder="Décrivez le travail prévu…"
+                                        rows={3}
+                                        disabled={isArchived}
+                                    />
+                                </div>
+                            )}
+
+                            {/* Status-specific fields */}
                             {courseStatus === 'given' && (
                                 <>
                                     <div className="form-group">
-                                        <label>Travail Prévu</label>
-                                        <textarea value={journalForm.planned_work} onChange={(e) => handleFormChange('planned_work', e.target.value)} />
-                                    </div>
-                                    <div className="form-group">
-                                        <label>Travail Effectué</label>
-                                        <textarea value={journalForm.actual_work} onChange={(e) => handleFormChange('actual_work', e.target.value)} />
+                                        <label>Travail effectué</label>
+                                        <textarea
+                                            value={journalForm.actual_work}
+                                            onChange={e => handleFormChange('actual_work', e.target.value)}
+                                            placeholder="Décrivez le travail réellement effectué…"
+                                            rows={3}
+                                            disabled={isArchived}
+                                        />
                                     </div>
                                     <div className="form-group checkbox-group">
-                                        <input type="checkbox" id="int" checked={isInterro} onChange={handleIsInterroChange} />
-                                        <label htmlFor="int">Interrogation</label>
+                                        <input type="checkbox" id="isInterro" checked={isInterro} onChange={handleIsInterroChange} disabled={isArchived} />
+                                        <label htmlFor="isInterro">Cette heure est une interrogation</label>
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Notes supplémentaires</label>
+                                        <textarea
+                                            value={journalForm.notes}
+                                            onChange={e => handleFormChange('notes', e.target.value)}
+                                            placeholder="Notes libres…"
+                                            rows={2}
+                                            disabled={isArchived}
+                                        />
+                                    </div>
+                                    {nextSlot && !isArchived && (
+                                        <div className="form-group checkbox-group">
+                                            <input type="checkbox" id="copyNext" checked={copyToNextSlot} onChange={handleCopyToNextSlotChange} />
+                                            <label htmlFor="copyNext">Copier sur le créneau suivant ({nextSlot.start_time?.substring(0, 5)})</label>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+
+                            {courseStatus === 'cancelled' && (
+                                <>
+                                    <div className="form-group">
+                                        <label>Raison de l'annulation</label>
+                                        <textarea
+                                            value={journalForm.notes}
+                                            onChange={e => handleFormChange('notes', e.target.value)}
+                                            placeholder="Ex : Grève, Maladie…"
+                                            rows={3}
+                                            disabled={isArchived}
+                                        />
+                                    </div>
+                                    <div className="form-group checkbox-group">
+                                        <input type="checkbox" id="cancelDay" checked={cancelEntireDay} onChange={handleCancelEntireDayChange} disabled={isArchived} />
+                                        <label htmlFor="cancelDay">Annuler toute la journée</label>
                                     </div>
                                 </>
                             )}
 
-                            {(courseStatus !== 'given') && (
+                            {courseStatus === 'exam' && (
                                 <div className="form-group">
-                                    <label>Notes / Raison</label>
-                                    <textarea value={journalForm.notes} onChange={(e) => handleFormChange('notes', e.target.value)} />
+                                    <label>Sujet / informations</label>
+                                    <textarea
+                                        value={journalForm.notes}
+                                        onChange={e => handleFormChange('notes', e.target.value)}
+                                        placeholder="Ex : Sujet, matériel autorisé…"
+                                        rows={3}
+                                        disabled={isArchived}
+                                    />
                                 </div>
                             )}
+
+                            {courseStatus === 'holiday' && (
+                                <div className="form-group">
+                                    <label>Motif</label>
+                                    <textarea
+                                        value={journalForm.notes}
+                                        onChange={e => handleFormChange('notes', e.target.value)}
+                                        placeholder="Ex : Jour blanc, Fête de l'école…"
+                                        rows={3}
+                                        disabled={isArchived}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                        <div className="modal-footer">
+                            {currentEntryId && !isArchived && (
+                                <button className="btn-danger" onClick={handleDeleteJournalEntry}><Trash2 size={14} /> Supprimer</button>
+                            )}
+                            <button className="btn-secondary" onClick={handleCloseModal}>Fermer</button>
                         </div>
                     </div>
                 </div>
             )}
+
+            {/* ================================================================
+                ASSIGNMENT MODAL
+            ================================================================ */}
+            {showAssignmentModal && (
+                <div className="modal-overlay" onClick={() => setShowAssignmentModal(false)}>
+                    <div className="modal" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3>{selectedAssignment ? 'Modifier l\'assignation' : 'Nouvelle assignation'}</h3>
+                            <button className="modal-close" onClick={() => setShowAssignmentModal(false)}><X size={18} /></button>
+                        </div>
+                        <div className="modal-body">
+                            <form id="assignment-form" onSubmit={handleSaveAssignment}>
+                                <div className="form-group">
+                                    <label>Classe</label>
+                                    <select value={assignmentForm.class_id} onChange={e => setAssignmentForm({ ...assignmentForm, class_id: e.target.value })} required disabled={isArchived}>
+                                        <option value="">Sélectionnez une classe</option>
+                                        {classes.map(cls => <option key={cls.id} value={cls.id}>{cls.name}</option>)}
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label>Matière</label>
+                                    <input type="text" value={assignmentForm.subject} onChange={e => setAssignmentForm({ ...assignmentForm, subject: e.target.value })} required disabled={isArchived} />
+                                </div>
+                                <div className="form-group">
+                                    <label>Type</label>
+                                    <select value={assignmentForm.type} onChange={e => setAssignmentForm({ ...assignmentForm, type: e.target.value })} required disabled={isArchived}>
+                                        {assignmentTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label>Description</label>
+                                    <textarea value={assignmentForm.description} onChange={e => setAssignmentForm({ ...assignmentForm, description: e.target.value })} rows={3} disabled={isArchived} />
+                                </div>
+                                <div className="form-group">
+                                    <label>Date d'échéance</label>
+                                    <select value={assignmentForm.due_date} onChange={e => setAssignmentForm({ ...assignmentForm, due_date: e.target.value })} required disabled={isArchived}>
+                                        <option value="">Sélectionnez une date</option>
+                                        {availableDueDates.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+                                    </select>
+                                </div>
+                            </form>
+                        </div>
+                        <div className="modal-footer">
+                            {selectedAssignment && !isArchived && (
+                                <button type="button" className="btn-danger" onClick={() => setConfirmModal({
+                                    isOpen: true,
+                                    title: 'Supprimer l\'assignation',
+                                    message: 'Êtes-vous sûr de vouloir supprimer cette assignation ?',
+                                    onConfirm: handleDeleteAssignment,
+                                })}>
+                                    <Trash2 size={14} /> Supprimer
+                                </button>
+                            )}
+                            <button type="submit" form="assignment-form" className="btn-primary" disabled={isArchived}>Sauvegarder</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                onClose={() => setConfirmModal({ isOpen: false })}
+                onConfirm={confirmModal.onConfirm}
+                confirmText="Supprimer"
+                cancelText="Annuler"
+                type="danger"
+            />
         </div>
     );
 };

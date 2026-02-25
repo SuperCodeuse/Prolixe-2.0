@@ -63,7 +63,7 @@ exports.createEvaluation = async (req, res) => {
             await connection.rollback();
             return res.status(403).json({ success: false, message: "Accès refusé. Journal non trouvé ou n'appartient pas à l'utilisateur." });
         }
-        const [classCheck] = await connection.query('SELECT user_id FROM CLASS WHERE id = ? AND user_id = ?', [class_id, user_id]);
+        const [classCheck] = await connection.query('SELECT user_id FROM CLASSES WHERE id = ? AND user_id = ?', [class_id, user_id]);
         if (classCheck.length === 0) {
             await connection.rollback();
             return res.status(403).json({ success: false, message: "Accès refusé. Classe non trouvée ou n'appartient pas à l'utilisateur." });

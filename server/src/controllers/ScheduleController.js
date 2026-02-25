@@ -16,7 +16,7 @@ class ScheduleController {
 
         try {
             const [result] = await pool.execute(
-                'INSERT INTO SCHEDULE_SETS (user_id, journal_id, name, start_date, end_date) VALUES (?, ?, ?, ?, ?)',
+                'INSERT INTO SCHEDULE_SETS (user_id, journal_id, name, start_time, end_time) VALUES (?, ?, ?, ?, ?)',
                 [userId, journal_id, name, start_date, end_date]
             );
             res.status(201).json({ success: true, id: result.insertId, name });
@@ -30,9 +30,9 @@ class ScheduleController {
         const userId = req.user.id;
         try {
             const [rows] = await pool.execute(
-                `SELECT id FROM SCHEDULE_SETS 
+                `SELECT id, name FROM SCHEDULE_SETS 
              WHERE user_id = ? 
-             AND ? BETWEEN start_date AND end_date 
+             AND ? BETWEEN start_time AND end_time
              LIMIT 1`,
                 [userId, date]
             );
@@ -40,7 +40,7 @@ class ScheduleController {
             if (rows.length === 0) {
                 return res.json({ success: true, id: null });
             }
-            res.json({ success: true, id: rows[0].id });
+            res.json({ success: true, id: rows[0].id, name: rows[0].name });
         } catch (error) {
             res.status(500).json({ success: false, message: error.message });
         }
@@ -126,8 +126,6 @@ class ScheduleController {
                 'SELECT id, name, journal_id, start_time, end_time FROM SCHEDULE_SETS WHERE id = ? AND user_id = ?',
                 [id, userId]
             );
-
-            console.log("here : ", sets);
 
             if (sets.length === 0) {
                 console.log(`Accès refusé ou set inconnu : ID ${id} pour User ${userId}`);

@@ -12,10 +12,9 @@ router.post('/slots/save', ScheduleController.saveSlots);
 router.post('/sets/:id/duplicate', ScheduleController.duplicateScheduleSet);
 router.delete('/sets/:id', ScheduleController.deleteScheduleSet);
 
-router.get('/active-set', ScheduleController.getScheduleByDate); // À placer AVANT router.get('/:id')
+router.get('/active-set', ScheduleController.getScheduleByDate);
 
 router.get('/:id', (req, res, next) => {
-    console.log('>>> Route /:id atteinte, id =', req.params.id);
     next();
 }, ScheduleController.getFullSchedule);
 

@@ -1,11 +1,24 @@
 import ApiService from '../api/axiosConfig';
 
-const JOURNAL_API_URL = '/journal'; // Base URL pour les journaux
+const JOURNAL_API_URL = '/journal';
 
+/**
+ * Service gérant les communications API pour le journal de classe.
+ * Note : journal_id fait référence à l'entité "Année Scolaire / Carnet"
+ * tandis que schedule_id (ou slot_id) fait référence à la structure de l'horaire.
+ */
 class JournalService {
-    // --- Gestion des Journaux (Années scolaires) ---
+
+    // ==========================================
+    // --- GESTION DES JOURNAUX (Entités) ---
+    // ==========================================
+
     static async getAllJournals() {
         return ApiService.get(`${JOURNAL_API_URL}/`);
+    }
+
+    static async getCurrentJournal() {
+        return ApiService.get(`${JOURNAL_API_URL}/current`);
     }
 
     static async createJournal(data) {
@@ -13,21 +26,31 @@ class JournalService {
     }
 
     static async archiveJournal(id) {
-        return ApiService.post(`${JOURNAL_API_URL}/archive/${id}`);
+        // Souvent traité comme un PATCH ou un POST sur une action spécifique
+        return ApiService.post(`${JOURNAL_API_URL}/${id}/archive`);
     }
 
     static async deleteJournal(id) {
-        return ApiService.delete(`${JOURNAL_API_URL}/delete/${id}`);
+        return ApiService.delete(`${JOURNAL_API_URL}/${id}`);
     }
 
-    static async getCurrentJournal() {
-        return ApiService.get(`${JOURNAL_API_URL}/current`);
-    }
+    // ==========================================
+    // --- SESSIONS & ENTRÉES DU JOURNAL ---
+    // ==========================================
 
-    // --- Entrées du Journal (Notes de cours) ---
     /**
-     * Récupère les notes de cours pour une période donnée.
-     * Le journal_id est crucial pour isoler les données de l'année scolaire en cours.
+     * RÉCUPÈRE LES SESSIONS (Utilisé par JournalView)
+     * Combine les slots de l'horaire et le contenu du journal.
+     */
+    static async getSessions(journal_id, startDate, endDate) {
+        const response = await ApiService.get(`${JOURNAL_API_URL}/sessions`, {
+            params: { journal_id, startDate, endDate }
+        });
+        return response.data?.data || response.data || [];
+    }
+
+    /**
+     * Récupère les entrées brutes du journal.
      */
     static async getJournalEntries(startDate, endDate, journal_id) {
         return ApiService.get(`${JOURNAL_API_URL}/entries`, {
@@ -36,12 +59,11 @@ class JournalService {
     }
 
     /**
-     * Sauvegarde ou met à jour une note de cours.
-     * @param {Object} entryData - Doit contenir schedule_id (lié au slot_id), date, actual_work, etc.
+     * Sauvegarde ou met à jour une note de cours (Upsert).
+     * @param {Object} mappedData - Données déjà mappées par le hook (entry_date, content_planned, etc.)
      */
-    static async upsertJournalEntry(entryData) {
-        // Dans votre nouvelle logique, entryData.schedule_id correspond au slot_id reçu de l'horaire
-        return ApiService.put(`${JOURNAL_API_URL}/entries`, entryData);
+    static async upsertJournalEntry(mappedData) {
+        return ApiService.put(`${JOURNAL_API_URL}/entries`, mappedData);
     }
 
     static async deleteJournalEntry(id) {
@@ -52,14 +74,16 @@ class JournalService {
         return ApiService.delete(`${JOURNAL_API_URL}/entries/clear/${journalId}`);
     }
 
-    // --- Assignations / Devoirs ---
+    // ==========================================
+    // --- ASSIGNATIONS / DEVOIRS ---
+    // ==========================================
+
     /**
      * Récupère les devoirs et évaluations.
      */
-    static async getAssignments(journalId, classId = '', startDate = '', endDate = '') {
+    static async getAssignments(journalId, classId = null, startDate = null, endDate = null) {
         if (!journalId) {
-            console.error("Un ID de journal est requis pour récupérer les assignations.");
-            return Promise.resolve({ data: { data: [], success: false } });
+            throw new Error("journal_id est requis");
         }
 
         const params = { journal_id: journalId };
@@ -67,7 +91,7 @@ class JournalService {
         if (startDate) params.startDate = startDate;
         if (endDate) params.endDate = endDate;
 
-        return ApiService.get(`${JOURNAL_API_URL}/assignments`, { params });
+        //return ApiService.get(`${JOURNAL_API_URL}/assignments`, { params });
     }
 
     static async upsertAssignment(assignmentData) {
@@ -78,12 +102,18 @@ class JournalService {
         return ApiService.delete(`${JOURNAL_API_URL}/assignments/${id}`);
     }
 
-    // --- Import / Export ---
+    // ==========================================
+    // --- IMPORT / EXPORT ---
+    // ==========================================
+
     static async importJournal(file, journalId) {
         const formData = new FormData();
         formData.append('journalFile', file);
         formData.append('journal_id', journalId);
-        return ApiService.post(`${JOURNAL_API_URL}/import`, formData);
+
+        return ApiService.post(`${JOURNAL_API_URL}/import`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
     }
 }
 

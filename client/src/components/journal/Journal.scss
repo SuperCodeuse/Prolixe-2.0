@@ -1,582 +1,985 @@
-/* Journal.scss - Styles spécifiques au Journal / Agenda */
+/* ============================================================
+   Journal.scss — Registre de classe professionnel
+   Direction : dark refined, accents teal/cyan froids,
+   typographie structurée, micro-animations précises
+   ============================================================ */
 
-@import '../../App.scss'; // Assurez-vous que le chemin est correct vers votre App.scss global
-@import './journal_mobile.scss'; // Ajoutez cette ligne pour les styles mobiles
+@import '../../App.scss';
+@import './journal_mobile.scss';
 
-.journal-page {
-  @include page-container-base;
+// ── Local tokens ─────────────────────────────────────────────
+$teal:          #0d9488;
+$teal-light:    #14b8a6;
+$teal-dim:      rgba(13, 148, 136, 0.15);
+$teal-glow:     rgba(13, 148, 136, 0.35);
+$cyan:          #22d3ee;
+$cyan-dim:      rgba(34, 211, 238, 0.12);
+$red:           #ef4444;
+$red-dim:       rgba(239, 68, 68, 0.12);
+$amber:         #f59e0b;
+$amber-dim:     rgba(245, 158, 11, 0.12);
+$violet:        #8b5cf6;
+$violet-dim:    rgba(139, 92, 246, 0.12);
+$green:         #22c55e;
+$green-dim:     rgba(34, 197, 94, 0.12);
 
-  .journal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-    padding: 1.5rem 2rem;
-    background: linear-gradient(135deg, var(--bg-dark-secondary) 0%, var(--border-color) 100%);
-    border-radius: 1rem;
-    border: 1px solid var(--border-color);
+$surface-0:     #0a0e17;
+$surface-1:     #111827;
+$surface-2:     #1a2235;
+$surface-3:     #232f42;
+$border:        rgba(255,255,255,0.07);
+$border-light:  rgba(255,255,255,0.12);
+$text-primary:  #f1f5f9;
+$text-secondary:#94a3b8;
+$text-muted:    #64748b;
 
-    h1 {
-      font-size: 2.2rem;
-      font-weight: 700;
-      margin: 0;
-      color: var(--text-light);
-    }
+$radius-sm:     0.375rem;
+$radius-md:     0.625rem;
+$radius-lg:     1rem;
+$radius-xl:     1.25rem;
 
-    .journal-header-left{
-      display: flex;
-      flex-direction: row;
-      gap: 2rem;
-
-      span{
-        padding-top: 1rem;
-        font-weight: bold;
-        color: var(--accent-cyan);
-      }
-    }
-
-    .week-navigation {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      color: var(--text-muted);
-      font-size: 1rem;
-      font-weight: 500;
-
-      .btn-secondary {
-        @include btn-secondary-base;
-        padding: 0.5rem 1rem;
-        font-size: 0.9rem;
-
-        &:disabled {
-          background-color: var(--bg-dark-tertiary);
-          color: var(--text-muted);
-          border-color: var(--border-color);
-          opacity: 0.6;
-          cursor: not-allowed; // Curseur "interdit"
-          transform: none; // Annule les effets de survol
-          box-shadow: none; // Annule les ombres de survol
-        }
-
-        &:disabled:hover {
-          background: var(--bg-dark-tertiary);
-          border-color: var(--border-color);
-        }
-      }
-    }
-  }
-
-  .journal-content {
-    display: flex; /* Utilisation de flexbox pour une meilleure adaptabilité */
-    flex-direction: column;
-    gap: 2rem;
-  }
-
-  /* Section des assignations / devoirs */
-  .assignments-section {
-    @include card-base;
-    padding: 1.5rem;
-    min-height: 20rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-
-    h2 {
-      font-size: 1.4rem;
-      font-weight: 600;
-      color: var(--text-light);
-      margin: 0;
-    }
-
-    .btn-primary {
-      @include btn-primary-base;
-      width: fit-content;
-      font-size: 0.9rem;
-      padding: 0.6rem 1.2rem;
-    }
-
-    .assignment-list {
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-      margin-top: 0.5rem;
-      overflow-y: auto;
-      max-height: 400px;
-    }
-
-    .assignment-item {
-      background: var(--white-transparent-sm);
-      border: 1px solid var(--border-color);
-      border-radius: 0.5rem;
-      padding: 0.75rem 1rem;
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      transition: all 0.2s ease;
-
-      &:hover {
-        background: var(--white-transparent-md);
-      }
-
-      input[type="checkbox"] {
-        width: 18px;
-        height: 18px;
-        accent-color: var(--accent-green);
-        cursor: pointer;
-        flex-shrink: 0;
-      }
-
-      .assignment-details {
-        flex: 1;
-        h4 {
-          font-size: 1rem;
-          color: var(--text-light);
-          margin: 0 0 0.25rem 0;
-        }
-        p {
-          font-size: 0.85rem;
-          color: var(--text-muted);
-          margin: 0;
-        }
-      }
-
-      .btn-edit {
-        @include btn-action-base;
-        font-size: 0.9rem;
-        padding: 0.4rem;
-        &:hover {
-          background: var(--blue-transparent-sm);
-          border-color: var(--accent-blue);
-        }
-      }
-    }
-  }
-
-  /* Section de l'agenda hebdomadaire par jour */
-  .weekly-agenda-section {
-    @include card-base;
-    padding: 0.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-
-    h2 {
-      font-size: 1.4rem;
-      font-weight: 600;
-      color: var(--text-light);
-      margin: 1rem;
-    }
-  }
-
-  /* NOUVEAU CONTENEUR POUR LES JOURS */
-  .journal-days-container {
-    display: flex;
-    flex-wrap: wrap; /* Permet aux éléments de passer à la ligne */
-    gap: 1rem;
-    border-radius: 0.5rem;
-    border: 1px solid var(--border-color);
-    min-height: 12.5rem;
-    background: var(--bg-dark-secondary); /* Fond pour le conteneur global des jours */
-
-    /* Styles de la scrollbar (si nécessaire) */
-    &::-webkit-scrollbar {
-      height: 8px;
-    }
-    &::-webkit-scrollbar-track {
-      background: var(--bg-dark-blue);
-      border-radius: 4px;
-    }
-    &::-webkit-scrollbar-thumb {
-      background: var(--border-color);
-      border-radius: 4px;
-    }
-    &::-webkit-scrollbar-thumb:hover {
-      background: #475569;
-    }
-  }
-
-  /* Styles pour chaque colonne de jour */
-  .day-column {
-    flex: 1 1; /* Utilise 'flex-grow', 'flex-shrink' et 'flex-basis' */
-    min-height: 12rem;
-    display: flex;
-    flex-direction: column;
-    border-right: 1px solid var(--border-color);
-    &:last-child {
-      border-right: none;
-    }
-
-    &:first-child {
-      border-top-left-radius: 0.5rem;
-      border-bottom-left-radius: 0.5rem;
-    }
-    &:last-child {
-      border-top-right-radius: 0.5rem;
-      border-bottom-right-radius: 0.5rem;
-    }
-  }
-
-  /* En-tête de chaque jour (Lundi 04/07) */
-  .day-header-journal {
-    background: #475569;
-    color: var(--text-light);
-    padding: 0.8rem;
-    font-weight: 600;
-    text-align: center;
-    font-size: 1rem;
-    border-bottom: 1px solid var(--border-color);
-  }
-
-  /* Liste des cours pour un jour donné */
-  .day-courses-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    padding: 0.75rem;
-    flex-grow: 1;
-  }
-
-  /* Message si aucun cours pour un jour spécifique */
-  .no-courses-for-day-message {
-    color: var(--text-muted);
-    font-size: 0.85rem;
-    text-align: center;
-    padding: 1rem;
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px dashed rgba(255, 255, 255, 0.1);
-    border-radius: 0.5rem;
-    margin-top: 0.5rem;
-  }
-
-  /* Styles des cellules de cours individuelles */
-  .journal-slot {
-    background: var(--white-transparent-sm);
-    border: 1px solid var(--border-color);
-    border-left: 5px solid;
-    border-radius: 0.5rem;
-    padding: 0.75rem;
-    min-height: 80px;
-    position: relative;
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    color: var(--text-light);
-    transition: all 0.2s ease;
-    margin-top: 0.5rem;
-
-    &:hover {
-      background: var(--white-transparent-md);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    }
-
-    .course-summary {
-      display: flex;
-      flex-direction: column;
-      gap: 0.2rem;
-      width: 100%;
-
-      .course-info-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: baseline;
-        font-size: 0.9rem;
-        font-weight: 600;
-        color: var(--text-light);
-      }
-
-      .course-time-display {
-        color: var(--text-muted);
-        font-size: 0.8rem;
-        font-weight: 400;
-      }
-
-      .course-class-display {
-        color: var(--accent-blue);
-        font-size: 0.9rem;
-        font-weight: 600;
-      }
-
-      .course-details {
-        margin-top: 0.25rem;
-        font-size: 0.9rem;
-        color: var(--text-light);
-        .course-title-display { font-weight: 600; }
-        .course-room-display { color: var(--text-muted); font-size: 0.85rem; }
-      }
-    }
-
-    .journal-entry-indicator {
-      position: absolute;
-      bottom: 0.5rem;
-      right: 0.5rem;
-      font-size: 0.75rem;
-      color: var(--accent-green);
-      background: rgba(var(--accent-green-rgb), 0.1);
-      padding: 0.2rem 0.4rem;
-      border-radius: 0.3rem;
-      font-weight: 500;
-    }
-  }
-
-
-  /* Modals (Journal Entry & Assignment) */
-  .modal-overlay { @include modal-overlay-base; }
-  .modal {
-    @include modal-base;
-    padding-inline: 1rem !important;
-    max-height: 100vh;
-  }
-  .modal-header {
-    @include modal-header-base;
-    border-bottom: 0;
-  }
-  .modal-close { @include modal-close-btn-base; }
-  .modal-form {
-    padding: 0 1.5rem 1.5rem;
-    margin-top: 1.5rem;
-  }
-  .modal-body-content { /* */ }
-  .slot-info {
-    background: var(--bg-dark-blue);
-    padding: 1px;
-    border-radius: 0.5rem;
-    margin-bottom: 1.5rem;
-    //color: var(--accent-blue);
-    color:white;
-    text-align: center;
-    border: 1px solid var(--border-color);
-  }
-
-  .form-group { @include modal-form-group-base; }
-  .modal-footer {
-    @include modal-form-actions-base;
-    .btn-primary { @include modal-form-btn-base; background: var(--accent-blue); color: white; &:hover { background: var(--accent-dark-blue); } }
-    .btn-secondary { @include modal-form-btn-base; background: var(--gray-button); color: white; &:hover { background: var(--gray-button-hover); } }
-    .btn-danger { @include modal-form-btn-base; background: var(--red-danger); color: white; &:hover { background: var(--red-dark-danger); } }
-  }
-
-  .btn-today {
-    @include btn-primary-base;
-    padding: 0.5rem 1.2rem;
-    font-size: 0.9rem;
-    background: var(--accent-cyan);
-    &:hover {
-      background: var(--accent-dark-cyan);
-    }
-  }
-
-  .checkbox-group {
-    display: flex;
-    align-items: center;
-    input[type="checkbox"] {
-      width: 18px;
-      height: 18px;
-      accent-color: var(--accent-green);
-      margin-right: 8px;
-    }
-    label {
-      margin-bottom: 0;
-      display: inline-block;
-      color: var(--text-secondary);
-      font-weight: 500;
-    }
-  }
-
-
-  /* Styles pour le chargement et l'erreur */
-  .loading-message, .error-message {
-    @include card-base;
-    padding: 2rem;
-    text-align: center;
-    font-size: 1.2rem;
-    color: var(--text-muted);
-  }
-  .error-message {
-    color: var(--red-danger);
-  }
-
-  .no-courses-message {
-    padding: 2rem;
-    text-align: center;
-    color: var(--text-muted);
-    font-size: 1.1rem;
-  }
+// ── Keyframes ────────────────────────────────────────────────
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+@keyframes pulseRing {
+  0%, 100% { box-shadow: 0 0 0 0 $teal-glow; }
+  50%       { box-shadow: 0 0 0 4px transparent; }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
-// Dans Journal.scss
+// ── Root container ───────────────────────────────────────────
+.journal-container {
+  min-height: 100vh;
+  background: $surface-0;
+  padding: 2rem;
+  animation: fadeSlideIn 0.35s ease both;
 
-.journal-entry-preview {
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-
-  .preview-text {
-    margin: 0;
-    font-size: 0.8rem;
-    white-space: pre-wrap;
-    word-break: break-word;
-
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  &.planned-work .preview-text {
-    color: var(--text-gray);
-    font-style: italic;
-  }
-
-  &.actual-work .preview-text {
-    color: var(--accent-green);
-    accent-color: var(--accent-green);
-    font-weight: 500;
-  }
+  // Subtle grid texture
+  background-image:
+          linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+  background-size: 40px 40px;
 }
 
-textarea {
-  padding: 0.2rem !important;
-  background: var(--border-color) !important;
-}
-
-.day-column.is-holiday {
-  background-color: var(--bg-dark-tertiary);
-  background-image: repeating-linear-gradient(
-                  45deg,
-                  rgba(255, 255, 255, 0.02),
-                  rgba(255, 255, 255, 0.02) 10px,
-                  rgba(255, 255, 255, 0.04) 10px,
-                  rgba(255, 255, 255, 0.04) 20px
-  );
-  border-color: var(--accent-orange);
-
-  .day-header-journal {
-    background: var(--accent-dark-orange);
-    color: white;
-  }
-}
-
-.holiday-card {
+// ── Loading ──────────────────────────────────────────────────
+.journal-loading,
+.loading-state {
   display: flex;
   flex-direction: column;
+  align-items: center;
   justify-content: center;
-  align-items: center;
-  text-align: center;
-  height: 100%;
-  padding: 1rem;
-  background: rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(5px);
-  border-radius: 0.5rem;
-  color: white;
-  border: 1px solid var(--accent-orange);
-}
+  gap: 1rem;
+  min-height: 40vh;
+  color: $text-secondary;
+  font-size: 0.95rem;
 
-.holiday-icon {
-  font-size: 2.5rem;
-  margin-bottom: 0.5rem;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
-}
-
-.holiday-name {
-  font-weight: 600;
-  font-size: 1.1rem;
-  text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
-}
-
-.corrected-checkbox-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-left: 1rem;
-  padding-left: 1rem;
-  border-left: 1px solid var(--border-color);
-
-  label {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    cursor: pointer;
+  .spinner {
+    width: 28px;
+    height: 28px;
+    animation: spin 0.8s linear infinite;
+    color: $teal-light;
   }
 }
 
-.assignment-item {
-  background: var(--white-transparent-sm);
-  border: 1px solid var(--border-color);
-  border-radius: 0.5rem;
-  padding: 0.75rem 1rem;
+// ── Page header ──────────────────────────────────────────────
+.journal-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid $border;
+
+  .journal-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+
+    svg { color: $teal-light; flex-shrink: 0; }
+
+    h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: $text-primary;
+      letter-spacing: -0.02em;
+      margin: 0;
+
+      // Subtle gradient text
+      background: linear-gradient(135deg, $text-primary 60%, $teal-light);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+  }
+}
+
+// ── No journal selected ──────────────────────────────────────
+.no-journal-selected {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 4rem;
+  color: $text-muted;
+  text-align: center;
+
+  svg { color: $teal-dim; opacity: 0.5; }
+  p { font-size: 1rem; }
+}
+
+// ── Journal view ─────────────────────────────────────────────
+.journal-view {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  animation: fadeSlideIn 0.3s ease both;
+}
+
+// ── Controls bar ─────────────────────────────────────────────
+.journal-controls {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0.875rem 1.25rem;
+  background: $surface-2;
+  border: 1px solid $border;
+  border-radius: $radius-lg;
+  flex-wrap: wrap;
+
+  .week-navigation {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+
+  .nav-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    background: $surface-3;
+    border: 1px solid $border;
+    border-radius: $radius-sm;
+    color: $text-secondary;
+    cursor: pointer;
+    transition: all 0.18s ease;
+
+    svg { display: block; }
+
+    &:hover:not(:disabled) {
+      background: $teal-dim;
+      border-color: $teal;
+      color: $teal-light;
+    }
+
+    &:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+  }
+
+  .today-btn {
+    height: 34px;
+    padding: 0 1rem;
+    background: $teal;
+    border: none;
+    border-radius: $radius-sm;
+    color: white;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: all 0.18s ease;
+
+    &:hover {
+      background: $teal-light;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px $teal-glow;
+    }
+  }
+
+  .current-range {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: $text-secondary;
+    font-size: 0.9rem;
+    margin-left: auto;
+
+    svg { color: $teal; flex-shrink: 0; }
+
+    span { font-weight: 500; }
+  }
+
+  .schedule-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.375rem 0.75rem;
+    background: $cyan-dim;
+    border: 1px solid rgba(34,211,238,0.2);
+    border-radius: 999px;
+    color: $text-secondary;
+    font-size: 0.8rem;
+    white-space: nowrap;
+
+    svg { color: $cyan; }
+    strong { color: $cyan; font-weight: 600; }
+  }
+}
+
+// ── Journal content layout ───────────────────────────────────
+.journal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+// ── Weekly section ───────────────────────────────────────────
+.weekly-section {
+  background: $surface-1;
+  border: 1px solid $border;
+  border-radius: $radius-xl;
+  padding: 1.5rem;
+  overflow: hidden;
+
+  h2 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: $text-secondary;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin: 0 0 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    &::before {
+      content: '';
+      display: block;
+      width: 3px;
+      height: 1em;
+      background: $teal;
+      border-radius: 2px;
+    }
+  }
+}
+
+// ── Error box ────────────────────────────────────────────────
+.error-box {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  transition: all 0.2s ease;
+  padding: 1.25rem 1.5rem;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: $radius-md;
+  color: $amber;
+  font-size: 0.9rem;
+  line-height: 1.5;
 
-  &:hover {
-    background: var(--white-transparent-md);
+  svg { flex-shrink: 0; }
+}
+
+// ── Days grid ────────────────────────────────────────────────
+.days-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 1rem;
+}
+
+.day-column {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  animation: fadeSlideIn 0.3s ease both;
+
+  @for $i from 1 through 5 {
+    &:nth-child(#{$i}) { animation-delay: #{($i - 1) * 0.06}s; }
   }
 
-  &.fully-corrected {
-    text-decoration: line-through;
-    opacity: 0.6;
-
-    h4, p {
-      color: var(--text-muted);
+  &.is-holiday-day {
+    .day-header {
+      background: linear-gradient(135deg, rgba(245,158,11,0.2), rgba(245,158,11,0.08));
+      border-color: rgba(245,158,11,0.3);
+      color: $amber;
     }
   }
-}
 
-.copy-next-group {
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--border-color);
-  flex-direction: row;
-  align-items: center;
+  .day-header {
+    padding: 0.6rem 0.875rem;
+    background: $surface-3;
+    border: 1px solid $border;
+    border-radius: $radius-md;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: $text-secondary;
+    text-transform: capitalize;
+    letter-spacing: 0.04em;
+    text-align: center;
+  }
 
-  label {
-    font-size: 0.9rem;
-    font-weight: 500;
-    cursor: pointer;
+  .day-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
   }
 }
 
-.journal-slot.is-exam {
-  background-color: rgba(var(--accent-orange-rgb), 0.1);
-}
-
-.cancellation-display {
-  width: 100%;
-  height: 100%;
+// ── Holiday card ─────────────────────────────────────────────
+.holiday-card {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 0.5rem;
+  padding: 1.5rem 1rem;
+  background: linear-gradient(135deg, rgba(245,158,11,0.1), rgba(245,158,11,0.04));
+  border: 1px dashed rgba(245,158,11,0.35);
+  border-radius: $radius-md;
   text-align: center;
+  min-height: 5rem;
 
-  .cancellation-icon { font-size: 1.5rem; }
-  .cancellation-label {
-    font-weight: 700;
-    margin: 0.25rem 0;
-    letter-spacing: 1px;
-  }
-  .cancellation-reason {
+  .holiday-icon { font-size: 1.75rem; }
+  .holiday-name {
     font-size: 0.8rem;
-    color: var(--text-muted);
+    font-weight: 600;
+    color: $amber;
+    line-height: 1.3;
+  }
+}
+
+// ── Journal slot card ────────────────────────────────────────
+.journal-slot {
+  position: relative;
+  background: $surface-2;
+  border: 1px solid $border;
+  border-left: 3px solid $teal;
+  border-radius: $radius-md;
+  padding: 0.75rem 0.875rem;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+  min-height: 72px;
+  overflow: hidden;
+
+  // Glow line top
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+    border-radius: $radius-md $radius-md 0 0;
+    pointer-events: none;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.35), 0 0 0 1px $border-light;
+    background: $surface-3;
+  }
+
+  // ── Status variants ──────────────────────────────────────
+  &.is-cancelled {
+    border-left-color: $red;
+    background: linear-gradient(135deg, $red-dim, $surface-2);
+    opacity: 0.85;
+  }
+  &.is-exam {
+    border-left-color: $amber;
+    background: linear-gradient(135deg, $amber-dim, $surface-2);
+  }
+  &.is-holiday-slot {
+    border-left-color: $amber;
+    background: linear-gradient(135deg, rgba(245,158,11,0.08), $surface-2);
+  }
+  &.is-interro {
+    border-left-color: $violet;
+    background: linear-gradient(135deg, $violet-dim, $surface-2);
+  }
+
+  // ── Course summary ───────────────────────────────────────
+  .course-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .course-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .course-time {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: $text-muted;
+    letter-spacing: 0.04em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .course-class-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .course-subject {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: $text-primary;
+    line-height: 1.2;
+    margin-top: 0.1rem;
+  }
+
+  .course-room {
+    font-size: 0.72rem;
+    color: $text-muted;
+  }
+
+  // ── Entry preview ────────────────────────────────────────
+  .entry-preview {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid $border;
+    display: flex;
+    align-items: baseline;
+    gap: 0.25rem;
+
+    .interro-badge {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: $violet;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      flex-shrink: 0;
+    }
+
+    .preview-text {
+      font-size: 0.75rem;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    &.planned-work .preview-text {
+      color: $text-muted;
+      font-style: italic;
+    }
+    &.actual-work .preview-text {
+      color: $green;
+      font-weight: 500;
+    }
+  }
+
+  // ── Status displays ──────────────────────────────────────
+  .status-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    height: 100%;
+    gap: 0.3rem;
+    padding: 0.25rem 0;
+
+    > span { font-size: 1.4rem; line-height: 1; }
+
+    .status-label {
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin: 0;
+    }
+
+    .status-reason {
+      font-size: 0.72rem;
+      color: $text-muted;
+      margin: 0;
+      line-height: 1.3;
+    }
+
+    &.cancelled-display .status-label { color: $red; }
+    &.exam-display .status-label      { color: $amber; }
+    &.holiday-display .status-label   { color: $amber; }
+  }
+}
+
+// ── Assignments section ──────────────────────────────────────
+.assignments-section {
+  background: $surface-1;
+  border: 1px solid $border;
+  border-radius: $radius-xl;
+  padding: 1.5rem;
+
+  .assignments-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    gap: 1rem;
+
+    h2 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: $text-secondary;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      &::before {
+        content: '';
+        display: block;
+        width: 3px;
+        height: 1em;
+        background: $cyan;
+        border-radius: 2px;
+      }
+    }
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 1rem;
+    background: $teal;
+    border: none;
+    border-radius: $radius-sm;
+    color: white;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    white-space: nowrap;
+
+    svg { flex-shrink: 0; }
+
+    &:hover {
+      background: $teal-light;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px $teal-glow;
+    }
+  }
+
+  .empty-note, .loading-small {
+    color: $text-muted;
+    font-size: 0.88rem;
+    text-align: center;
+    padding: 2rem 1rem;
+    border: 1px dashed $border;
+    border-radius: $radius-md;
+  }
+
+  .assignment-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+  }
+
+  .assignment-item {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    padding: 0.875rem 1rem;
+    background: $surface-2;
+    border: 1px solid $border;
+    border-radius: $radius-md;
+    transition: all 0.18s ease;
+    animation: fadeSlideIn 0.25s ease both;
+
+    &:hover { background: $surface-3; border-color: $border-light; }
+
+    &.fully-done {
+      opacity: 0.5;
+      .assignment-details strong,
+      .assignment-details small { text-decoration: line-through; }
+    }
+
+    .check-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: $text-muted;
+      padding: 0;
+      flex-shrink: 0;
+      transition: color 0.15s;
+
+      &:hover:not(:disabled) { color: $teal-light; }
+      &:disabled { cursor: not-allowed; opacity: 0.4; }
+    }
+
+    .assignment-details {
+      flex: 1;
+      min-width: 0;
+
+      strong {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+        color: $text-primary;
+        font-weight: 600;
+        margin-bottom: 0.2rem;
+      }
+
+      small {
+        font-size: 0.78rem;
+        color: $text-muted;
+        display: block;
+      }
+
+      .assign-desc {
+        font-size: 0.78rem;
+        color: $text-secondary;
+        margin: 0.25rem 0 0;
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+    }
+
+    .type-badge {
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 0.15rem 0.5rem;
+      background: $teal-dim;
+      border: 1px solid rgba(13,148,136,0.25);
+      color: $teal-light;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      white-space: nowrap;
+    }
+
+    .corrected-label {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.75rem;
+      color: $text-muted;
+      cursor: pointer;
+      white-space: nowrap;
+      padding: 0.3rem 0.6rem;
+      border-left: 1px solid $border;
+
+      input[type="checkbox"] {
+        accent-color: $teal-light;
+        cursor: pointer;
+      }
+    }
+
+    .btn-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      background: $surface-3;
+      border: 1px solid $border;
+      border-radius: $radius-sm;
+      color: $text-secondary;
+      cursor: pointer;
+      transition: all 0.15s;
+      flex-shrink: 0;
+
+      &:hover {
+        background: $cyan-dim;
+        border-color: rgba(34,211,238,0.3);
+        color: $cyan;
+      }
+    }
+  }
+}
+
+// ── Modal ─────────────────────────────────────────────────────
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  animation: fadeSlideIn 0.2s ease both;
+}
+
+.modal {
+  background: $surface-1;
+  border: 1px solid $border-light;
+  border-radius: $radius-xl;
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04);
+  animation: fadeSlideIn 0.25s ease both;
+
+  // Top accent line
+  &::before {
+    content: '';
+    display: block;
+    height: 2px;
+    background: linear-gradient(90deg, $teal, $cyan, transparent);
+    flex-shrink: 0;
+  }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem 1rem;
+  flex-shrink: 0;
+
+  h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: $text-primary;
     margin: 0;
-  }
-
-  &.exam-display {
-    .cancellation-label { color: var(--accent-orange); }
+    line-height: 1.3;
   }
 }
 
-.journal-slot.is-interro {
-  background-color: rgba(139, 92, 246, 0.15);
-  border-left-color: #8B5CF6;
+.modal-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background: $surface-3;
+  border: 1px solid $border;
+  border-radius: $radius-sm;
+  color: $text-muted;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+
+  &:hover { background: $red-dim; border-color: rgba(239,68,68,0.3); color: $red; }
 }
 
-.interro-prefix {
-  font-weight: 500;
-  color: #a78bfa;
-  font-size: 0.9rem;
-  margin-right: 6px;
+.modal-body {
+  padding: 0 1.5rem 1.25rem;
+  overflow-y: auto;
+  flex: 1;
+
+  &::-webkit-scrollbar { width: 4px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb { background: $surface-3; border-radius: 2px; }
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-bottom: 1rem;
+
+  label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: $text-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  select,
+  input[type="text"],
+  textarea {
+    background: $surface-2 !important;
+    border: 1px solid $border !important;
+    border-radius: $radius-sm !important;
+    color: $text-primary !important;
+    padding: 0.6rem 0.75rem !important;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    width: 100%;
+    transition: border-color 0.15s;
+    resize: vertical;
+
+    &::placeholder { color: $text-muted; }
+
+    &:focus {
+      outline: none !important;
+      border-color: $teal !important;
+      box-shadow: 0 0 0 3px $teal-dim !important;
+    }
+  }
+
+  textarea {
+    min-height: 80px;
+  }
+
+  &.checkbox-group {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 0.75rem;
+    background: $surface-2;
+    border: 1px solid $border;
+    border-radius: $radius-sm;
+    cursor: pointer;
+    transition: border-color 0.15s;
+    margin-bottom: 0.75rem;
+
+    &:hover { border-color: $teal; }
+
+    input[type="checkbox"] {
+      width: 16px !important;
+      height: 16px !important;
+      accent-color: $teal-light;
+      flex-shrink: 0;
+      margin: 0 !important;
+      padding: 0 !important;
+      background: none !important;
+      border: none !important;
+      box-shadow: none !important;
+    }
+
+    label {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: $text-secondary;
+      text-transform: none;
+      letter-spacing: 0;
+      cursor: pointer;
+      margin: 0;
+    }
+  }
+}
+
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid $border;
+  flex-shrink: 0;
+  background: $surface-2;
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.55rem 1.25rem;
+    background: $teal;
+    border: none;
+    border-radius: $radius-sm;
+    color: white;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s;
+
+    &:hover:not(:disabled) {
+      background: $teal-light;
+      box-shadow: 0 4px 12px $teal-glow;
+      transform: translateY(-1px);
+    }
+    &:disabled { opacity: 0.4; cursor: not-allowed; }
+  }
+
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.55rem 1.25rem;
+    background: $surface-3;
+    border: 1px solid $border;
+    border-radius: $radius-sm;
+    color: $text-secondary;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s;
+
+    &:hover {
+      background: $surface-2;
+      border-color: $border-light;
+      color: $text-primary;
+    }
+  }
+
+  .btn-danger {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.55rem 1.25rem;
+    background: transparent;
+    border: 1px solid rgba(239,68,68,0.3);
+    border-radius: $radius-sm;
+    color: $red;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-right: auto;
+    transition: all 0.18s;
+
+    &:hover {
+      background: $red-dim;
+      border-color: $red;
+    }
+  }
+}
+
+// ── Status select highlight ──────────────────────────────────
+select.status-select option[value="cancelled"] { color: $red; }
+select.status-select option[value="exam"]      { color: $amber; }
+select.status-select option[value="holiday"]   { color: $amber; }
+
+// ── Responsive ───────────────────────────────────────────────
+@media (max-width: 768px) {
+  .journal-container { padding: 1rem; }
+
+  .journal-controls {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+
+    .current-range { margin-left: 0; order: 3; width: 100%; }
+    .schedule-indicator { order: 4; }
+  }
+
+  .days-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modal {
+    max-height: 95vh;
+    border-radius: $radius-lg $radius-lg 0 0;
+    align-self: flex-end;
+    max-width: 100%;
+  }
+
+  .modal-overlay { align-items: flex-end; }
 }

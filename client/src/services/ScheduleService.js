@@ -8,7 +8,9 @@ const ScheduleService = {
      */
     getScheduleSets: async (journalId) => {
         // On passe le journalId en paramètre de requête pour filtrer côté serveur
-        const response = await axios.get(`/schedule/sets?journalId=${journalId}`);
+        const response = await axios.get(`/schedule/sets`, {
+            params: { journalId }
+        });
         return response.data;
     },
 
@@ -27,7 +29,7 @@ const ScheduleService = {
 
     getScheduleIdByDate: async (date) => {
         const response = await axios.get(`/schedule/active-set?date=${date}`);
-        return response.data; // Retourne { success: true, id: ... }
+        return response.data;
     },
 
     /**
