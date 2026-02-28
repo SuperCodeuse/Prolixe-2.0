@@ -305,8 +305,6 @@ const JournalView = ({ journalId, isArchived }) => {
             const endDate = format(addDays(currentWeekStart, 4), 'yyyy-MM-dd');
             const response = await JournalService.getAssignments(journalId, startDate, endDate);
             const data = response?.data?.data || response?.data || [];
-
-            console.log("data : ", data);
             setAssignments(data);
         } catch {
             setAssignments([]);
@@ -400,7 +398,8 @@ const JournalView = ({ journalId, isArchived }) => {
 
         // Déterminer le créneau suivant pour la fonction "Copier sur le créneau suivant"
         const daySlots = (slotsByDay[day.dayIndex] || []);
-        const idx = daySlots.findIndex(s => s.id === slot.id);
+        const currentSlotId = slot.slot_id || slot.id;
+        const idx = daySlots.findIndex(s => (s.slot_id || s.id) === currentSlotId);
         const next = idx > -1 && idx + 1 < daySlots.length ? daySlots[idx + 1] : null;
         setNextSlot(next && next.class_id === slot.class_id && next.subject === slot.subject ? next : null);
 
@@ -557,7 +556,6 @@ const JournalView = ({ journalId, isArchived }) => {
                 success('Assignation "Interro" créée.');
             } catch (err) { showError('Erreur : ' + err.message); }
         } else {
-            console.log("assignemnts : ", assignments);
             const existing = assignments.find(a =>
                 String(a.schedule_slot_id) === String(selectedSlot.id || selectedSlot.slot_id) &&
                 a.due_date === selectedDay.key &&
@@ -575,6 +573,32 @@ const JournalView = ({ journalId, isArchived }) => {
             }
         }
     };
+
+    // -----------------------------------------------------------------------
+    // Validate planned work
+    // -----------------------------------------------------------------------
+
+    const handleValidatePlannedWork = () => {
+        if (isArchived || !journalForm.planned_work) return;
+
+        const updatedForm = {
+            ...journalForm,
+            actual_work: journalForm.planned_work // On copie le texte
+        };
+
+        setJournalForm(updatedForm);
+
+        // Sauvegarde immédiate
+        debouncedSave({
+            id: currentEntryId,
+            schedule_slot_id: selectedSlot.id || selectedSlot.slot_id,
+            date: selectedDay.key,
+            ...updatedForm
+        });
+
+        success('Travail prévu validé et copié dans le travail effectué.');
+    };
+
     // -----------------------------------------------------------------------
     // Copy to next slot
     // -----------------------------------------------------------------------
@@ -584,8 +608,19 @@ const JournalView = ({ journalId, isArchived }) => {
         setCopyToNextSlot(checked);
         if (checked && nextSlot) {
             try {
-                const nex = getSession(nextSlot.id, selectedDay.key);
-                await JournalService.upsertJournalEntry({ id: nex?.id || null, schedule_slot_id: nextSlot.id, date: selectedDay.key, journal_id: journalId, ...journalForm });
+                const nextId = nextSlot.slot_id || nextSlot.id;
+
+                if (!nextId) {
+                    throw new Error("L'identifiant du créneau suivant est introuvable.");
+                }
+                const payload = {
+                    ...journalForm,               // Données textuelles (planned, actual, notes)
+                    journal_id: journalId,        // ID du carnet
+                    date: selectedDay.key,        // Date du jour
+                    schedule_slot_id: nextId      // L'ID du créneau cible (forcé à la fin)
+                };
+
+                await JournalService.upsertJournalEntry(payload);
                 await loadSessions();
                 success('Notes copiées sur le créneau suivant.');
             } catch (err) { showError('Erreur : ' + err.message); setCopyToNextSlot(false); }
@@ -693,7 +728,7 @@ const JournalView = ({ journalId, isArchived }) => {
             >
                 <div className="slot-meta">
                 <span className="slot-time">
-                    {slot.time_label ? slot.time_label.split('-')[0] : slot.start_time?.substring(0, 5)}
+                    {slot.time_label}
                 </span>
                     <span className="slot-badge" style={{ backgroundColor: `${subjectColor}15`, color: subjectColor }}>
                     {slot.class_name || '—'}
@@ -919,7 +954,21 @@ const JournalView = ({ journalId, isArchived }) => {
                             {courseStatus === 'given' && (
                                 <>
                                     <div className="form-group">
-                                        <label>Travail effectué</label>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.45rem' }}>
+                                            <label style={{ margin: 0 }}>Travail effectué</label>
+
+                                            {/* BOUTON VALIDER LE PRÉVU (Modification 2) */}
+                                            {journalForm.planned_work && !journalForm.actual_work && (
+                                                <button
+                                                    type="button"
+                                                    className="btn-validate-planned"
+                                                    onClick={handleValidatePlannedWork}
+                                                    title="Copier le travail prévu ici"
+                                                >
+                                                    <CheckSquare size={14} /> Effectué
+                                                </button>
+                                            )}
+                                        </div>
                                         <textarea
                                             value={journalForm.actual_work}
                                             onChange={e => handleFormChange('actual_work', e.target.value)}
@@ -944,8 +993,15 @@ const JournalView = ({ journalId, isArchived }) => {
                                     </div>
                                     {nextSlot && !isArchived && (
                                         <div className="form-group checkbox-group">
-                                            <input type="checkbox" id="copyNext" checked={copyToNextSlot} onChange={handleCopyToNextSlotChange} />
-                                            <label htmlFor="copyNext">Copier sur le créneau suivant ({nextSlot.start_time?.substring(0, 5)})</label>
+                                            <input
+                                                type="checkbox"
+                                                id="copyNext"
+                                                checked={copyToNextSlot}
+                                                onChange={handleCopyToNextSlotChange}
+                                            />
+                                            <label htmlFor="copyNext">
+                                                Étendre aux deux heures {nextSlot.start_time?.substring(0, 5)}
+                                            </label>
                                         </div>
                                     )}
                                 </>
