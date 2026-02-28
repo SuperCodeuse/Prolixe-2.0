@@ -135,6 +135,14 @@ $radius-xl:     1.25rem;
   p { font-size: 1rem; }
 }
 
+.no-courses-day {
+  padding: 12px;
+  text-align: center;
+  color: var(--text-muted, #aaa);
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
 // ── Journal view ─────────────────────────────────────────────
 .journal-view {
   display: flex;
@@ -291,10 +299,382 @@ $radius-xl:     1.25rem;
 }
 
 // ── Days grid ────────────────────────────────────────────────
+/* ============================================================
+   Journal.scss — Registre de Classe Professionnel
+   Design : Dark Refined / Teal & Cyan Accents
+   ============================================================ */
+
+@import '../../App.scss';
+@import './journal_mobile.scss';
+
+// ── Variables & Tokens ───────────────────────────────────────
+$teal:          #0d9488;
+$teal-light:    #14b8a6;
+$teal-dim:      rgba(13, 148, 136, 0.15);
+$teal-glow:     rgba(13, 148, 136, 0.35);
+$cyan:          #22d3ee;
+$cyan-dim:      rgba(34, 211, 238, 0.12);
+$red:           #ef4444;
+$red-dim:       rgba(239, 68, 68, 0.12);
+$amber:         #f59e0b;
+$amber-dim:     rgba(245, 158, 11, 0.12);
+$violet:        #8b5cf6;
+$violet-dim:    rgba(139, 92, 246, 0.12);
+$green:         #22c55e;
+
+$surface-0:     #0a0e17;
+$surface-1:     #111827;
+$surface-2:     #1a2235;
+$surface-3:     #232f42;
+$border:        rgba(255, 255, 255, 0.07);
+$border-light:  rgba(255, 255, 255, 0.12);
+
+$text-primary:  #f1f5f9;
+$text-secondary:#94a3b8;
+$text-muted:    #64748b;
+
+$radius-md:     0.625rem;
+$radius-lg:     1rem;
+$radius-xl:     1.25rem;
+
+// ── Animations ───────────────────────────────────────────────
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+// ── Root Container ───────────────────────────────────────────
+.journal-container {
+  min-height: 100vh;
+  background: $surface-0;
+  padding: 2rem;
+  animation: fadeSlideIn 0.4s ease-out both;
+  background-image:
+          linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+// ── Header & Navigation ──────────────────────────────────────
+.journal-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid $border;
+
+  .journal-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    svg { color: $teal-light; }
+    h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, $text-primary 60%, $teal-light);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin: 0;
+    }
+  }
+}
+
+.journal-controls {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1rem 1.25rem;
+  background: $surface-2;
+  border: 1px solid $border;
+  border-radius: $radius-lg;
+  margin-bottom: 2rem;
+
+  .week-navigation {
+    display: flex;
+    gap: 0.35rem;
+
+    .nav-btn, .today-btn {
+      height: 36px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .nav-btn {
+      width: 36px;
+      background: $surface-3;
+      border: 1px solid $border;
+      color: $text-secondary;
+      &:hover:not(:disabled) { color: $teal-light; border-color: $teal; background: $teal-dim; }
+      &:disabled { opacity: 0.3; cursor: not-allowed; }
+    }
+
+    .today-btn {
+      padding: 0 1rem;
+      background: $teal;
+      border: none;
+      color: white;
+      font-weight: 600;
+      font-size: 0.85rem;
+      &:hover { background: $teal-light; transform: translateY(-1px); }
+    }
+  }
+
+  .current-range {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: $text-primary;
+    font-weight: 500;
+    font-size: 0.9rem;
+    svg { color: $teal; }
+  }
+}
+
+// ── Grille des Jours ─────────────────────────────────────────
 .days-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.day-column {
+  display: flex;
+  flex-direction: column;
   gap: 1rem;
+  animation: fadeSlideIn 0.3s ease both;
+
+  .day-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.75rem;
+    background: $surface-2;
+    border: 1px solid $border;
+    border-radius: $radius-md;
+
+    .day-name {
+      text-transform: uppercase;
+      font-size: 0.65rem;
+      color: $teal-light;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+    }
+    .day-date {
+      font-size: 1.15rem;
+      color: $text-primary;
+      font-weight: 800;
+    }
+  }
+
+  .day-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  &.is-holiday-day .day-header {
+    border-color: rgba($amber, 0.3);
+    .day-name { color: $amber; }
+  }
+}
+
+// ── La SlotCard (Journal Slot) ────────────────────────────────
+.journal-slot {
+  position: relative;
+  background: $surface-2;
+  border: 1px solid $border;
+  border-left: 4px solid var(--class-color, $teal);
+  border-radius: $radius-md;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+
+  &:hover {
+    background: $surface-3;
+    transform: translateY(-3px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
+    border-color: rgba(255,255,255,0.15);
+  }
+
+  .slot-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .slot-time {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: $text-muted;
+      letter-spacing: 0.02em;
+    }
+
+    .slot-badge {
+      font-size: 0.65rem;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+  }
+
+  .slot-content {
+    .slot-subject {
+      font-size: 1rem;
+      font-weight: 700;
+      color: $text-primary;
+      line-height: 1.2;
+      margin-bottom: 0.2rem;
+    }
+    .slot-room {
+      font-size: 0.75rem;
+      color: $text-muted;
+      font-weight: 500;
+    }
+  }
+
+  .slot-footer {
+    margin-top: 0.4rem;
+    padding-top: 0.6rem;
+    border-top: 1px solid $border;
+    min-height: 24px;
+    display: flex;
+    align-items: center;
+
+    .slot-preview {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      width: 100%;
+
+      .interro-dot {
+        width: 7px;
+        height: 7px;
+        background: $violet;
+        border-radius: 50%;
+        flex-shrink: 0;
+        box-shadow: 0 0 8px rgba($violet, 0.6);
+      }
+
+      .preview-text {
+        font-size: 0.78rem;
+        color: $text-secondary;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-style: italic;
+      }
+    }
+
+    .status-tag {
+      font-size: 0.65rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      border-radius: 4px;
+      &.tag-red { background: $red-dim; color: $red; }
+      &.tag-amber { background: $amber-dim; color: $amber; }
+    }
+
+    .add-hint { font-size: 0.7rem; color: $text-muted; opacity: 0.4; }
+  }
+
+  // États Spéciaux
+  &.is-cancelled {
+    opacity: 0.7;
+    border-left-color: $red;
+    background: linear-gradient(135deg, rgba($red, 0.05), $surface-2);
+  }
+  &.is-exam { border-left-color: $amber; border-left-width: 6px; }
+  &.is-interro { border-left-color: $violet; }
+}
+
+// ── Holiday Card (Journée complète) ───────────────────────────
+.holiday-card {
+  padding: 2rem 1rem;
+  background: rgba($amber, 0.05);
+  border: 1px dashed rgba($amber, 0.3);
+  border-radius: $radius-md;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  text-align: center;
+
+  .holiday-icon { font-size: 1.5rem; }
+  .holiday-name { color: $amber; font-weight: 600; font-size: 0.85rem; }
+}
+
+// ── Modals & Forms ───────────────────────────────────────────
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.modal {
+  background: $surface-1;
+  border: 1px solid $border-light;
+  border-radius: $radius-xl;
+  width: 100%;
+  max-width: 500px;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+
+  .modal-header {
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid $border;
+    h3 { margin: 0; font-size: 1.1rem; }
+  }
+
+  .modal-body {
+    padding: 1.5rem;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+
+  .modal-footer {
+    padding: 1.25rem 1.5rem;
+    background: $surface-2;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    border-top: 1px solid $border;
+  }
+}
+
+// ── Responsive ───────────────────────────────────────────────
+@media (max-width: 768px) {
+  .journal-container { padding: 1rem; }
+  .journal-controls {
+    flex-direction: column;
+    align-items: stretch;
+    .current-range { margin-left: 0; justify-content: center; }
+  }
+  .days-grid {
+    grid-template-columns: 1fr; // Une seule colonne sur mobile
+  }
 }
 
 .day-column {

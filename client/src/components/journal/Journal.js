@@ -17,8 +17,6 @@ import { fr } from 'date-fns/locale';
 import {
     ChevronLeft,
     ChevronRight,
-    ChevronFirst,
-    ChevronLast,
     Calendar as CalendarIcon,
     Clock,
     BookOpen,
@@ -30,6 +28,7 @@ import {
     X,
     CheckSquare,
     Square,
+    MapPin
 } from 'lucide-react';
 
 import { useSchedule } from '../../hooks/useSchedule';
@@ -205,12 +204,18 @@ const JournalView = ({ journalId, isArchived }) => {
 
     const slotsByDay = useMemo(() => {
         const map = {};
-        Object.values(slots || {}).forEach(slot => {
-            const d = slot.day_of_week; // 1-5 or 0-6 depending on API
+        const allSlots = Object.values(slots || {});
+
+        allSlots.forEach(slot => {
+            const d = slot.day_of_week;
             if (!map[d]) map[d] = [];
             map[d].push(slot);
         });
-        Object.keys(map).forEach(d => map[d].sort((a, b) => (a.start_time || '').localeCompare(b.start_time || '')));
+
+        Object.keys(map).forEach(d => {
+            map[d].sort((a, b) => (a.time_label || '').localeCompare(b.time_label || ''));
+        });
+
         return map;
     }, [slots]);
 
@@ -298,7 +303,10 @@ const JournalView = ({ journalId, isArchived }) => {
     // Helper – find session for a slot + date
     // -----------------------------------------------------------------------
     const getSession = useCallback((slotId, dateKey) =>
-            sessions.find(s => s.schedule_slot_id === slotId && s.date && format(new Date(s.date), 'yyyy-MM-dd') === dateKey),
+            sessions.find(s =>
+                String(s.schedule_slot_id) === String(slotId) &&
+                s.date && format(new Date(s.date), 'yyyy-MM-dd') === dateKey
+            ),
         [sessions]);
 
     // -----------------------------------------------------------------------
@@ -586,7 +594,7 @@ const JournalView = ({ journalId, isArchived }) => {
     // Render helpers
     // -----------------------------------------------------------------------
     const renderSlotCard = (slot, day) => {
-        const entry = getSession(slot.id, day.key);
+        const entry = getSession(slot.slot_id || slot.id, day.key);
         const aw = entry?.actual_work || '';
         const isCancelled = aw === '[CANCELLED]';
         const isExam = aw === '[EXAM]';
@@ -594,62 +602,59 @@ const JournalView = ({ journalId, isArchived }) => {
         const isInterroSlot = aw.startsWith('[INTERRO]');
 
         const color = getClassColor(slot.subject, slot.class_level);
-        const borderColor = isCancelled ? 'var(--red-danger, #e05252)'
-            : (isExam || isManualHoliday) ? 'var(--accent-orange, #e09639)' : color;
+
+        // Détermination des états pour le style CSS
+        const cardStatusClass = isCancelled ? 'is-cancelled' : isExam ? 'is-exam' : isManualHoliday ? 'is-holiday-slot' : isInterroSlot ? 'is-interro' : '';
 
         let previewText = null;
-        let previewClass = '';
         if (entry && !isCancelled && !isExam && !isManualHoliday) {
             const wt = entry.actual_work || entry.planned_work;
             previewText = isInterroSlot ? wt.replace('[INTERRO]', '').trim() : wt;
-            previewClass = entry.actual_work ? 'actual-work' : 'planned-work';
         }
 
         return (
             <div
-                key={slot.id}
-                className={`journal-slot has-course${isCancelled ? ' is-cancelled' : ''}${isExam ? ' is-exam' : ''}${isManualHoliday ? ' is-holiday-slot' : ''}${isInterroSlot ? ' is-interro' : ''}`}
-                style={{ borderLeftColor: borderColor }}
+                key={slot.slot_id || slot.id}
+                className={`journal-slot ${cardStatusClass}`}
+                style={{ '--class-color': color }}
                 onClick={() => handleOpenModal(slot, day)}
             >
-                {isManualHoliday ? (
-                    <div className="status-display holiday-display">
-                        <span>🌴</span>
-                        <p className="status-label">Vacances – Férié</p>
-                        <p className="status-reason">{entry?.notes}</p>
-                    </div>
-                ) : isCancelled ? (
-                    <div className="status-display cancelled-display">
-                        <span>🚫</span>
-                        <p className="status-label">ANNULÉ</p>
-                        <p className="status-reason">{entry?.notes}</p>
-                    </div>
-                ) : isExam ? (
-                    <div className="status-display exam-display">
-                        <span>✍️</span>
-                        <p className="status-label">EXAMEN</p>
-                        <p className="status-reason">{entry?.notes}</p>
-                    </div>
-                ) : (
-                    <div className="course-summary">
-                        <div className="course-header-row">
-                            <span className="course-time">{slot.start_time?.substring(0, 5)}–{slot.end_time?.substring(0, 5)}</span>
-                            <span className="course-class-badge" style={{ backgroundColor: color + '22', color }}>{slot.class_name || slot.className || '—'}</span>
+                {/* Header de la carte : Heure et Badge Classe */}
+                <div className="slot-meta">
+                <span className="slot-time">
+                    {slot.start_time?.substring(0, 5)}
+                </span>
+                    <span className="slot-badge" style={{ backgroundColor: `${color}22`, color: color }}>
+                    {slot.class_name || '—'}
+                </span>
+                </div>
+
+                {/* Contenu principal */}
+                <div className="slot-content">
+                    <div className="slot-subject">{slot.subject}</div>
+                    {slot.room && <div className="slot-room"><MapPin size={14} /> Salle {slot.room}</div>}
+                </div>
+
+                {/* Zone de preview des notes ou Statuts spéciaux */}
+                <div className="slot-footer">
+                    {isCancelled ? (
+                        <span className="status-tag tag-red">Annulé</span>
+                    ) : isExam ? (
+                        <span className="status-tag tag-amber">Examen</span>
+                    ) : isManualHoliday ? (
+                        <span className="status-tag tag-amber">Férié</span>
+                    ) : previewText ? (
+                        <div className="slot-preview">
+                            {isInterroSlot && <span className="interro-dot"></span>}
+                            <span className="preview-text">{previewText}</span>
                         </div>
-                        <div className="course-subject">{slot.subject}</div>
-                        {slot.room && <div className="course-room">📍 {slot.room}</div>}
-                        {previewText && (
-                            <div className={`entry-preview ${previewClass}`}>
-                                {isInterroSlot && <span className="interro-badge">Interro · </span>}
-                                <span className="preview-text">{previewText}</span>
-                            </div>
-                        )}
-                    </div>
-                )}
+                    ) : (
+                        <span className="add-hint">+ Notes</span>
+                    )}
+                </div>
             </div>
         );
     };
-
     const isLoading = loadingSlots || loadingHolidays;
 
     if (isLoading) {
@@ -684,7 +689,6 @@ const JournalView = ({ journalId, isArchived }) => {
 
             {/* ---- Main content ---- */}
             <div className="journal-content">
-                {/* Weekly agenda */}
                 <div className="weekly-section">
                     <h2>Journal des cours</h2>
 
@@ -695,27 +699,32 @@ const JournalView = ({ journalId, isArchived }) => {
                         </div>
                     ) : (
                         <div className="days-grid">
-                            {weekDays.map(day => {
-                                const daySlots = (slotsByDay[day.dayIndex] || []).filter(s => s.id != null);
-                                const hasContent = daySlots.length > 0 || day.isHoliday;
-                                if (!hasContent) return null;
-
-                                return (
-                                    <div key={day.key} className={`day-column${day.isHoliday ? ' is-holiday-day' : ''}`}>
-                                        <div className="day-header">{day.label}</div>
-                                        <div className="day-body">
-                                            {day.isHoliday ? (
-                                                <div className="holiday-card">
-                                                    <span className="holiday-icon">🎉</span>
-                                                    <span className="holiday-name">{day.holidayName}</span>
-                                                </div>
-                                            ) : (
-                                                daySlots.map(slot => renderSlotCard(slot, day))
-                                            )}
+                            {weekDays
+                                .filter(day => {
+                                    const daySlots = (slotsByDay[day.dayIndex] || []).filter(s => s.slot_id != null || s.id != null);
+                                    return daySlots.length > 0 || day.isHoliday;
+                                })
+                                .map(day => {
+                                    const daySlots = (slotsByDay[day.dayIndex] || []).filter(s => s.slot_id != null || s.id != null);
+                                    return (
+                                        <div key={day.key} className={`day-column${day.isHoliday ? ' is-holiday-day' : ''}`}>
+                                            <div className="day-header">
+                                                <span className="day-name">{format(day.date, 'EEEE', { locale: fr })}</span>
+                                                <span className="day-date">{format(day.date, 'dd/MM', { locale: fr })}</span>
+                                            </div>
+                                            <div className="day-body">
+                                                {day.isHoliday ? (
+                                                    <div className="holiday-card">
+                                                        <span className="holiday-icon">🎉</span>
+                                                        <span className="holiday-name">{day.holidayName}</span>
+                                                    </div>
+                                                ) : (
+                                                    daySlots.map(slot => renderSlotCard(slot, day))
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-                                );
-                            })}
+                                    );
+                                })}
                         </div>
                     )}
                 </div>

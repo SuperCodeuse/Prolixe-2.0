@@ -14,8 +14,6 @@ export const useSchedule = (setId) => {
         setLoading(true);
         try {
             const res = await ScheduleService.getScheduleById(setId);
-            // On transforme la liste plate en objet indexé par "jour-heure"
-            // pour faciliter l'accès dans le Journal
             const formatted = {};
             (res.data || []).forEach(slot => {
                 formatted[`${slot.day_of_week}-${slot.time_slot_id}`] = slot;
