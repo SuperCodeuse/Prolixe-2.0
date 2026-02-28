@@ -28,7 +28,8 @@ import {
     X,
     CheckSquare,
     Square,
-    MapPin
+    MapPin,
+    TreePalm
 } from 'lucide-react';
 
 import { useSchedule } from '../../hooks/useSchedule';
@@ -601,9 +602,9 @@ const JournalView = ({ journalId, isArchived }) => {
         const isManualHoliday = aw === '[HOLIDAY]';
         const isInterroSlot = aw.startsWith('[INTERRO]');
 
-        const color = getClassColor(slot.subject, slot.class_level);
+        // On utilise la couleur fournie par l'API, ou une couleur par défaut
+        const subjectColor = slot.subject_color || '#0d9488';
 
-        // Détermination des états pour le style CSS
         const cardStatusClass = isCancelled ? 'is-cancelled' : isExam ? 'is-exam' : isManualHoliday ? 'is-holiday-slot' : isInterroSlot ? 'is-interro' : '';
 
         let previewText = null;
@@ -616,26 +617,28 @@ const JournalView = ({ journalId, isArchived }) => {
             <div
                 key={slot.slot_id || slot.id}
                 className={`journal-slot ${cardStatusClass}`}
-                style={{ '--class-color': color }}
+                style={{ '--subject-color': subjectColor }}
                 onClick={() => handleOpenModal(slot, day)}
             >
-                {/* Header de la carte : Heure et Badge Classe */}
                 <div className="slot-meta">
                 <span className="slot-time">
-                    {slot.start_time?.substring(0, 5)}
+                    {slot.time_label ? slot.time_label.split('-')[0] : slot.start_time?.substring(0, 5)}
                 </span>
-                    <span className="slot-badge" style={{ backgroundColor: `${color}22`, color: color }}>
+                    <span className="slot-badge" style={{ backgroundColor: `${subjectColor}15`, color: subjectColor }}>
                     {slot.class_name || '—'}
                 </span>
                 </div>
 
-                {/* Contenu principal */}
                 <div className="slot-content">
-                    <div className="slot-subject">{slot.subject}</div>
-                    {slot.room && <div className="slot-room"><MapPin size={14} /> Salle {slot.room}</div>}
+                    <div className="slot-subject">{slot.subject_name || slot.subject}</div>
+                    {slot.room && (
+                        <div className="slot-room">
+                            <MapPin size={12} strokeWidth={2.5} />
+                            <span>Salle {slot.room}</span>
+                        </div>
+                    )}
                 </div>
 
-                {/* Zone de preview des notes ou Statuts spéciaux */}
                 <div className="slot-footer">
                     {isCancelled ? (
                         <span className="status-tag tag-red">Annulé</span>
@@ -715,7 +718,7 @@ const JournalView = ({ journalId, isArchived }) => {
                                             <div className="day-body">
                                                 {day.isHoliday ? (
                                                     <div className="holiday-card">
-                                                        <span className="holiday-icon">🎉</span>
+                                                        <span className="holiday-icon"><TreePalm color={'white'} /></span>
                                                         <span className="holiday-name">{day.holidayName}</span>
                                                     </div>
                                                 ) : (
