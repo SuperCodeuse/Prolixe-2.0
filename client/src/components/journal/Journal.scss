@@ -406,6 +406,77 @@ $radius-xl:     1.25rem;
     box-shadow: 0 10px 24px rgba(0,0,0,0.4), 0 0 0 1px $border-light;
   }
 
+
+  // ── Entry preview / footer ───────────────────────────────
+  .slot-footer {
+    margin-top: 0.3rem;
+    padding-top: 0.6rem;
+    border-top: 1px solid $border;
+    display: flex;
+    align-items: center;
+    min-height: 28px;
+
+    .slot-preview {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+      font-size: 0.78rem;
+
+      .status-icon {
+        flex-shrink: 0;
+        opacity: 0.7;
+      }
+
+      .preview-text {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 1.4;
+      }
+
+      // Style pour le travail EFFECTUÉ (Actual)
+      &.is-actual {
+        color: $green;
+        font-weight: 500;
+
+        .status-icon {
+          color: $green;
+        }
+
+        .interro-label {
+          color: $violet;
+          font-weight: 700;
+        }
+      }
+
+      // Style pour le travail PRÉVU (Planned)
+      &.is-planned {
+        color: $text-muted;
+        font-style: italic;
+
+        .status-icon {
+          color: $text-muted;
+        }
+
+        // On peut ajouter une petite opacité pour simuler un état "en attente"
+        opacity: 0.8;
+      }
+    }
+
+    .status-tag {
+      font-size: 0.65rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      border-radius: 4px;
+      &.tag-red   { background: rgba($red, 0.15);   color: $red; }
+      &.tag-amber { background: rgba($amber, 0.15); color: $amber; }
+    }
+
+    .add-hint { font-size: 0.7rem; color: $text-muted; opacity: 0.4; }
+  }
+  
   // ── Slot meta row ────────────────────────────────────────
   .slot-meta,
   .course-header-row {
@@ -464,7 +535,6 @@ $radius-xl:     1.25rem;
   }
 
   // ── Entry preview / footer ───────────────────────────────
-  .slot-footer,
   .entry-preview {
     margin-top: 0.25rem;
     padding-top: 0.6rem;
@@ -498,6 +568,8 @@ $radius-xl:     1.25rem;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      color: var(--text-muted);
+      font-style: italic;
     }
 
     &.planned-work .preview-text { color: $text-muted; font-style: italic; }

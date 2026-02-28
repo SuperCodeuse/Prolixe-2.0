@@ -268,9 +268,24 @@ const JournalView = ({ journalId, isArchived }) => {
             const startDate = format(currentWeekStart, 'yyyy-MM-dd');
             const endDate = format(addDays(currentWeekStart, 4), 'yyyy-MM-dd');
             const response = await JournalService.getJournalEntries(startDate, endDate, journalId);
-            const entries = response?.data?.data || response?.data || [];
-            setSessions(entries);
-        } catch {
+
+            const rawEntries = response?.data?.data || response?.data || [];
+
+            // --- TRANSFORMATION DES DONNÉES ---
+            const mappedEntries = rawEntries.map(entry => {
+                const cleanDate = entry.entry_date.split('T')[0];
+                return {
+                    ...entry,
+                    date: cleanDate, // On crée la clé 'date' attendue par getSession
+                    planned_work: entry.content_planned, // On mappe vers le nom attendu
+                    actual_work: entry.content_done,
+                    notes: entry.homework
+                };
+            });
+
+            setSessions(mappedEntries);
+        } catch (err) {
+            console.error("Erreur chargement sessions:", err);
             setSessions([]);
         } finally {
             setLoadingSessions(false);
@@ -303,59 +318,85 @@ const JournalView = ({ journalId, isArchived }) => {
     // -----------------------------------------------------------------------
     // Helper – find session for a slot + date
     // -----------------------------------------------------------------------
-    const getSession = useCallback((slotId, dateKey) =>
-            sessions.find(s =>
-                String(s.schedule_slot_id) === String(slotId) &&
-                s.date && format(new Date(s.date), 'yyyy-MM-dd') === dateKey
-            ),
-        [sessions]);
+    const getSession = useCallback((slotId, dateKey) => {
+        if (!slotId || !dateKey) return null;
+        return sessions.find(s => {
+            const sSlotId = String(s.schedule_slot_id);
+            const targetSlotId = String(slotId);
+
+            const sessionDate = s.date || s.entry_date;
+            const sDate = sessionDate ? format(new Date(sessionDate), 'yyyy-MM-dd') : null;
+            return sSlotId === targetSlotId && sDate === dateKey;
+        });
+    }, [sessions]);
 
     // -----------------------------------------------------------------------
     // Debounced save
     // -----------------------------------------------------------------------
     const debouncedSave = useCallback((entryData) => {
-        if (isArchived) return;
-        const key = `${entryData.schedule_slot_id}-${entryData.date}`;
+        if (isArchived || !selectedSlot) return;
+
+        const slotId = entryData.schedule_slot_id || selectedSlot.slot_id || selectedSlot.id;
+        const key = `${slotId}-${entryData.date}`;
+
         setDebounceMap(prev => {
             if (prev[key]) clearTimeout(prev[key]);
             const id = setTimeout(async () => {
                 try {
-                    const saved = await JournalService.upsertJournalEntry({ ...entryData, journal_id: journalId });
-                    if (saved?.data?.id && entryData.schedule_slot_id === selectedSlot?.id) {
-                        setCurrentEntryId(saved.data.id);
+                    const payload = {
+                        ...entryData,
+                        journal_id: journalId,
+                        schedule_slot_id: slotId
+                    };
+
+                    const response = await JournalService.upsertJournalEntry(payload);
+                    const newId = response?.data?.id || response?.id;
+                    if (newId && slotId === (selectedSlot.slot_id || selectedSlot.id)) {
+                        setCurrentEntryId(newId);
                     }
-                    // Refresh sessions silently
-                    loadSessions();
+
+                    await loadSessions();
+
                 } catch (err) {
                     showError('Erreur de sauvegarde : ' + err.message);
                 }
-                setDebounceMap(p => { const n = { ...p }; delete n[key]; return n; });
+                setDebounceMap(p => {
+                    const n = { ...p };
+                    delete n[key];
+                    return n;
+                });
             }, 900);
             return { ...prev, [key]: id };
         });
     }, [isArchived, journalId, selectedSlot, loadSessions, showError]);
 
+
     // -----------------------------------------------------------------------
     // Open journal modal
     // -----------------------------------------------------------------------
     const handleOpenModal = useCallback((slot, day) => {
-        const entry = getSession(slot.id, day.key);
+        const slotId = slot.slot_id || slot.id; // Extraction de l'ID
+        const entry = getSession(slotId, day.key);
         const aw = entry?.actual_work || '';
         const status = getStatusFromActualWork(aw);
+
         setCourseStatus(status);
         setIsInterro(aw.startsWith('[INTERRO]'));
+
+        // Mise à jour du formulaire avec les données de l'entrée (ou vide par défaut)
         setJournalForm({
             planned_work: entry?.planned_work || '',
             actual_work: aw,
             notes: entry?.notes || '',
         });
+
         setCurrentEntryId(entry?.id || null);
         setSelectedSlot(slot);
         setSelectedDay(day);
         setCancelEntireDay(false);
         setCopyToNextSlot(false);
 
-        // Determine next slot (same day, same class, next time)
+        // Déterminer le créneau suivant pour la fonction "Copier sur le créneau suivant"
         const daySlots = (slotsByDay[day.dayIndex] || []);
         const idx = daySlots.findIndex(s => s.id === slot.id);
         const next = idx > -1 && idx + 1 < daySlots.length ? daySlots[idx + 1] : null;
@@ -602,15 +643,21 @@ const JournalView = ({ journalId, isArchived }) => {
         const isManualHoliday = aw === '[HOLIDAY]';
         const isInterroSlot = aw.startsWith('[INTERRO]');
 
-        // On utilise la couleur fournie par l'API, ou une couleur par défaut
         const subjectColor = slot.subject_color || '#0d9488';
-
         const cardStatusClass = isCancelled ? 'is-cancelled' : isExam ? 'is-exam' : isManualHoliday ? 'is-holiday-slot' : isInterroSlot ? 'is-interro' : '';
 
+        // Détermination du texte à afficher et de sa nature
         let previewText = null;
+        let contentType = ''; // 'actual' ou 'planned'
+
         if (entry && !isCancelled && !isExam && !isManualHoliday) {
-            const wt = entry.actual_work || entry.planned_work;
-            previewText = isInterroSlot ? wt.replace('[INTERRO]', '').trim() : wt;
+            if (entry.actual_work) {
+                previewText = isInterroSlot ? entry.actual_work.replace('[INTERRO]', '').trim() : entry.actual_work;
+                contentType = 'actual';
+            } else if (entry.planned_work) {
+                previewText = entry.planned_work;
+                contentType = 'planned';
+            }
         }
 
         return (
@@ -647,9 +694,16 @@ const JournalView = ({ journalId, isArchived }) => {
                     ) : isManualHoliday ? (
                         <span className="status-tag tag-amber">Férié</span>
                     ) : previewText ? (
-                        <div className="slot-preview">
-                            {isInterroSlot && <span className="interro-dot"></span>}
-                            <span className="preview-text">{previewText}</span>
+                        <div className={`slot-preview ${contentType === 'actual' ? 'is-actual' : 'is-planned'}`}>
+                            {contentType === 'actual' ? (
+                                <CheckSquare size={12} className="status-icon" />
+                            ) : (
+                                <Clock size={12} className="status-icon" />
+                            )}
+                            <span className="preview-text">
+                            {isInterroSlot && <span className="interro-label">Interro: </span>}
+                                {previewText}
+                        </span>
                         </div>
                     ) : (
                         <span className="add-hint">+ Notes</span>

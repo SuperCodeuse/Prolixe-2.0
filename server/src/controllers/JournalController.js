@@ -189,15 +189,14 @@ class JournalController {
         try {
             const entries = await JournalController.withConnection(async (db) => {
                 const [rows] = await db.execute(`
-                    SELECT je.*, s.day_of_week, s.start_time, s.end_time, sub.name as subject_name, c.name as class_name
+                    SELECT je.*
                     FROM JOURNAL_ENTRIES je
-                    JOIN SCHEDULES s ON je.schedule_id = s.id
-                    JOIN SUBJECTS sub ON s.subject_id = sub.id
-                    JOIN CLASSES c ON s.class_id = c.id
                     WHERE je.journal_id = ? AND je.entry_date BETWEEN ? AND ?
                 `, [journal_id, startDate, endDate]);
                 return rows;
             });
+
+            console.log("entries : ", entries);
             res.json({ success: true, data: entries });
         } catch (error) {
             JournalController.handleError(res, error, 'Erreur récupération entrées.');
@@ -205,25 +204,50 @@ class JournalController {
     }
 
     static async upsertJournalEntry(req, res) {
-        const { id, journal_id, schedule_id, entry_date, content_planned, content_done, homework } = req.body;
+        const {
+            id, // Peut être null si le front n'a pas encore reçu le nouvel ID
+            journal_id,
+            schedule_slot_id,
+            date,
+            planned_work,
+            actual_work,
+            notes
+        } = req.body;
+
         try {
             const result = await JournalController.withConnection(async (db) => {
-                if (id) {
+                const content_planned = planned_work || null;
+                const content_done = actual_work || null;
+                const homework = notes || null;
+                const entry_date = date || null;
+
+                const [existing] = await db.execute(
+                    'SELECT id FROM JOURNAL_ENTRIES WHERE journal_id = ? AND schedule_slot_id = ? AND entry_date = ?',
+                    [journal_id, schedule_slot_id, entry_date]
+                );
+
+                const targetId = id || (existing.length > 0 ? existing[0].id : null);
+
+                if (targetId) {
                     await db.execute(
                         'UPDATE JOURNAL_ENTRIES SET content_planned = ?, content_done = ?, homework = ?, entry_date = ? WHERE id = ?',
-                        [content_planned, content_done, homework, entry_date, id]
+                        [content_planned, content_done, homework, entry_date, targetId]
                     );
-                    return id;
+                    return targetId;
                 } else {
+                    // 3. Sinon, c'est vraiment une nouvelle ligne, on INSERT
+                    console.log("Nouvelle insertion réelle dans JOURNAL_ENTRIES...");
                     const [ins] = await db.execute(
-                        'INSERT INTO JOURNAL_ENTRIES (journal_id, schedule_id, entry_date, content_planned, content_done, homework) VALUES (?, ?, ?, ?, ?, ?)',
-                        [journal_id, schedule_id, entry_date, content_planned, content_done, homework]
+                        'INSERT INTO JOURNAL_ENTRIES (journal_id, schedule_slot_id, entry_date, content_planned, content_done, homework) VALUES (?, ?, ?, ?, ?, ?)',
+                        [journal_id, schedule_slot_id, entry_date, content_planned, content_done, homework]
                     );
                     return ins.insertId;
                 }
             });
+
             res.json({ success: true, data: { id: result } });
         } catch (error) {
+            console.error("Erreur SQL détaillée:", error.message);
             JournalController.handleError(res, error, 'Erreur sauvegarde entrée.');
         }
     }
