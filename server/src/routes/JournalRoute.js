@@ -23,14 +23,14 @@ router.get('/current', JournalController.getCurrentJournal);
 
 // Routes pour les entrées de journal
 router.get('/entries', JournalController.getJournalEntries);
-router.put('/entries', JournalController.upsertJournalEntry); // Upsert (créer/mettre à jour)
+router.put('/entries', JournalController.upsertJournalEntry);
 //router.delete('/entries/:id', JournalController.deleteJournalEntry);
 
 
 // Routes pour les assignations (interros/devoirs)
-/*
+
 router.get('/assignments', JournalController.getAssignments);
-router.put('/assignments', JournalController.upsertAssignment); // Upsert
-router.delete('/assignments/:id', JournalController.deleteAssignment);*/
+router.put('/assignments', JournalController.upsertAssignment);
+router.delete('/assignments/:id', JournalController.deleteAssignment);
 
 module.exports = router;

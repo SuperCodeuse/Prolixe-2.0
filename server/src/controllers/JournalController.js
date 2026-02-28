@@ -196,7 +196,6 @@ class JournalController {
                 return rows;
             });
 
-            console.log("entries : ", entries);
             res.json({ success: true, data: entries });
         } catch (error) {
             JournalController.handleError(res, error, 'Erreur récupération entrées.');
@@ -300,6 +299,103 @@ class JournalController {
             JournalController.handleError(res, error, "Erreur import");
         } finally {
             if (connection) connection.release();
+        }
+    }
+
+    static async getAssignments(req, res) {
+        const { journal_id, startDate, endDate } = req.query;
+
+        try {
+            const assignments = await JournalController.withConnection(async (db) => {
+                const [rows] = await db.execute(`
+                SELECT a.*, c.name as class_name 
+                FROM ASSIGNMENTS a
+                JOIN CLASSES c ON a.class_id = c.id
+                WHERE a.journal_id = ? AND a.due_date BETWEEN ? AND ?
+                ORDER BY a.due_date ASC
+            `, [journal_id, startDate, endDate]);
+                return rows;
+            });
+            res.json({ success: true, data: assignments });
+        } catch (error) {
+            JournalController.handleError(res, error, 'Erreur récupération assignations.');
+        }
+    }
+
+    /**
+     * Crée ou met à jour une assignation
+     */
+    static async upsertAssignment(req, res) {
+        const {
+            id,
+            journal_id,
+            class_id,
+            schedule_slot_id, // Ajouté
+            subject,
+            type,
+            description,
+            due_date,
+            is_completed,
+            is_corrected
+        } = req.body;
+
+        try {
+            const result = await JournalController.withConnection(async (db) => {
+                const safeData = [
+                    class_id || null,
+                    schedule_slot_id || null, // Ajouté
+                    subject || null,
+                    type || 'Devoir',
+                    description || null,
+                    due_date || null,
+                    is_completed ? 1 : 0,
+                    is_corrected ? 1 : 0
+                ];
+
+                if (id) {
+                    await db.execute(`
+                        UPDATE ASSIGNMENTS
+                        SET class_id         = ?,
+                            schedule_slot_id = ?,
+                            subject          = ?,
+                            type             = ?,
+                            description      = ?,
+                            due_date         = ?,
+                            is_completed     = ?,
+                            is_corrected     = ?
+                        WHERE id = ?
+                    `, [...safeData, id]);
+                    return id;
+                } else {
+                    const [ins] = await db.execute(`
+                        INSERT INTO ASSIGNMENTS
+                        (journal_id, class_id, schedule_slot_id, subject, type, description, due_date, is_completed,
+                         is_corrected)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    `, [journal_id, ...safeData]);
+                    return ins.insertId;
+                }
+            });
+            res.json({success: true, data: {id: result}});
+        } catch (error) {
+            JournalController.handleError(res, error, 'Erreur sauvegarde assignation.');
+        }
+    }
+
+    /**
+     * Supprime une assignation par son ID
+     */
+    static async deleteAssignment(req, res) {
+        const { id } = req.params;
+
+        try {
+            await JournalController.withConnection(async (db) => {
+                const [result] = await db.execute('DELETE FROM ASSIGNMENTS WHERE id = ?', [id]);
+                if (result.affectedRows === 0) throw new Error('Assignation non trouvée.');
+            });
+            res.json({ success: true, message: 'Assignation supprimée.' });
+        } catch (error) {
+            JournalController.handleError(res, error, 'Erreur suppression assignation.');
         }
     }
 }

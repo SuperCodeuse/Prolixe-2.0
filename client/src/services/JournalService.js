@@ -81,17 +81,16 @@ class JournalService {
     /**
      * Récupère les devoirs et évaluations.
      */
-    static async getAssignments(journalId, classId = null, startDate = null, endDate = null) {
+    static async getAssignments(journalId, startDate = null, endDate = null) {
         if (!journalId) {
             throw new Error("journal_id est requis");
         }
 
-        const params = { journal_id: journalId };
-        if (classId) params.classId = classId;
+        const params = { journal_id: journalId, startDate, endDate};
         if (startDate) params.startDate = startDate;
         if (endDate) params.endDate = endDate;
 
-        //return ApiService.get(`${JOURNAL_API_URL}/assignments`, { params });
+        return ApiService.get(`${JOURNAL_API_URL}/assignments`, { params });
     }
 
     static async upsertAssignment(assignmentData) {

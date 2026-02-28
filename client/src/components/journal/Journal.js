@@ -305,6 +305,8 @@ const JournalView = ({ journalId, isArchived }) => {
             const endDate = format(addDays(currentWeekStart, 4), 'yyyy-MM-dd');
             const response = await JournalService.getAssignments(journalId, startDate, endDate);
             const data = response?.data?.data || response?.data || [];
+
+            console.log("data : ", data);
             setAssignments(data);
         } catch {
             setAssignments([]);
@@ -504,53 +506,75 @@ const JournalView = ({ journalId, isArchived }) => {
     // -----------------------------------------------------------------------
     // Interro toggle
     // -----------------------------------------------------------------------
+// -----------------------------------------------------------------------
+    // Interro toggle
+    // -----------------------------------------------------------------------
     const handleIsInterroChange = async (e) => {
         const checked = e.target.checked;
         setIsInterro(checked);
+
+        // Mise à jour du texte de travail effectué pour ajouter/retirer le tag [INTERRO]
         const baseWork = journalForm.actual_work.replace('[INTERRO]', '').trim();
         const newAw = checked ? `[INTERRO] ${baseWork}` : baseWork;
         const updForm = { ...journalForm, actual_work: newAw };
+
         setJournalForm(updForm);
-        debouncedSave({ id: currentEntryId, schedule_slot_id: selectedSlot.id, date: selectedDay.key, ...updForm });
+
+        // Sauvegarde immédiate de la note de cours
+        debouncedSave({
+            id: currentEntryId,
+            schedule_slot_id: selectedSlot.id || selectedSlot.slot_id,
+            date: selectedDay.key,
+            ...updForm
+        });
 
         if (checked) {
             const newAssignment = {
+                journal_id: journalId,
                 class_id: selectedSlot.class_id,
-                subject: selectedSlot.subject,
+                schedule_slot_id: selectedSlot.id || selectedSlot.slot_id,
+                subject: selectedSlot.subject_name || selectedSlot.subject,
                 type: 'Interro',
                 description: baseWork,
                 due_date: selectedDay.key,
                 is_completed: false,
                 is_corrected: false,
-                journal_id: journalId,
             };
+
             const existing = assignments.find(a =>
-                a.class_id === newAssignment.class_id &&
-                a.subject === newAssignment.subject &&
-                a.type === 'Interro' &&
-                a.due_date === newAssignment.due_date
+                String(a.schedule_slot_id) === String(selectedSlot.id || selectedSlot.slot_id) &&
+                a.due_date === selectedDay.key &&
+                a.type === 'Interro'
             );
-            if (existing) { newAssignment.id = existing.id; newAssignment.is_corrected = existing.is_corrected; }
+
+            if (existing) {
+                newAssignment.id = existing.id;
+            }
+
             try {
                 await JournalService.upsertAssignment(newAssignment);
                 await loadAssignments();
-                success('Assignation "Interro" créée ou mise à jour.');
+                success('Assignation "Interro" créée.');
             } catch (err) { showError('Erreur : ' + err.message); }
         } else {
+            console.log("assignemnts : ", assignments);
             const existing = assignments.find(a =>
-                a.class_id === selectedSlot.class_id && a.subject === selectedSlot.subject &&
-                a.type === 'Interro' && a.due_date === selectedDay.key
+                String(a.schedule_slot_id) === String(selectedSlot.id || selectedSlot.slot_id) &&
+                a.due_date === selectedDay.key &&
+                a.type === 'Interro'
             );
+
             if (existing) {
                 try {
                     await JournalService.deleteAssignment(existing.id);
                     await loadAssignments();
-                    success('Assignation "Interro" supprimée.');
-                } catch (err) { showError('Erreur : ' + err.message); }
+                    success('Assignation "Interro" retirée.');
+                } catch (err) {
+                    showError('Erreur lors du retrait : ' + err.message);
+                }
             }
         }
     };
-
     // -----------------------------------------------------------------------
     // Copy to next slot
     // -----------------------------------------------------------------------
