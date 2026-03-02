@@ -1,38 +1,52 @@
-// client/src/hooks/useSchedule.js
 import { useState, useCallback } from 'react';
 import ScheduleService from '../services/ScheduleService';
 
 export const useSchedule = (setId) => {
-    const [slots, setSlots] = useState([]);
+    const [slots, setSlots] = useState({});
+    const [availableSets, setAvailableSets] = useState([]);
     const [loading, setLoading] = useState(false);
+
+    // Utilisation du nom correct : getScheduleSets
+    const fetchAllSets = useCallback(async (journalId) => {
+        setLoading(true);
+        try {
+            // Appel avec le journalId requis par votre service
+            const data = await ScheduleService.getScheduleSets(journalId);
+            setAvailableSets(data || []);
+            return data;
+        } catch (err) {
+            console.error("Erreur sets:", err);
+            setAvailableSets([]);
+            return [];
+        } finally {
+            setLoading(false);
+        }
+    }, []);
 
     const fetchSlots = useCallback(async () => {
         if (!setId) {
-            setSlots([]);
+            setSlots({});
             return;
         }
         setLoading(true);
         try {
-            const res = await ScheduleService.getScheduleById(setId);
+            const data = await ScheduleService.getScheduleById(setId);
             const formatted = {};
-            (res.data || []).forEach(slot => {
+            // Votre service renvoie directement les données
+            let dataConstr = data.data;
+            console.log(dataConstr);
+
+            (dataConstr || []).forEach(slot => {
                 formatted[`${slot.day_of_week}-${slot.time_slot_id}`] = slot;
             });
             setSlots(formatted);
         } catch (err) {
             console.error("Erreur slots:", err);
+            setSlots({});
         } finally {
             setLoading(false);
         }
     }, [setId]);
-    const getActiveScheduleByDate = useCallback(async (date) => {
-        try {
-            const res = await ScheduleService.getScheduleIdByDate(date);
-            return res.id;
-        } catch (err) {
-            return null;
-        }
-    }, []);
 
-    return { slots, loading, fetchSlots };
+    return { slots, availableSets, loading, fetchSlots, fetchAllSets };
 };
