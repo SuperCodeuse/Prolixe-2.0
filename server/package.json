@@ -21,6 +21,7 @@
     "mssql": "^11.0.1",
     "multer": "^2.0.2",
     "mysql2": "^3.14.1",
+    "nodemailer": "^8.0.1",
     "pdfkit": "^0.17.1"
   },
   "devDependencies": {

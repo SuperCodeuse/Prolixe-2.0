@@ -1,36 +1,79 @@
 // frontend/src/services/authService.js
-import ApiService from './api'; // Votre service API centralisé
+import ApiService from './api';
 
 class AuthService {
-    static async login(username, password, rememberMe) { // Ajout du paramètre rememberMe
+    static async login(username, password, rememberMe) {
         try {
             const response = await ApiService.request('/auth/login', {
                 method: 'POST',
                 body: JSON.stringify({ username, password, rememberMe })
             }, false);
+
             if (response.success) {
-                localStorage.setItem('authToken', response.token);
-                localStorage.setItem('user', JSON.stringify(response.user));
+                // Choisir le stockage en fonction de "Rester connecté"
+                const storage = rememberMe ? localStorage : sessionStorage;
+
+                storage.setItem('authToken', response.token);
+                storage.setItem('user', JSON.stringify(response.user));
+
+                // On garde une trace du type de stockage pour le logout
+                localStorage.setItem('rememberMe', rememberMe);
             }
             return response;
         } catch (error) {
             console.error('Erreur de connexion:', error);
-            throw error; // L'erreur sera déjà le message du backend grâce à ApiService
+            throw error;
+        }
+    }
+
+    /**
+     * Envoie un email de récupération de mot de passe
+     */
+    static async sendPasswordResetEmail(email) {
+        try {
+            const response = await ApiService.request('/auth/forgot-password', {
+                method: 'POST',
+                body: JSON.stringify({ email })
+            }, false);
+            return response;
+        } catch (error) {
+            console.error('Erreur lors de la demande de reset:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Change le mot de passe (pour l'utilisateur connecté)
+     */
+    static async changePassword(currentPassword, newPassword) {
+        try {
+            return await ApiService.request('/auth/change-password', {
+                method: 'POST',
+                body: JSON.stringify({ currentPassword, newPassword })
+            }, false); // "true" car l'utilisateur doit être authentifié
+        } catch (error) {
+            console.error('Erreur changement mdp:', error);
+            throw error;
         }
     }
 
     static logout() {
+        // On nettoie les deux au cas où
         localStorage.removeItem('authToken');
         localStorage.removeItem('user');
+        localStorage.removeItem('rememberMe');
+        sessionStorage.removeItem('authToken');
+        sessionStorage.removeItem('user');
     }
 
     static getCurrentUser() {
-        const user = localStorage.getItem('user');
+        // Vérifie d'abord dans le local, puis le session
+        const user = localStorage.getItem('user') || sessionStorage.getItem('user');
         return user ? JSON.parse(user) : null;
     }
 
     static getToken() {
-        return localStorage.getItem('authToken');
+        return localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
     }
 }
 

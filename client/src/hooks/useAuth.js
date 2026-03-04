@@ -51,7 +51,33 @@ export const AuthProvider = ({ children }) => {
         }
     }, []);
 
-    const value = { user, isAuthenticated, loadingAuth, login, logout };
+    // --- NOUVELLE FONCTION AJOUTÉE ---
+    const sendPasswordResetEmail = useCallback(async (email) => {
+        try {
+            // On appelle la méthode correspondante dans ton AuthService
+            const response = await AuthService.sendPasswordResetEmail(email);
+
+            if (response.success) {
+                return { success: true, message: response.message };
+            } else {
+                throw new Error(response.message || 'Impossible d\'envoyer l\'email de récupération.');
+            }
+        } catch (error) {
+            // On propage l'erreur pour qu'elle soit attrapée par le composant Login
+            throw error;
+        }
+    }, []);
+    // ---------------------------------
+
+    // On ajoute sendPasswordResetEmail dans la valeur du contexte
+    const value = {
+        user,
+        isAuthenticated,
+        loadingAuth,
+        login,
+        logout,
+        sendPasswordResetEmail
+    };
 
     return (
         <AuthContext.Provider value={value}>
