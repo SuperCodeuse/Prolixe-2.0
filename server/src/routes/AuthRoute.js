@@ -9,5 +9,6 @@ router.post('/login', AuthController.login);
 
 // Ajout de la route mot de passe oublié (SANS verifyToken)
 router.post('/forgot-password', AuthController.forgotPassword);
+router.post('/reset-password', AuthController.resetPassword);
 
 module.exports = router;

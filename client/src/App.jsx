@@ -16,6 +16,7 @@ import CorrectionView from "./components/Correction/CorrectionView";
 import DocumentGenerator from "./components/DocumentGenerator/DocumentGenerator";
 import './App.scss';
 import ConseilDeClasse from "./components/cc/conseilClasse";
+import ResetPassword from "./components/authentification/ResetPassword";
 
 const AuthenticatedAppContent = ({ isMenuOpen, toggleMenu }) => {
     const breakpoint = 1600;
@@ -41,6 +42,7 @@ const AuthenticatedAppContent = ({ isMenuOpen, toggleMenu }) => {
                     <Route path="/document-generator" element={<DocumentGenerator />} />
                     <Route path="/settings" element={<Settings />} />
                     <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
                 </Routes>
             </main>
         </>
@@ -89,8 +91,10 @@ const App = () => {
                     navigate('/dashboard', { replace: true });
                 }
             } else {
-                if (currentPath !== '/login' && currentPath !== '/register') {
-                    navigate('./register', { replace: true });
+                if (currentPath !== '/login' &&
+                    currentPath !== '/register' &&
+                    currentPath !== '/reset-password') {
+                    navigate('/register', { replace: true });
                 }
             }
         }
@@ -112,6 +116,7 @@ const App = () => {
                 <Routes>
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
                     <Route path="*" element={<Navigate to="/register" replace />} />
                 </Routes>
             )}

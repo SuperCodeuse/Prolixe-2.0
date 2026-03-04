@@ -137,6 +137,49 @@ class AuthController {
             res.status(500).json({ success: false, message: "Erreur lors de la demande de réinitialisation." });
         }
     }
+
+    static async resetPassword(req, res) {
+        const { token, newPassword } = req.body;
+        const pool = req.pool;
+
+        if (!token || !newPassword) {
+            return res.status(400).json({ success: false, message: "Token et nouveau mot de passe requis." });
+        }
+
+        try {
+            const connection = await pool.getConnection();
+
+            // 1. Chercher l'utilisateur avec ce token et vérifier l'expiration
+            const [rows] = await connection.execute(
+                'SELECT id FROM USER WHERE reset_token = ? AND reset_token_expires > NOW()',
+                [token]
+            );
+
+            if (rows.length === 0) {
+                connection.release();
+                return res.status(400).json({ success: false, message: "Le lien est invalide ou a expiré." });
+            }
+
+            const userId = rows[0].id;
+
+            // 2. Hasher le nouveau mot de passe
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+            // 3. Mettre à jour le mot de passe et supprimer le token
+            await connection.execute(
+                'UPDATE USER SET password = ?, reset_token = NULL, reset_token_expires = NULL WHERE id = ?',
+                [hashedPassword, userId]
+            );
+
+            connection.release();
+            res.json({ success: true, message: "Votre mot de passe a été réinitialisé avec succès !" });
+
+        } catch (error) {
+            console.error('Erreur resetPassword:', error);
+            res.status(500).json({ success: true, message: "Erreur lors de la réinitialisation." });
+        }
+    }
 }
 
 module.exports = AuthController;

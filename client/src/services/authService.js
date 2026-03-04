@@ -45,14 +45,17 @@ class AuthService {
     /**
      * Change le mot de passe (pour l'utilisateur connecté)
      */
-    static async changePassword(currentPassword, newPassword) {
+    static async resetPassword(token, newPassword) {
         try {
-            return await ApiService.request('/auth/change-password', {
+            // Utilise ApiService.request comme vos autres méthodes
+            const response = await ApiService.request('/auth/reset-password', {
                 method: 'POST',
-                body: JSON.stringify({ currentPassword, newPassword })
-            }, false); // "true" car l'utilisateur doit être authentifié
+                body: JSON.stringify({ token, newPassword })
+            }, false); // false car la route est publique (l'utilisateur n'est pas connecté)
+
+            return response;
         } catch (error) {
-            console.error('Erreur changement mdp:', error);
+            console.error('Erreur lors de la réinitialisation du mdp:', error);
             throw error;
         }
     }

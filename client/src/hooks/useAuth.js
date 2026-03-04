@@ -51,6 +51,21 @@ export const AuthProvider = ({ children }) => {
         }
     }, []);
 
+    const resetPassword = useCallback(async (token, newPassword) => {
+        try {
+            const response = await AuthService.resetPassword(token, newPassword);
+
+            if (response.success) {
+                return { success: true, message: response.message };
+            } else {
+                return { success: false, message: response.message || 'Échec de la réinitialisation' };
+            }
+        } catch (error) {
+            // On attrape l'erreur du service et on la formate pour le composant
+            return { success: false, message: error.message || 'Erreur lors de la réinitialisation' };
+        }
+    }, []);
+
     // --- NOUVELLE FONCTION AJOUTÉE ---
     const sendPasswordResetEmail = useCallback(async (email) => {
         try {
@@ -74,6 +89,7 @@ export const AuthProvider = ({ children }) => {
         user,
         isAuthenticated,
         loadingAuth,
+        resetPassword,
         login,
         logout,
         sendPasswordResetEmail
