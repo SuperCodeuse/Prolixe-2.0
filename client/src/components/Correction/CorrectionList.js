@@ -7,6 +7,7 @@ import EvaluationModal from './EvaluationModal';
 import ConfirmModal from '../ConfirmModal';
 import { useToast } from '../../hooks/useToast';
 import { useJournal } from '../../hooks/useJournal';
+import { Pencil, Copy, FileDown, Trash2 } from 'lucide-react';
 import './CorrectionList.scss';
 
 const CorrectionList = () => {
@@ -180,12 +181,41 @@ const CorrectionList = () => {
                                             <div className="card-header">
                                                 <h2>{ev.title}</h2>
                                                 <div className="card-actions">
-                                                    {!isArchivedYear && <button onClick={() => handleOpenEditModal(ev)} className="btn-edit">✏️</button>}
-                                                    <button onClick={() => handleOpenCopyModal(ev)} className="btn-copy">📄</button>
-                                                    <button onClick={() => handleExportPDF(ev.id, ev.name)} className="btn-export">
-                                                        <span role="img" aria-label="pdf">📥</span>
+                                                    {!isArchivedYear && (
+                                                        <button
+                                                            onClick={() => handleOpenEditModal(ev)}
+                                                            className="btn-edit"
+                                                            title="Modifier"
+                                                        >
+                                                            <Pencil size={18} />
+                                                        </button>
+                                                    )}
+
+                                                    <button
+                                                        onClick={() => handleOpenCopyModal(ev)}
+                                                        className="btn-copy"
+                                                        title="Copier"
+                                                    >
+                                                        <Copy size={18} />
                                                     </button>
-                                                    {!isArchivedYear && <button onClick={() => handleDeleteClick(ev)} className="btn-delete">🗑️</button>}
+
+                                                    <button
+                                                        onClick={() => handleExportPDF(ev.id, ev.name)}
+                                                        className="btn-export"
+                                                        title="Exporter en PDF"
+                                                    >
+                                                        <FileDown size={18}/>
+                                                    </button>
+
+                                                    {!isArchivedYear && (
+                                                        <button
+                                                            onClick={() => handleDeleteClick(ev)}
+                                                            className="btn-delete"
+                                                            title="Supprimer"
+                                                        >
+                                                            <Trash2 size={18}/>
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </div>
                                             <Link to={`/correction/${ev.id}`} className="card-link-area">

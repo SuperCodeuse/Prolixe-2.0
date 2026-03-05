@@ -108,24 +108,28 @@ const CorrectionView = () => {
 
         const studentGrades = students.map(student => {
             const isAbsent = absentStudents.has(student.id);
-            let totalScore = 0;
+            let totalScore = 0; // On garde sum à 0
 
             const criteriaScores = criteria.map(criterion => {
                 const gradeInfo = grades[`${student.id}-${criterion.id}`] || { score: null, comment: '' };
-                if (!isAbsent && gradeInfo.score !== null) totalScore += gradeInfo.score;
+
+                // CORRECTION ICI : Parser la note en nombre avant de l'ajouter
+                if (!isAbsent && gradeInfo.score !== null && gradeInfo.score !== '') {
+                    const val = parseFloat(gradeInfo.score);
+                    if (!isNaN(val)) totalScore += val;
+                }
 
                 return {
                     criterion_id: criterion.id,
-                    score: isAbsent ? null : gradeInfo.score,
+                    score: isAbsent ? null : (gradeInfo.score === '' ? null : parseFloat(gradeInfo.score)),
                     comment: isAbsent ? null : gradeInfo.comment
                 };
             });
 
             return {
                 student_id: student.id,
-                total_score: totalScore,
+                total_score: totalScore, // Maintenant c'est un vrai nombre (ex: 7.5)
                 is_absent: isAbsent,
-                // On récupère ici le commentaire global de l'élève
                 comment: isAbsent ? null : (grades[`global-${student.id}`]?.comment || null),
                 criteria_scores: criteriaScores
             };
@@ -150,7 +154,11 @@ const CorrectionView = () => {
                 let sum = 0;
                 criteria.forEach(c => {
                     const g = grades[`${student.id}-${c.id}`];
-                    if (g?.score !== null && g?.score !== undefined) sum += g.score;
+                    // On vérifie que score n'est pas vide et on le force en float
+                    if (g?.score !== null && g?.score !== undefined && g.score !== '') {
+                        const val = parseFloat(g.score);
+                        if (!isNaN(val)) sum += val;
+                    }
                 });
                 totals[student.id] = sum;
             }
@@ -280,7 +288,10 @@ const CorrectionView = () => {
                         <div className="student-total-display">
                             <span>Total Élève :</span>
                             <strong>
-                                {isSelectedStudentAbsent ? 'ABS' : (studentTotals[selectedStudentId] || 0).toFixed(2)} / {totalMaxScore}
+                                {isSelectedStudentAbsent
+                                    ? 'ABS'
+                                    : `${Number(studentTotals[selectedStudentId] || 0).toFixed(2)} / ${totalMaxScore}`
+                                }
                             </strong>
                         </div>
                     </div>

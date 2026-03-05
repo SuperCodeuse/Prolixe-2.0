@@ -136,16 +136,21 @@
   }
 
   .evaluation-card .card-header .card-actions {
+
     .btn-edit, .btn-delete, .btn-copy, .btn-export {
       @include btn-action-base;
       font-size: 0.9rem;
       padding: 0.4rem;
-      background-color: var(--white-transparent-md);
+      color:white;
+    }
+
+    .btn-edit{
+      color:var(--accent-green);
     }
 
     .btn-edit:hover {
       background: var(--blue-transparent-sm);
-      border-color: var(--accent-blue);
+      border-color: var(--accent-green);
     }
 
     .btn-delete:hover {
@@ -166,6 +171,7 @@
         width: 1rem;
         height: 1rem;
         fill: #F5383F; /* Spécifiez la couleur de l'icône SVG ici si vous voulez la changer */
+
       }
       &:hover {
         background: rgba(var(--red-transparent-sm), 0.15);

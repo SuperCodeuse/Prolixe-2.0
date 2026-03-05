@@ -11,6 +11,7 @@
     align-items: center;
 
     .header-title {
+      text-align: left;
       .back-link { display: block; color: var(--accent-blue); text-decoration: none; font-size: 0.9rem; margin-bottom: 0.5rem; &:hover { text-decoration: underline; } }
       h1 { @include section-title-h1; font-size: 1.8rem; margin: 0; }
       p { @include section-paragraph; margin-top: 0.25rem; font-size: 0.95rem; opacity: 0.8; }
@@ -70,7 +71,7 @@
   .summary-list { display: flex; flex-direction: column; gap: 0.5rem; }
   .summary-item {
     display: flex; justify-content: space-between; padding: 0.75rem 1rem; background: var(--bg-dark-blue); border-radius: 6px; cursor: pointer;
-    &.active { border-left: 3px solid var(--accent-blue); background: rgba(var(--accent-blue-rgb), 0.1); }
+    &.active { border-left: 3px solid var(--accent-blue); background: var(--bg-dark-tertiary) ;}
   }
 }
 
