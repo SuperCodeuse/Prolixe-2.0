@@ -236,3 +236,14 @@
 .btn-secondary{
   @include btn-primary-base;
 }
+
+b {
+  font-size: 2rem;
+  color:white;
+  font-style: normal;
+  text-decoration: underline;
+}
+
+code{
+  color: var(--accent-cyan);
+}
