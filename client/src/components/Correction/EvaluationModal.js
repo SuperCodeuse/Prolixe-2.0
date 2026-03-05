@@ -153,6 +153,16 @@ const EvaluationModal = ({ isOpen, onClose, onSave, evaluation, evaluationToCopy
                             <input type="text" value={name} onChange={(e) => setName(e.target.value)} required />
                         </div>
 
+                        <div className="form-group">
+                            <label>Dossier / Catégorie</label>
+                            <input
+                                type="text"
+                                value={folder}
+                                onChange={(e) => setFolder(e.target.value)}
+                                placeholder="Ex: Interrogations, Examens..."
+                            />
+                        </div>
+
                         <div className="form-row">
                             <div className="form-group">
                                 <label>Matière</label>

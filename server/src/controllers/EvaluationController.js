@@ -73,7 +73,7 @@ exports.getEvaluationById = async (req, res) => {
 exports.createEvaluation = async (req, res) => {
     const {
         title, class_id, journal_id, subject_id, journal_entry_id,
-        evaluation_date, max_score, global_comment, criteria
+        evaluation_date, max_score, global_comment, criteria, folder
     } = req.body;
     const user_id = req.user.id;
 
@@ -87,10 +87,10 @@ exports.createEvaluation = async (req, res) => {
 
         // 1. Insertion de l'évaluation
         const [result] = await connection.query(
-            `INSERT INTO EVALUATIONS 
-            (title, class_id, journal_id, subject_id, journal_entry_id, evaluation_date, max_score, global_comment, is_completed, is_corrected) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [title, class_id, journal_id, subject_id, journal_entry_id, evaluation_date, max_score || 20, global_comment, false, false]
+            `INSERT INTO EVALUATIONS
+             (title, class_id, journal_id, subject_id, journal_entry_id, evaluation_date, max_score, global_comment, is_completed, is_corrected, folder)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [title, class_id, journal_id, subject_id, journal_entry_id, evaluation_date, max_score || 20, global_comment, false, false, folder || null]
         );
 
         const evaluationId = result.insertId;
@@ -225,7 +225,7 @@ exports.saveDetailedGrades = async (req, res) => {
  */
 exports.updateEvaluation = async (req, res) => {
     const { id } = req.params;
-    const { title, evaluation_date, max_score, global_comment, is_completed, is_corrected, criteria } = req.body;
+    const { title, evaluation_date, max_score, global_comment, is_completed, is_corrected, criteria, folder } = req.body;
     const user_id = req.user.id;
 
     const connection = await db.getConnection();
@@ -234,10 +234,10 @@ exports.updateEvaluation = async (req, res) => {
 
         const [result] = await connection.query(`
             UPDATE EVALUATIONS e
-            JOIN JOURNALS j ON e.journal_id = j.id
-            SET e.title = ?, e.evaluation_date = ?, e.max_score = ?, e.global_comment = ?, e.is_completed = ?, e.is_corrected = ?
+                JOIN JOURNALS j ON e.journal_id = j.id
+                SET e.title = ?, e.evaluation_date = ?, e.max_score = ?, e.global_comment = ?, e.is_completed = ?, e.is_corrected = ?, e.folder = ?
             WHERE e.id = ? AND j.user_id = ?
-        `, [title, evaluation_date, max_score, global_comment, is_completed, is_corrected, id, user_id]);
+        `, [title, evaluation_date, max_score, global_comment, is_completed, is_corrected, folder, id, user_id]);
 
         if (result.affectedRows === 0) throw new Error("Évaluation non trouvée.");
 
