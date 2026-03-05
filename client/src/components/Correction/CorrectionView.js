@@ -33,6 +33,15 @@ const CommentDisplay = ({ text }) => {
     );
 };
 
+// Retourne une classe CSS selon le ratio score/max
+const getScoreClass = (score, max) => {
+    if (score === null || score === undefined || score === '' || max == null || max === 0) return '';
+    const ratio = parseFloat(score) / parseFloat(max);
+    if (ratio < 0.5)  return 'score-fail';
+    if (ratio < 0.7)  return 'score-warning';
+    return 'score-success';
+};
+
 const CorrectionView = () => {
     const { evaluationId } = useParams();
     const [evaluation, setEvaluation] = useState(null);
@@ -84,7 +93,6 @@ const CorrectionView = () => {
 
     useEffect(() => { fetchData(); }, [fetchData]);
 
-    // Groupement des critères par section (ordre d'apparition préservé)
     const groupedCriteria = useMemo(() => {
         const groups = {};
         criteria.forEach(c => {
@@ -274,12 +282,13 @@ const CorrectionView = () => {
                                     const key = `${selectedStudentId}-${criterion.id}`;
                                     const gradeInfo = grades[key] || { score: '', comment: '' };
                                     const isEditing = editingCommentKey === key;
+                                    const scoreClass = isSelectedStudentAbsent ? '' : getScoreClass(gradeInfo.score, criterion.max_points);
 
                                     return (
                                         <div className={`criterion-row ${isSelectedStudentAbsent ? 'disabled' : ''}`} key={criterion.id}>
                                             <div className="criterion-main">
                                                 <span className="criterion-name">{criterion.name}</span>
-                                                <div className="grade-input-group">
+                                                <div className={`grade-input-group ${scoreClass}`}>
                                                     <input
                                                         type="number"
                                                         step="0.25"
@@ -317,7 +326,7 @@ const CorrectionView = () => {
                     <div className="navigation-footer">
                         <div className="student-total-display">
                             <span>Total :</span>
-                            <strong>
+                            <strong className={isSelectedStudentAbsent ? '' : getScoreClass(studentTotals[selectedStudentId], evaluation.max_score)}>
                                 {isSelectedStudentAbsent
                                     ? 'ABS'
                                     : `${Number(studentTotals[selectedStudentId] || 0).toFixed(2)} / ${evaluation.max_score}`
@@ -338,18 +347,22 @@ const CorrectionView = () => {
                 <div className="class-summary-panel">
                     <h3>Liste de la classe</h3>
                     <div className="summary-list">
-                        {students.map(s => (
-                            <div
-                                key={s.id}
-                                className={`summary-item ${s.id === selectedStudentId ? 'active' : ''}`}
-                                onClick={() => setSelectedStudentId(s.id)}
-                            >
-                                <span className="student-name">{s.lastname} {s.firstname}</span>
-                                <span className="student-score">
-                                    {studentTotals[s.id] === null ? 'ABS' : Number(studentTotals[s.id]).toFixed(1)}
-                                </span>
-                            </div>
-                        ))}
+                        {students.map(s => {
+                            const total = studentTotals[s.id];
+                            const scoreClass = total === null ? 'score-absent' : getScoreClass(total, evaluation.max_score);
+                            return (
+                                <div
+                                    key={s.id}
+                                    className={`summary-item ${s.id === selectedStudentId ? 'active' : ''}`}
+                                    onClick={() => setSelectedStudentId(s.id)}
+                                >
+                                    <span className="student-name">{s.lastname} {s.firstname}</span>
+                                    <span className={`student-score ${scoreClass}`}>
+                                        {total === null ? 'ABS' : Number(total).toFixed(1)}
+                                    </span>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             </div>

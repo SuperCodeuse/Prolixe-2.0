@@ -383,3 +383,79 @@ code{
     }
   }
 }
+
+// =============================================
+// COULEURS DE SCORE — à ajouter à la fin de CorrectionView.scss
+// =============================================
+
+// Variables de couleur
+$score-fail-color:    #ff6b6b;
+$score-fail-bg:       rgba(255, 107, 107, 0.12);
+$score-fail-border:   rgba(255, 107, 107, 0.35);
+
+$score-warning-color: #ffd43b;
+$score-warning-bg:    rgba(255, 212, 59, 0.10);
+$score-warning-border:rgba(255, 212, 59, 0.35);
+
+$score-success-color: #51cf66;
+$score-success-bg:    rgba(81, 207, 102, 0.10);
+$score-success-border:rgba(81, 207, 102, 0.35);
+
+// --- Dans le grade-input-group (critères) ---
+.grade-input-group {
+  transition: border-color 0.25s, background 0.25s;
+
+  &.score-fail {
+    border-color: $score-fail-border;
+    background: $score-fail-bg;
+    input { color: $score-fail-color; }
+    .max-points { color: rgba($score-fail-color, 0.6); }
+  }
+  &.score-warning {
+    border-color: $score-warning-border;
+    background: $score-warning-bg;
+    input { color: $score-warning-color; }
+    .max-points { color: rgba($score-warning-color, 0.6); }
+  }
+  &.score-success {
+    border-color: $score-success-border;
+    background: $score-success-bg;
+    input { color: $score-success-color; }
+    .max-points { color: rgba($score-success-color, 0.6); }
+  }
+}
+
+// --- Dans le footer (total élève courant) ---
+.student-total-display strong {
+  transition: color 0.25s;
+  &.score-fail    { color: $score-fail-color; }
+  &.score-warning { color: $score-warning-color; }
+  &.score-success { color: $score-success-color; }
+}
+
+// --- Dans la liste latérale ---
+.summary-item .student-score {
+  font-weight: 700;
+  font-family: 'Fira Code', monospace;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  transition: all 0.25s;
+
+  &.score-fail {
+    color: $score-fail-color;
+    background: $score-fail-bg;
+  }
+  &.score-warning {
+    color: $score-warning-color;
+    background: $score-warning-bg;
+  }
+  &.score-success {
+    color: $score-success-color;
+    background: $score-success-bg;
+  }
+  &.score-absent {
+    color: var(--text-muted);
+    font-style: italic;
+  }
+}
