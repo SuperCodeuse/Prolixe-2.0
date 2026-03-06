@@ -38,11 +38,11 @@ const createHeader = (title, className, date, isFirstPage) => `
     </div>`;
 
 const createStudentInfo = (student) => `
-    <div style="background: ${student.isAbsent ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' : 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.9) 100%)'}; padding: 15px 20px; border-radius: 8px; margin-bottom: 15px; color: white;">
+    <div style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.9) 100%); padding: 15px 20px; border-radius: 8px; margin-bottom: 15px; color: white;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <div>
                 <h2 style="font-size: 18px; margin: 0;">${escapeHtml(student.lastname)} ${escapeHtml(student.firstname)}</h2>
-                ${student.isAbsent ? '<p style="margin: 4px 0 0 0; font-weight: bold; font-size: 12px;">ÉLÈVE ABSENT</p>' : ''}
+                ${student.isAbsent ? '<p style="margin: 4px 0 0 0; font-weight: bold; font-size: 12px; color: #ef4444">ÉLÈVE ABSENT</p>' : ''}
             </div>
             <div style="text-align: right;">
                 <div style="font-size: 22px; font-weight: 700;">${student.isAbsent ? '-' : Number(student.totalScore).toFixed(1)} / ${student.totalMaxScore}</div>
