@@ -142,9 +142,32 @@ const CorrectionList = () => {
         const loadingToastId = info(`Exportation de "${evaluationName}" en cours...`, 60000);
 
         try {
-            let { data } = await getEvaluationForGrading(evaluationId);
-            const { evaluation, students, criteria, grades } = data.data;
-            await generateEvaluationPDF(evaluation, students, criteria, grades);
+            const response = await getEvaluationForGrading(evaluationId);
+            const { evaluation, students, criteria, grades: globalGrades, criteriaGrades } = response.data.data;
+
+            // --- Transformation des données pour le PDF ---
+            // On recrée l'objet de "mapping" exactement comme dans ton useEffect de CorrectionView
+            const gradesObject = {};
+
+            // 1. On mappe les notes des critères (scores individuels)
+            criteriaGrades.forEach(cg => {
+                gradesObject[`${cg.student_id}-${cg.criterion_id}`] = {
+                    score: cg.score_obtained,
+                    comment: cg.comment || '',
+                };
+            });
+
+            // 2. On mappe les données globales (absences et commentaires de bilan)
+            globalGrades.forEach(g => {
+                gradesObject[`global-${g.student_id}`] = {
+                    comment: g.comment || '',
+                    is_absent: !!g.is_absent // On s'assure que c'est un booléen
+                };
+            });
+
+            // Appel de la génération avec l'objet formaté
+            await generateEvaluationPDF(evaluation, students, criteria, gradesObject);
+
             removeToast(loadingToastId);
             success('PDF exporté avec succès !');
         } catch (err) {
