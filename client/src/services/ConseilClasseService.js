@@ -2,22 +2,19 @@ import ApiService from '../api/axiosConfig';
 
 const API_BASE_URL = '/conseilDeClasse';
 
-/**
- * Récupère les données du conseil pour tous les élèves d'une classe.
- */
-export const getConseilDataForClass = async (classId) => {
+// --- Gestion des Sessions ---
+export const getSessions = (journalId) =>
+    ApiService.get(`${API_BASE_URL}/sessions/${journalId}`);
 
-    if (!classId) {
-        return { success: true, data: [] };
-    }
-    // Utiliser ApiService.get avec le chemin complet
-    return ApiService.get(`${API_BASE_URL}/${classId}`);
-};
+export const createSession = (journalId, libelle) =>
+    ApiService.post(`${API_BASE_URL}/sessions`, { journal_id: journalId, libelle });
 
-/**
- * Sauvegarde les notes et/ou la décision pour un étudiant.
- */
-export const saveStudentConseil = async (studentId, data) => {
-    if (!studentId) return;
-    return ApiService.put(`${API_BASE_URL}/student/${studentId}`, data);
-};
+export const deleteSession = (id) =>
+    ApiService.delete(`${API_BASE_URL}/sessions/${id}`);
+
+// --- Gestion des Données Élèves ---
+export const getConseilDataBySession = (sessionId, classId) =>
+    ApiService.get(`${API_BASE_URL}/data/${sessionId}/${classId}`);
+
+export const saveStudentConseil = (sessionId, studentId, data) =>
+    ApiService.put(`${API_BASE_URL}/student/${sessionId}/${studentId}`, data);

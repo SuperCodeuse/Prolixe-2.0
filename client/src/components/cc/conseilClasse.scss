@@ -1,138 +1,234 @@
-@import '../../App.scss';
+// src/components/cc/conseilClasse.scss
+@import '../../App';
 
-// --- Block: conseil-de-classe ---
-// Le conteneur principal de la page
-
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.75;
-  }
-}
-
-.saving-indicator {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.3em 0.8em;
-  border-radius: 16px; // Bords très arrondis pour un effet "pilule"
-  font-size: 0.875em;   // Légèrement plus petit que le texte environnant
-  font-weight: 600;     // Semi-gras pour la lisibilité
-  white-space: nowrap;  // Empêche le badge de passer à la ligne
-  transition: all 0.3s ease-in-out;
-
-  // --- Style par défaut : État "Sauvegarde en cours" ---
-  background-color: #e7f3fe; // Bleu clair et doux
-  color: #0b6bcb;            // Bleu foncé pour le texte
-  animation: pulse 2s infinite ease-in-out; // Animation de pulsation subtile
-
-  // --- Modificateur pour l'état de succès ---
-  &.saved {
-    background-color: #e6f4ea; // Vert pastel
-    color: #1e7e34;            // Vert foncé
-    animation: none;           // On arrête l'animation de pulsation
-  }
-
-  // --- Modificateur pour l'état d'erreur ---
-  &.error {
-    background-color: #fdecea; // Rouge/rose très clair
-    color: #d93025;            // Rouge vif mais lisible
-    animation: none;           // On arrête aussi l'animation
-  }
-}
-.btn-select{
-  background-color: var(--accent-blue) !important;
-}
 .conseil-de-classe {
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --accent-blue: #3b82f6;
+  --accent-red: #ef4444;
+  --accent-green: #10b981;
+  --bg-input: rgba(0, 0, 0, 0.2);
+
+  background: var(--bg-dark-secondary);
+  border-radius: 24px;
   padding: 2rem;
-  background-color: #f9f9f9;
-  border-radius: 8px;
+  color: #f1f5f9;
+  min-height: 500px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
 
-  // --- Element: header ---
-  &__header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap; // Permet le passage à la ligne sur mobile
-    gap: 1rem;
-    margin-bottom: 1rem;
-  }
+  // --- Header & Sélecteurs ---
+  .page-header {
+    margin-bottom: 2.5rem;
 
-  &__content {
-    margin-top: 1.5rem;
-  }
-}
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
 
-// Styles partagés pour les en-têtes de page
-.page-header {
-  border-bottom: 2px solid #eee;
-  padding-bottom: 1rem;
+      h2 {
+        margin: 0;
+        font-size: 1.6rem;
+        font-weight: 700;
+        background: linear-gradient(to right, #fff, #94a3b8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+    }
 
-  h2 {
-    color: #333;
-    margin: 0; // On retire la marge par défaut pour mieux gérer l'alignement
-  }
-}
+    .selectors-container {
+      display: flex;
+      gap: 1.5rem;
+      background: var(--glass-bg);
+      padding: 1.2rem;
+      border-radius: 18px;
+      border: 1px solid var(--glass-border);
 
-.student-table {
-  width: 100%;
-  border-collapse: collapse;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      .input-group {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
 
-  th, td {
-    padding: 12px 15px;
-    text-align: left;
-    border-bottom: 1px solid #ddd;
-  }
+        label {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 0.85rem;
+          color: #94a3b8;
+          font-weight: 500;
+        }
 
-  th {
-    background-color: #f2f2f2;
-    font-weight: 600;
-    color: #555;
-  }
+        select {
+          background: var(--bg-input);
+          border: 1px solid var(--glass-border);
+          color: white;
+          padding: 0.7rem;
+          border-radius: 10px;
+          outline: none;
+          cursor: pointer;
+          transition: all 0.2s;
 
-  &__row {
-    &:hover {
-      background-color: #f1f1f1;
+          &:focus { border-color: var(--accent-blue); }
+          option { background: #1e293b; color: white; }
+        }
+      }
     }
   }
 
-  textarea, select {
+  // --- Gestionnaire de Sessions (Style ScheduleManager) ---
+  .session-manager-view {
+    animation: fadeIn 0.4s ease;
+
+    h3 { margin-bottom: 1.5rem; color: #cbd5e1; }
+
+    .add-session-form {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+
+      input {
+        flex: 1;
+        background: var(--bg-input);
+        border: 1px solid var(--glass-border);
+        padding: 0.8rem 1.2rem;
+        border-radius: 12px;
+        color: white;
+        outline: none;
+        &:focus { border-color: var(--accent-blue); }
+      }
+    }
+
+    .schedule-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1rem;
+    }
+
+    .schedule-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      padding: 1rem;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      transition: transform 0.2s;
+
+      &:hover { transform: translateY(-3px); background: rgba(255, 255, 255, 0.05); }
+
+      .card-index {
+        background: rgba(59, 130, 246, 0.1);
+        color: var(--accent-blue);
+        padding: 5px 10px;
+        border-radius: 8px;
+        font-weight: bold;
+        font-size: 0.8rem;
+      }
+
+      .card-info { flex: 1; font-weight: 500; }
+
+      .action-btn.delete {
+        background: rgba(239, 68, 68, 0.1);
+        border: none;
+        color: var(--accent-red);
+        padding: 8px;
+        border-radius: 8px;
+        cursor: pointer;
+        &:hover { background: var(--accent-red); color: white; }
+      }
+    }
+  }
+
+  // --- Tableau des Élèves (Dark Glass Edition) ---
+  .student-table {
     width: 100%;
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    background-color: rgba(224, 229, 244, 0.63) !important;
-    color: black;
-    transition: border-color 0.2s ease-in-out;
+    border-collapse: separate;
+    border-spacing: 0 8px;
+    margin-top: 1rem;
 
-    &:focus {
-      border-color: #007bff; // Couleur de focus (à adapter)
-      outline: none;
-      box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+    th {
+      padding: 1rem;
+      text-align: left;
+      color: #64748b;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
     }
+
+    td {
+      padding: 1rem;
+      background: var(--glass-bg);
+      border-top: 1px solid var(--glass-border);
+      border-bottom: 1px solid var(--glass-border);
+
+      &:first-child { border-left: 1px solid var(--glass-border); border-radius: 14px 0 0 14px; }
+      &:last-child { border-right: 1px solid var(--glass-border); border-radius: 0 14px 14px 0; }
+    }
+
+    textarea, select {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid var(--glass-border);
+      color: #f1f5f9;
+      padding: 0.6rem;
+      border-radius: 8px;
+      outline: none;
+      transition: all 0.2s;
+
+      &:focus { border-color: var(--accent-blue); background: rgba(0, 0, 0, 0.4); }
+    }
+
+    textarea { min-height: 80px; resize: none; font-family: inherit; font-size: 0.9rem; }
   }
 
-  textarea {
-    min-height: 60px;
-    resize: vertical;
+  // --- Indicateur de Sauvegarde ---
+  .saving-indicator {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--accent-blue);
+
+    &.saved { background: rgba(16, 185, 129, 0.1); color: var(--accent-green); }
+    &.error { background: rgba(239, 68, 68, 0.1); color: var(--accent-red); }
+  }
+
+  .placeholder-text {
+    text-align: center;
+    padding: 4rem;
+    color: #64748b;
+    font-style: italic;
+  }
+
+  // --- Boutons ---
+  .add-glass-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    color: white;
+    padding: 0.6rem 1.2rem;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s;
+    &:hover { background: var(--accent-blue); border-color: var(--accent-blue); }
+  }
+
+  .confirm-btn {
+    background: var(--accent-blue);
+    color: white;
+    border: none;
+    padding: 0.8rem 1.5rem;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    &:hover { opacity: 0.9; transform: translateY(-1px); }
   }
 }
 
-// --- Styles utilitaires (peuvent être dans un fichier séparé) ---
-.error-message {
-  color: #d9534f;
-  background-color: #f2dede;
-  border: 1px solid #ebccd1;
-  padding: 15px;
-  border-radius: 4px;
-  margin: 1rem 0;
-}
-
-.placeholder-text {
-  text-align: center;
-  padding: 3rem;
-  color: #666;
-  font-style: italic;
-}
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
