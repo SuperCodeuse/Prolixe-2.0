@@ -36,10 +36,16 @@ const EvaluationModal = ({ isOpen, onClose, onSave, evaluation, evaluationToCopy
         class_id: '',
         subject_id: '',
         evaluation_date: new Date().toISOString().split('T')[0],
-        max_score: 20,
         folder: '',
         criteria: []
     });
+
+    const totalMaxScore = useMemo(() => {
+        return formData.criteria.reduce((sum, criterion) => {
+            const points = parseFloat(criterion.max_points) || 0;
+            return sum + points;
+        }, 0);
+    }, [formData.criteria]);
 
     const [customSectionFlags, setCustomSectionFlags] = useState({});
 
@@ -184,8 +190,12 @@ const EvaluationModal = ({ isOpen, onClose, onSave, evaluation, evaluationToCopy
     }, []);
 
     const handleSave = useCallback(() => {
-        onSave({ ...formData, journal_id: currentJournal.id });
-    }, [formData, currentJournal, onSave]);
+        onSave({
+            ...formData,
+            max_score: totalMaxScore, // On ajoute le total calculé ici
+            journal_id: currentJournal.id
+        });
+    }, [formData, totalMaxScore, currentJournal, onSave]);
 
     const criteriaIds = useMemo(() => formData.criteria.map(c => c.tempId), [formData.criteria]);
 
