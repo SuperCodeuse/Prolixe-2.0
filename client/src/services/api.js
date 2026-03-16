@@ -2,7 +2,8 @@
 
 import {useAuth} from "../hooks/useAuth";
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+//const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://217.154.117.102/api';
 
 class ApiService {
 static async request(endpoint, options = {}, requireAuth = true) {
