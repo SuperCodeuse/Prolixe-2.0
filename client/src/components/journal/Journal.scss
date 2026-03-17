@@ -835,6 +835,8 @@ $radius-xl:     1.25rem;
   overflow: hidden;
   box-shadow: 0 30px 64px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04);
   animation: fadeSlideIn 0.25s ease both;
+  position: fixed;
+  top: 8rem;
 
   &::before {
     content: '';
