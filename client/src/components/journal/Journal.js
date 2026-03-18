@@ -166,6 +166,7 @@ const JournalView = ({ journalId, isArchived }) => {
     // --- debounce map ---
     const [debounceMap, setDebounceMap] = useState({});
 
+
     // -----------------------------------------------------------------------
     // Compute journal navigation bounds from holidays
     // -----------------------------------------------------------------------
@@ -182,6 +183,24 @@ const JournalView = ({ journalId, isArchived }) => {
             };
         } catch { return null; }
     }, [holidays]);
+
+    useEffect(() => {
+        console.log("Journal bounds:", journalBounds);
+        if (journalBounds && !loadingHolidays) {
+            const today = new Date();
+            // On vérifie si aujourd'hui est dans l'intervalle du journal (avec marge d'une semaine)
+            const isTodayInJournal = isAfter(today, journalBounds.start) &&
+                isBefore(today, addDays(journalBounds.end, 7));
+
+            if (!isTodayInJournal) {
+                // On se positionne sur le début de l'année scolaire du journal
+                setCurrentDate(journalBounds.start);
+            } else {
+                // On reste sur aujourd'hui
+                setCurrentDate(today);
+            }
+        }
+    }, [journalId, journalBounds, loadingHolidays]);
 
     const isPrevDisabled = !journalBounds || !isAfter(currentWeekStart, journalBounds.start);
     const isNextDisabled = !journalBounds || !isBefore(currentWeekStart, journalBounds.end);
