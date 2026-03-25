@@ -5,7 +5,7 @@ import { useSchoolYears } from '../../hooks/useSchoolYear';
 import { useToast } from '../../hooks/useToast';
 import ConfirmModal from '../ConfirmModal';
 import JournalService from '../../services/JournalService';
-import { BookMarked } from 'lucide-react';
+import { BookMarked, Download } from 'lucide-react';
 import './JournalManager.scss';
 
 const JournalManager = () => {
@@ -18,6 +18,7 @@ const JournalManager = () => {
         archiveJournal,
         deleteArchivedJournal,
         clearJournal,
+        exportJournal,
         loading: journalLoading,
         loadAllJournals,
     } = useJournal();
@@ -43,6 +44,16 @@ const JournalManager = () => {
     const otherActiveJournals = useMemo(() =>
             activeJournals.filter(j => j.id !== currentJournal?.id),
         [activeJournals, currentJournal]);
+
+    const handleExport = async (id, name) => {
+        try {
+            const fileName = `export_${name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.json`;
+            await JournalService.exportJournal(id, fileName);
+            success('Exportation réussie !');
+        } catch (err) {
+            showError("Échec de l'exportation.");
+        }
+    };
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
@@ -106,6 +117,14 @@ const JournalManager = () => {
                     {hasEntries && <small>{journal.entries_count} entrée(s)</small>}
                 </div>
                 <div className="journal-actions">
+                    <button
+                        onClick={() => handleExport(journal.id, journal.name)}
+                        className="btn-export"
+                        title="Exporter les données"
+                    >
+                        <Download size={18} />
+                    </button>
+
                     {isSelected && !isArchived && <span className="status-badge current">Actif</span>}
                     {isSelected && isArchived && <span className="status-badge selected">Visualisé</span>}
 

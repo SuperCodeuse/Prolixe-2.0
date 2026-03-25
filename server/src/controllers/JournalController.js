@@ -131,6 +131,66 @@ class JournalController {
         }
     }
 
+    static async exportJournal(req, res) {
+        const { id } = req.params;
+        const userId = req.user.id;
+
+        try {
+            const exportData = await JournalController.withConnection(async (db) => {
+                // 1. Vérifier l'existence et l'ownership du journal
+                const [journals] = await db.execute(
+                    'SELECT * FROM JOURNALS WHERE id = ? AND user_id = ?',
+                    [id, userId]
+                );
+
+                if (journals.length === 0) return null;
+
+                const journal = journals[0];
+
+                // 2. Récupérer les entrées du journal
+                const [entries] = await db.execute(`
+                SELECT je.*, ss.day_of_week, h.libelle as time_label
+                FROM JOURNAL_ENTRIES je
+                JOIN SCHEDULE_SLOTS ss ON je.schedule_slot_id = ss.id
+                JOIN SCH_HOURS h ON ss.time_slot_id = h.id
+                WHERE je.journal_id = ?
+                ORDER BY je.entry_date ASC, h.id ASC
+            `, [id]);
+
+                // 3. Récupérer les devoirs (assignments)
+                const [assignments] = await db.execute(
+                    'SELECT * FROM ASSIGNMENTS WHERE journal_id = ? ORDER BY due_date ASC',
+                    [id]
+                );
+
+                return {
+                    metadata: {
+                        name: journal.name,
+                        export_date: new Date(),
+                        version: "2.0"
+                    },
+                    journal_info: journal,
+                    entries: entries,
+                    assignments: assignments
+                };
+            });
+
+            if (!exportData) {
+                return res.status(404).json({ success: false, message: 'Journal introuvable.' });
+            }
+
+            // Paramétrage du header pour le téléchargement du fichier
+            const fileName = `export_journal_${id}_${new Date().toISOString().split('T')[0]}.json`;
+            res.setHeader('Content-Type', 'application/json');
+            res.setHeader('Content-Disposition', `attachment; filename=${fileName}`);
+
+            res.send(JSON.stringify(exportData, null, 2));
+
+        } catch (error) {
+            JournalController.handleError(res, error, 'Erreur lors de l\'exportation du journal.');
+        }
+    }
+
     /**
      * Archive un journal (is_archived = 1).
      * Si c'était le journal courant, on tente d'en promouvoir un autre.
@@ -363,7 +423,18 @@ class JournalController {
         try {
             let data;
             try {
-                data = JSON.parse(req.file.buffer.toString('utf8'));
+                const parsed = JSON.parse(req.file.buffer.toString('utf8'));
+
+                // Format export v2.0 : { metadata, journal_info, entries, assignments }
+                if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && Array.isArray(parsed.entries)) {
+                    data = parsed.entries;
+                }
+                // Format JDC legacy : tableau de sessions directement
+                else if (Array.isArray(parsed)) {
+                    data = parsed;
+                } else {
+                    return res.status(400).json({ success: false, message: 'Format JSON non reconnu : tableau ou export v2.0 attendu.' });
+                }
             } catch {
                 return res.status(400).json({ success: false, message: 'Fichier JSON invalide.' });
             }

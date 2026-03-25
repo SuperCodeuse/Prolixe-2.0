@@ -12,6 +12,8 @@ router.post('/',                             JournalController.createJournal);
 router.get('/current',                       JournalController.getCurrentJournal);
 router.post('/import', upload.single('journalFile'), JournalController.importJournal);
 
+
+router.get('/:id/export', JournalController.exportJournal); // Nouvelle route d'export
 router.post('/:id/archive',                  JournalController.archiveJournal);
 router.delete('/:id',                        JournalController.deleteJournal);
 
