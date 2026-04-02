@@ -44,7 +44,7 @@ const Horaire = () => {
             const result = await fetchAllSets(journalId);
             const setsArray = result?.data || result;
             if (Array.isArray(setsArray) && setsArray.length > 0) {
-                setSelectedSetId(setsArray[0].id);
+                setSelectedSetId(setsArray[setsArray.length - 1].id);
             }
         };
         init();
