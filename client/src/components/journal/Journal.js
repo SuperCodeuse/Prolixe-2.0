@@ -29,7 +29,8 @@ import {
     CheckSquare,
     Square,
     MapPin,
-    TreePalm
+    TreePalm,
+    RotateCcw
 } from 'lucide-react';
 
 import { useSchedule } from '../../hooks/useSchedule';
@@ -492,46 +493,158 @@ const JournalView = ({ journalId, isArchived }) => {
         }
     };
 
+
     // -----------------------------------------------------------------------
     // Status change
     // -----------------------------------------------------------------------
-    const handleStatusChange = (e) => {
-        if (isArchived) return;
-        const newStatus = e.target.value;
-        setCourseStatus(newStatus);
 
-        let newForm = { planned_work: '', actual_work: '', notes: journalForm.notes || '' };
-        if (newStatus === 'cancelled') newForm.actual_work = '[CANCELLED]';
-        else if (newStatus === 'exam') { newForm.actual_work = '[EXAM]'; newForm.notes = journalForm.notes || 'Sujet : '; }
-        else if (newStatus === 'holiday') { newForm.actual_work = '[HOLIDAY]'; newForm.notes = journalForm.notes || 'Férié'; }
-        else newForm = { planned_work: journalForm.planned_work, actual_work: '', notes: '' };
-
-        setJournalForm(newForm);
-        debouncedSave({
-            id: currentEntryId,
-            schedule_slot_id: selectedSlot.slot_id || selectedSlot.id, // AJOUT ICI
-            date: selectedDay.key,
-            ...newForm
-        });
+    const handleResetEntireDay = async () => {
+        if (isArchived || !selectedDay) return;
 
         const daySlots = slotsByDay[selectedDay.dayIndex] || [];
 
-        if (newStatus === 'holiday') {
-            daySlots.filter(s => s.id !== selectedSlot.id).forEach(s => {
-                const ex = getSession(s.id, selectedDay.key);
-                debouncedSave({ id: ex?.id || null, schedule_slot_id: s.id, date: selectedDay.key, planned_work: '', actual_work: '[HOLIDAY]', notes: newForm.notes });
-            });
-            success('Toute la journée a été marquée comme "Vacances".');
-        }
+        try {
+            await Promise.all(daySlots.map(s => {
+                const sId = s.slot_id || s.id;
+                const existing = getSession(sId, selectedDay.key);
 
-        if (newStatus === 'exam') {
-            daySlots.filter(s => s.class_id === selectedSlot.class_id && s.id !== selectedSlot.id).forEach(s => {
-                const ex = getSession(s.id, selectedDay.key);
-                debouncedSave({ id: ex?.id || null, schedule_slot_id: s.id, date: selectedDay.key, planned_work: '', actual_work: '[EXAM]', notes: newForm.notes });
-            });
+                // On ne réinitialise que si une entrée existe
+                if (existing) {
+                    return JournalService.upsertJournalEntry({
+                        id: existing.id,
+                        journal_id: journalId,
+                        schedule_slot_id: sId,
+                        date: selectedDay.key,
+                        planned_work: existing.planned_work || '',
+                        actual_work: '', // On repasse en "Cours donné"
+                        notes: ''        // On nettoie les raisons d'annulation/férié
+                    });
+                }
+                return Promise.resolve();
+            }));
+
+            // Mettre à jour l'état local du modal actuel
+            setCourseStatus('given');
+            setJournalForm(prev => ({ ...prev, actual_work: '', notes: '' }));
+
+            await loadSessions();
+            success('Toute la journée a été rétablie en "Cours donnés".');
+        } catch (err) {
+            showError("Erreur lors du rétablissement : " + err.message);
         }
     };
 
+    const handleStatusChange = async (e) => {
+        if (isArchived) return;
+        const newStatus = e.target.value;
+        const oldStatus = courseStatus; // On garde en mémoire l'ancien statut
+        setCourseStatus(newStatus);
+
+        let newForm = {
+            planned_work: journalForm.planned_work || '',
+            actual_work: '',
+            notes: journalForm.notes || ''
+        };
+
+        // Configuration du formulaire selon le nouveau statut
+        if (newStatus === 'cancelled') {
+            newForm.actual_work = '[CANCELLED]';
+        } else if (newStatus === 'exam') {
+            newForm.actual_work = '[EXAM]';
+            newForm.notes = journalForm.notes || 'Sujet : ';
+        } else if (newStatus === 'holiday') {
+            newForm.actual_work = '[HOLIDAY]';
+            newForm.notes = journalForm.notes || 'Férié';
+            newForm.planned_work = ''; // On vide le prévu en cas de vacances
+        } else {
+            // Retour à "Cours donné"
+            newForm.actual_work = '';
+            // On ne vide pas notes/planned ici au cas où l'utilisateur s'est trompé
+        }
+
+        setJournalForm(newForm);
+
+        const currentSlotId = selectedSlot.slot_id || selectedSlot.id;
+        const daySlots = slotsByDay[selectedDay.dayIndex] || [];
+        const otherSlots = daySlots.filter(s => String(s.slot_id || s.id) !== String(currentSlotId));
+
+        try {
+            // 1. Sauvegarder le créneau actuel immédiatement
+            await JournalService.upsertJournalEntry({
+                id: currentEntryId,
+                journal_id: journalId,
+                schedule_slot_id: currentSlotId,
+                date: selectedDay.key,
+                ...newForm
+            });
+
+            // 2. CAS : Passage vers VACANCES (Appliquer à tous)
+            if (newStatus === 'holiday') {
+                await Promise.all(otherSlots.map(s => {
+                    const sId = s.slot_id || s.id;
+                    const existing = getSession(sId, selectedDay.key);
+                    return JournalService.upsertJournalEntry({
+                        id: existing?.id || null,
+                        journal_id: journalId,
+                        schedule_slot_id: sId,
+                        date: selectedDay.key,
+                        planned_work: '',
+                        actual_work: '[HOLIDAY]',
+                        notes: newForm.notes
+                    });
+                }));
+                success('Toute la journée est marquée comme "Vacances".');
+            }
+
+            // 3. CAS : Retour de VACANCES vers COURS DONNÉ (Réinitialiser tous)
+            // On vérifie si on était en mode "holiday" juste avant
+            if (oldStatus === 'holiday' && newStatus === 'given') {
+                await Promise.all(otherSlots.map(s => {
+                    const sId = s.slot_id || s.id;
+                    const existing = getSession(sId, selectedDay.key);
+
+                    // On ne réinitialise QUE si le créneau était effectivement en [HOLIDAY]
+                    if (existing?.actual_work === '[HOLIDAY]') {
+                        return JournalService.upsertJournalEntry({
+                            id: existing.id,
+                            journal_id: journalId,
+                            schedule_slot_id: sId,
+                            date: selectedDay.key,
+                            planned_work: existing.planned_work || '',
+                            actual_work: '', // On retire le tag
+                            notes: ''        // On retire la note "Férié"
+                        });
+                    }
+                    return Promise.resolve();
+                }));
+                success('La journée a été rétablie (vacances annulées).');
+            }
+
+            // 4. CAS : Examen (uniquement pour la même classe)
+            if (newStatus === 'exam') {
+                const sameClassSlots = otherSlots.filter(s => s.class_id === selectedSlot.class_id);
+                await Promise.all(sameClassSlots.map(s => {
+                    const sId = s.slot_id || s.id;
+                    const existing = getSession(sId, selectedDay.key);
+                    return JournalService.upsertJournalEntry({
+                        id: existing?.id || null,
+                        journal_id: journalId,
+                        schedule_slot_id: sId,
+                        date: selectedDay.key,
+                        planned_work: '',
+                        actual_work: '[EXAM]',
+                        notes: newForm.notes
+                    });
+                }));
+            }
+
+            // Mise à jour finale des données locales
+            await loadSessions();
+
+        } catch (err) {
+            showError("Erreur lors de la mise à jour : " + err.message);
+        }
+    };
     // -----------------------------------------------------------------------
     // Cancel entire day
     // -----------------------------------------------------------------------
@@ -993,15 +1106,38 @@ const JournalView = ({ journalId, isArchived }) => {
                             <button className="modal-close" onClick={handleCloseModal}><X size={18} /></button>
                         </div>
                         <div className="modal-body">
-                            {/* Status */}
+                            {/* Status with Reset Button */}
                             <div className="form-group">
                                 <label>Statut du cours</label>
-                                <select value={courseStatus} onChange={handleStatusChange} disabled={isArchived}>
-                                    <option value="given">Cours donné</option>
-                                    <option value="cancelled">Cours annulé</option>
-                                    <option value="exam">Période d'examen</option>
-                                    <option value="holiday">Vacances / Férié</option>
-                                </select>
+                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                    <select
+                                        value={courseStatus}
+                                        onChange={handleStatusChange}
+                                        disabled={isArchived}
+                                        style={{ flex: 1 }}
+                                    >
+                                        <option value="given">Cours donné</option>
+                                        <option value="cancelled">Cours annulé</option>
+                                        <option value="exam">Période d'examen</option>
+                                        <option value="holiday">Vacances / Férié</option>
+                                    </select>
+
+                                    {!isArchived && (
+                                        <button
+                                            type="button"
+                                            className="btn-reset-day"
+                                            onClick={() => setConfirmModal({
+                                                isOpen: true,
+                                                title: 'Rétablir la journée',
+                                                message: 'Voulez-vous repasser TOUS les créneaux de cette journée en "Cours donné" et effacer les notes d\'annulation ou de vacances ?',
+                                                onConfirm: handleResetEntireDay
+                                            })}
+                                            title="Rétablir toute la journée (F5)"
+                                        >
+                                            <RotateCcw size={14} />
+                                        </button>
+                                    )}
+                                </div>
                             </div>
 
                             {/* Planned work (given or cancelled) */}
@@ -1025,7 +1161,7 @@ const JournalView = ({ journalId, isArchived }) => {
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.45rem' }}>
                                             <label style={{ margin: 0 }}>Travail effectué</label>
 
-                                            {/* BOUTON VALIDER LE PRÉVU (Modification 2) */}
+                                            {/* BOUTON VALIDER LE PRÉVU */}
                                             {journalForm.planned_work && !journalForm.actual_work && (
                                                 <button
                                                     type="button"
@@ -1109,7 +1245,7 @@ const JournalView = ({ journalId, isArchived }) => {
 
                             {courseStatus === 'holiday' && (
                                 <div className="form-group">
-                                    <label>Motif</label>
+                                    <label>Motif (appliqué à la journée)</label>
                                     <textarea
                                         value={journalForm.notes}
                                         onChange={e => handleFormChange('notes', e.target.value)}
@@ -1195,7 +1331,7 @@ const JournalView = ({ journalId, isArchived }) => {
                 message={confirmModal.message}
                 onClose={() => setConfirmModal({ isOpen: false })}
                 onConfirm={confirmModal.onConfirm}
-                confirmText="Supprimer"
+                confirmText="Confirmer"
                 cancelText="Annuler"
                 type="danger"
             />

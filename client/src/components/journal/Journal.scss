@@ -1089,3 +1089,44 @@ select.status-select {
     max-width: 100%;
   }
 }
+
+.btn-reset-day {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  background: transparent;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background-color: #f1f5f9;
+    color: #0f172a;
+    border-color: #cbd5e1;
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+// Style pour le bouton "Valider le prévu" que nous avions ajouté précédemment
+.btn-validate-planned {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  background-color: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+  border-radius: 4px;
+  cursor: pointer;
+
+  &:hover {
+    background-color: #dcfce7;
+  }
+}
