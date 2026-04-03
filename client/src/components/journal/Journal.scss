@@ -88,6 +88,7 @@ $radius-xl:     1.25rem;
 
 // ── Root container ───────────────────────────────────────────
 .journal-container {
+  position: relative; // ← nécessaire pour que .modal-overlay (absolute) se positionne ici
   min-height: 100vh;
   background-color: $surface-0;
   background-image:
@@ -812,14 +813,16 @@ $radius-xl:     1.25rem;
 
 // ── Modal ────────────────────────────────────────────────────
 .modal-overlay {
-  position: fixed;
+  position: absolute;           // ← était fixed, maintenant ancré dans .journal-container
   inset: 0;
   background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(8px);
   display: flex;
   justify-content: center;
+  align-items: flex-start;      // ← était center, la modal s'aligne en haut de l'overlay
   z-index: 1000;
   padding: 1rem;
+  padding-top: calc(var(--modal-offset) - 10rem); // ← injecté dynamiquement via JS
   animation: fadeSlideIn 0.2s ease both;
 }
 
@@ -835,8 +838,7 @@ $radius-xl:     1.25rem;
   overflow: hidden;
   box-shadow: 0 30px 64px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04);
   animation: fadeSlideIn 0.25s ease both;
-  position: fixed;
-  top: 8rem;
+
 
   &::before {
     content: '';
@@ -1075,12 +1077,15 @@ select.status-select {
 
   .days-grid { grid-template-columns: 1fr; }
 
+  .modal-overlay {
+    align-items: flex-start;                                    // ← était flex-end (bottom sheet), maintenant aligné en haut
+    padding-top: calc(var(--modal-offset, 60px) + 0.5rem);     // ← offset scroll sur mobile aussi
+  }
+
   .modal {
     max-height: 95vh;
     border-radius: $radius-lg $radius-lg 0 0;
     align-self: flex-end;
     max-width: 100%;
   }
-
-  .modal-overlay { align-items: flex-end; }
 }

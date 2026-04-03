@@ -425,6 +425,8 @@ const JournalView = ({ journalId, isArchived }) => {
         const next = idx > -1 && idx + 1 < daySlots.length ? daySlots[idx + 1] : null;
         setNextSlot(next && next.class_id === slot.class_id && next.subject === slot.subject ? next : null);
 
+        const scrollY = document.documentElement.scrollTop || document.body.scrollTop;
+        document.querySelector('.journal-container').style.setProperty('--modal-offset', `${scrollY}px`);
         setShowJournalModal(true);
     }, [getSession, slotsByDay]);
 
