@@ -882,6 +882,8 @@ const JournalView = ({ journalId, isArchived }) => {
         const isManualHoliday = aw === '[HOLIDAY]';
         const isInterroSlot = aw.startsWith('[INTERRO]');
 
+        const cancelReason = entry?.notes;
+
         const subjectColor = slot.subject_color || '#0d9488';
         const cardStatusClass = isCancelled ? 'is-cancelled' : isExam ? 'is-exam' : isManualHoliday ? 'is-holiday-slot' : isInterroSlot ? 'is-interro' : '';
 
@@ -927,7 +929,12 @@ const JournalView = ({ journalId, isArchived }) => {
 
                 <div className="slot-footer">
                     {isCancelled ? (
-                        <span className="status-tag tag-red">Annulé</span>
+                        <div className="status-tag-container">
+                            <span className="status-tag tag-red">Annulé</span>
+                            {cancelReason && (
+                                <span className="cancel-reason-text"> : {cancelReason}</span>
+                            )}
+                        </div>
                     ) : isExam ? (
                         <span className="status-tag tag-amber">Examen</span>
                     ) : isManualHoliday ? (

@@ -1130,3 +1130,11 @@ select.status-select {
     background-color: #dcfce7;
   }
 }
+
+
+  .cancel-reason-text {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-left: 4px;
+    font-style: italic;
+  }
