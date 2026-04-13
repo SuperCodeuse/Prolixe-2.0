@@ -1,5 +1,6 @@
 {
   "name": "school-planner-client",
+  "homepage": "/GPT/",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
