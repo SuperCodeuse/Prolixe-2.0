@@ -1153,15 +1153,7 @@ select.status-select {
   }
 
   .holiday-card { border-radius: 0 0 0.5rem 0.5rem; }
-
-  // Modale en bas d'écran style bottom-sheet
-  .modal-overlay {
-    position: fixed; // Override: fixée sur mobile
-    align-items: flex-end;
-    padding: 0;
-    padding-top: 0;
-  }
-
+  
   .modal {
     max-height: 95vh;
     border-radius: $radius-lg $radius-lg 0 0;
@@ -1169,7 +1161,7 @@ select.status-select {
   }
 
   .assignment-item {
-    flex-wrap: wrap;  
+    flex-wrap: wrap;
     gap: 0.5rem;
 
     .assignment-details { min-width: 0; flex: 1 1 200px; }
