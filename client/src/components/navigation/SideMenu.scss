@@ -1,11 +1,17 @@
-/* SideMenu.scss - Styles spécifiques au menu latéral - Theme Dark */
-@import '../../App.scss'; // Assurez-vous que le chemin est correct
+/* ==========================================================================
+   SideMenu.scss — Menu de navigation latéral
+   Structure : variables → composant → dropdown → responsive
+   ========================================================================== */
 
+@import '../../App.scss';
+
+
+// ── 1. MENU PRINCIPAL ────────────────────────────────────────────────────────
 .sidemenu {
     width: 280px;
     height: 100vh;
-    display: flex; // Ajouté pour une structure interne flexible
-    flex-direction: column; // Les éléments s'empilent verticalement
+    display: flex;
+    flex-direction: column;
     flex-shrink: 0;
     background: var(--bg-dark-secondary);
     border-right: 1px solid var(--border-color);
@@ -16,10 +22,12 @@
     z-index: 1000;
     transition: transform 0.3s ease-in-out;
 
+    // Caché par défaut sous 1600px (géré dans App.scss via .open)
     @media (max-width: 1599px) {
         transform: translateX(-100%);
     }
 
+    // Fixé et toujours visible sur grand écran
     @media (min-width: 1600px) {
         position: relative;
     }
@@ -27,135 +35,187 @@
     &.open {
         transform: translateX(0);
     }
+}
 
-    .sidemenu-content {
-        flex: 1;
+
+// ── 2. STRUCTURE INTERNE ─────────────────────────────────────────────────────
+.sidemenu-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0; // Empêche le débordement en flex
+    overflow: hidden;
+}
+
+.sidemenu-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-dark-tertiary);
+    flex-shrink: 0;
+
+    .logo      { display: flex; align-items: center; gap: 0.75rem; }
+    .logo-icon { font-size: 1.5rem; }
+    .logo-text { font-size: 1.25rem; font-weight: 600; color: var(--text-light); }
+}
+
+
+// ── 3. NAVIGATION ────────────────────────────────────────────────────────────
+.sidemenu-nav {
+    flex: 1;
+    padding: 1rem 0;
+    overflow-y: auto;
+    min-height: 0;
+
+    // Scrollbar discrète
+    &::-webkit-scrollbar       { width: 3px; }
+    &::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 2px; }
+
+    .menu-list { list-style: none; padding: 0; margin: 0; }
+    .menu-item { margin: 0.25rem 0; }
+
+    .menu-link {
         display: flex;
-        flex-direction: column;
-        min-height: 0;
-    }
+        align-items: center;
+        padding: 1rem 1.5rem;
+        color: #b0b0b0;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        border-left: 3px solid transparent;
 
-    .sidemenu-header {
-        padding: 1.5rem;
-        border-bottom: 1px solid var(--border-color);
-        background: var(--bg-dark-tertiary);
-        .logo { display: flex; align-items: center; gap: 0.75rem; }
-        .logo-icon { font-size: 1.5rem; }
-        .logo-text { font-size: 1.25rem; font-weight: 600; color: var(--text-light); }
-    }
-
-    .sidemenu-nav {
-        flex: 1;
-        padding: 1rem 0;
-        min-height: 0;
-        .menu-list { list-style: none; padding: 0; margin: 0; }
-        .menu-item { margin: 0.25rem 0; }
-        .menu-link {
-            display: flex; align-items: center; padding: 1rem 1.5rem; color: #b0b0b0; text-decoration: none;
-            transition: all 0.3s ease; border-left: 3px solid transparent;
-            &.active, &:hover {
-                background: var(--blue-transparent-sm);
-                color: var(--text-light);
-                border-left-color: var(--accent-blue);
-            }
-            .menu-icon { font-size: 1.125rem; margin-right: 0.875rem; width: 20px; text-align: center; }
-            .menu-label { font-size: 0.875rem; }
-        }
-    }
-
-    // --- STYLES MODIFIÉS ET AJOUTÉS POUR LE FOOTER ET LE DROPDOWN ---
-    .sidemenu-footer {
-        flex-shrink: 0;
-        padding: 1rem; // Un peu d'espace autour
-        border-top: 1px solid var(--border-color);
-        background: var(--bg-dark-tertiary);
-
-        .user-menu-dropdown {
-            position: relative; // Contexte de positionnement pour le dropdown
+        &:hover,
+        &.active {
+            background: var(--blue-transparent-sm);
+            color: var(--text-light);
+            border-left-color: var(--accent-blue);
         }
 
-        .user-profile {
-            display: flex;
-            align-items: center;
-            gap: 0.875rem;
-            padding: 0.75rem;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background 0.2s ease;
-
-            &:hover {
-                background: rgba(255, 255, 255, 0.05);
-            }
-        }
-
-        .user-avatar {
-            width: 40px; height: 40px; border-radius: 50%; background: var(--accent-blue);
-            display: flex; align-items: center; justify-content: center; font-weight: 500;
-        }
-
-        .user-info { flex: 1; }
-        .user-name {
-            text-transform: uppercase;
+        &.active {
+            background: var(--blue-transparent-md);
             font-weight: 500;
         }
-        .user-role { font-size: 0.75rem; color: #9ca3af; }
 
-        .dropdown-arrow {
-            width: 0;
-            height: 0;
-            border-left: 5px solid transparent;
-            border-right: 5px solid transparent;
-            border-bottom: 5px solid var(--text-muted); // Flèche vers le haut
-            transition: transform 0.3s ease;
-        }
+        .menu-icon  { font-size: 1.125rem; margin-right: 0.875rem; width: 20px; text-align: center; }
+        .menu-label { font-size: 0.875rem; }
+    }
+}
 
-        // Styles pour le contenu du dropdown (caché par défaut)
-        .dropdown-content {
-            position: absolute;
-            bottom: calc(100% + 10px); // Se positionne au-dessus du footer
-            left: 0;
-            right: 0;
-            background: var(--bg-dark-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.2);
-            padding: 0.5rem;
 
-            // Masqué par défaut et hors du flux
-            opacity: 0;
-            visibility: hidden;
-            transform: translateY(10px);
-            transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s;
-        }
+// ── 4. FOOTER AVEC DROPDOWN ──────────────────────────────────────────────────
+.sidemenu-footer {
+    flex-shrink: 0;
+    padding: 1rem;
+    border-top: 1px solid var(--border-color);
+    background: var(--bg-dark-tertiary);
 
-        .logout-btn {
-            width: 100%;
-            padding: 0.75rem;
-            background: var(--red-transparent-sm);
-            border: 1px solid var(--red-danger);
-            color: var(--red-danger);
-            border-radius: 6px;
-            cursor: pointer;
-            text-align: center;
-            transition: background 0.2s ease, color 0.2s ease;
+    .user-menu-dropdown {
+        position: relative; // Contexte pour le dropdown
+    }
+}
 
-            &:hover {
-                background: var(--red-danger);
-                color: white;
-            }
-        }
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    padding: 0.75rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s ease;
 
-        // Styles quand le menu est ACTIF (ouvert)
-        .user-menu-dropdown.active {
-            .dropdown-arrow {
-                transform: rotate(180deg); // La flèche pointe vers le bas
-            }
+    &:hover { background: rgba(255, 255, 255, 0.05); }
+}
 
-            .dropdown-content {
-                opacity: 1;
-                visibility: visible;
-                transform: translateY(0);
-            }
-        }
+.user-avatar {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: var(--accent-blue);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 500;
+    flex-shrink: 0;
+}
+
+.user-info { flex: 1; min-width: 0; }
+
+.user-name {
+    display: block;
+    text-transform: uppercase;
+    font-weight: 500;
+    font-size: 0.875rem;
+    color: var(--text-light);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.user-role { font-size: 0.75rem; color: #9ca3af; }
+
+// Flèche indicatrice (triangle CSS)
+.dropdown-arrow {
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 5px solid var(--text-muted);
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+}
+
+
+// ── 5. CONTENU DU DROPDOWN ───────────────────────────────────────────────────
+.dropdown-content {
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 0;
+    right: 0;
+    background: var(--bg-dark-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.2);
+    padding: 0.5rem;
+
+    // Caché par défaut
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s;
+}
+
+.logout-btn {
+    width: 100%;
+    padding: 0.75rem;
+    background: var(--red-transparent-sm);
+    border: 1px solid var(--red-danger);
+    color: var(--red-danger);
+    border-radius: 6px;
+    cursor: pointer;
+    text-align: center;
+    transition: background 0.2s ease, color 0.2s ease;
+    font-weight: 500;
+
+    &:hover {
+        background: var(--red-danger);
+        color: white;
+    }
+}
+
+
+// ── 6. ÉTAT ACTIF (menu dropdown ouvert) ─────────────────────────────────────
+.user-menu-dropdown.active {
+    .dropdown-arrow {
+        transform: rotate(180deg);
+    }
+
+    .dropdown-content {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+}
+
+
+// ── 7. RESPONSIVE ────────────────────────────────────────────────────────────
+// Sur mobile, le menu prend toute la largeur disponible si ouvert
+@media (max-width: 480px) {
+    .sidemenu {
+        width: min(280px, 85vw);
     }
 }

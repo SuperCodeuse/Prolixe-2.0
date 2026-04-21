@@ -1,43 +1,45 @@
-/* ============================================================
-   Journal.scss — Registre de classe professionnel
-   Dark refined · Accents teal/cyan · Typographie structurée
-   ============================================================ */
+/* ==========================================================================
+   Journal.scss — Registre de classe
+   Structure : tokens → mixins → animations → composants → états → responsive
+   ========================================================================== */
 
 @import '../../App.scss';
-@import './journal_mobile.scss';
 
-// ── Design tokens ────────────────────────────────────────────
-$teal:          #0d9488;
-$teal-light:    #14b8a6;
-$teal-dim:      rgba(13, 148, 136, 0.15);
-$teal-glow:     rgba(13, 148, 136, 0.35);
-$cyan:          #22d3ee;
-$cyan-dim:      rgba(34, 211, 238, 0.12);
-$red:           #ef4444;
-$red-dim:       rgba(239, 68, 68, 0.12);
-$amber:         #f59e0b;
-$amber-dim:     rgba(245, 158, 11, 0.12);
-$violet:        #8b5cf6;
-$violet-dim:    rgba(139, 92, 246, 0.12);
-$green:         #22c55e;
 
-$surface-0:     #0a0e17;
-$surface-1:     #111827;
-$surface-2:     #1a2235;
-$surface-3:     #232f42;
+// ── 1. DESIGN TOKENS LOCAUX ──────────────────────────────────────────────────
+$teal:        #0d9488;
+$teal-light:  #14b8a6;
+$teal-dim:    rgba(13, 148, 136, 0.15);
+$teal-glow:   rgba(13, 148, 136, 0.35);
+$cyan:        #22d3ee;
+$cyan-dim:    rgba(34, 211, 238, 0.12);
+$red:         #ef4444;
+$red-dim:     rgba(239, 68, 68, 0.12);
+$amber:       #f59e0b;
+$amber-dim:   rgba(245, 158, 11, 0.12);
+$violet:      #8b5cf6;
+$violet-dim:  rgba(139, 92, 246, 0.12);
+$green:       #22c55e;
+
+$surface-0:   #0a0e17;
+$surface-1:   #111827;
+$surface-2:   #1a2235;
+$surface-3:   #232f42;
+
 $border:        rgba(255, 255, 255, 0.07);
 $border-light:  rgba(255, 255, 255, 0.12);
 
-$text-primary:  #f1f5f9;
-$text-secondary:#94a3b8;
-$text-muted:    #64748b;
+$text-primary:   #f1f5f9;
+$text-secondary: #94a3b8;
+$text-muted:     #64748b;
 
-$radius-sm:     0.375rem;
-$radius-md:     0.625rem;
-$radius-lg:     1rem;
-$radius-xl:     1.25rem;
+$radius-sm: 0.375rem;
+$radius-md: 0.625rem;
+$radius-lg: 1rem;
+$radius-xl: 1.25rem;
 
-// ── Mixins ───────────────────────────────────────────────────
+
+// ── 2. MIXINS LOCAUX ─────────────────────────────────────────────────────────
 @mixin section-heading($accent: $teal) {
   font-size: 1rem;
   font-weight: 700;
@@ -69,37 +71,43 @@ $radius-xl:     1.25rem;
   transition: all 0.18s ease;
 }
 
-// ── Keyframes ────────────────────────────────────────────────
+
+// ── 3. ANIMATIONS ─────────────────────────────────────────────────────────────
 @keyframes fadeSlideIn {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
 @keyframes shimmer {
   0%   { background-position: -200% center; }
   100% { background-position:  200% center; }
 }
+
 @keyframes pulseRing {
   0%, 100% { box-shadow: 0 0 0 0 $teal-glow; }
   50%       { box-shadow: 0 0 0 4px transparent; }
 }
+
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
 
-// ── Root container ───────────────────────────────────────────
+
+// ── 4. CONTENEUR RACINE ──────────────────────────────────────────────────────
 .journal-container {
-  position: relative; // ← nécessaire pour que .modal-overlay (absolute) se positionne ici
+  position: relative; // Ancre le .modal-overlay
   min-height: 100vh;
   background-color: $surface-0;
   background-image:
-          linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+          linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
   background-size: 40px 40px;
   padding: 2rem;
   animation: fadeSlideIn 0.35s ease both;
 }
 
-// ── Loading states ───────────────────────────────────────────
+
+// ── 5. ÉTATS DE CHARGEMENT ───────────────────────────────────────────────────
 .journal-loading,
 .loading-state {
   display: flex;
@@ -119,7 +127,8 @@ $radius-xl:     1.25rem;
   }
 }
 
-// ── Page header ──────────────────────────────────────────────
+
+// ── 6. EN-TÊTE DE PAGE ───────────────────────────────────────────────────────
 .journal-header {
   display: flex;
   align-items: center;
@@ -148,7 +157,8 @@ $radius-xl:     1.25rem;
   }
 }
 
-// ── Empty / error states ─────────────────────────────────────
+
+// ── 7. ÉTATS VIDES & ERREURS ─────────────────────────────────────────────────
 .no-journal-selected {
   display: flex;
   flex-direction: column;
@@ -185,7 +195,8 @@ $radius-xl:     1.25rem;
   svg { flex-shrink: 0; }
 }
 
-// ── Journal view ─────────────────────────────────────────────
+
+// ── 8. VUE JOURNAL ───────────────────────────────────────────────────────────
 .journal-view {
   display: flex;
   flex-direction: column;
@@ -193,7 +204,8 @@ $radius-xl:     1.25rem;
   animation: fadeSlideIn 0.3s ease both;
 }
 
-// ── Controls bar ─────────────────────────────────────────────
+
+// ── 9. BARRE DE CONTRÔLES ────────────────────────────────────────────────────
 .journal-controls {
   display: flex;
   align-items: center;
@@ -226,6 +238,7 @@ $radius-xl:     1.25rem;
       border-color: $teal;
       color: $teal-light;
     }
+
     &:disabled { opacity: 0.35; cursor: not-allowed; }
   }
 
@@ -275,14 +288,14 @@ $radius-xl:     1.25rem;
   }
 }
 
-// ── Journal content ──────────────────────────────────────────
+
+// ── 10. CONTENU & SECTION HEBDO ──────────────────────────────────────────────
 .journal-content {
   display: flex;
   flex-direction: column;
   gap: 1.75rem;
 }
 
-// ── Weekly section ───────────────────────────────────────────
 .weekly-section {
   background: $surface-1;
   border: 1px solid $border;
@@ -293,7 +306,8 @@ $radius-xl:     1.25rem;
   h2 { @include section-heading($teal); }
 }
 
-// ── Days grid ────────────────────────────────────────────────
+
+// ── 11. GRILLE DES JOURS ─────────────────────────────────────────────────────
 .days-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -328,6 +342,7 @@ $radius-xl:     1.25rem;
       text-transform: uppercase;
       letter-spacing: 0.15em;
     }
+
     .day-date {
       font-size: 1.25rem;
       font-weight: 800;
@@ -341,16 +356,16 @@ $radius-xl:     1.25rem;
     gap: 0.625rem;
   }
 
-  &.is-holiday-day {
-    .day-header {
-      background: linear-gradient(135deg, rgba($amber, 0.2), rgba($amber, 0.08));
-      border-color: rgba($amber, 0.3);
-      .day-name { color: $amber; }
-    }
+  &.is-holiday-day .day-header {
+    background: linear-gradient(135deg, rgba($amber, 0.2), rgba($amber, 0.08));
+    border-color: rgba($amber, 0.3);
+
+    .day-name { color: $amber; }
   }
 }
 
-// ── Holiday card ─────────────────────────────────────────────
+
+// ── 12. CARTE VACANCES ───────────────────────────────────────────────────────
 .holiday-card {
   display: flex;
   flex-direction: column;
@@ -365,6 +380,7 @@ $radius-xl:     1.25rem;
   min-height: 5rem;
 
   .holiday-icon { font-size: 1.75rem; line-height: 1; }
+
   .holiday-name {
     font-size: 0.8rem;
     font-weight: 600;
@@ -373,7 +389,8 @@ $radius-xl:     1.25rem;
   }
 }
 
-// ── Journal slot card ────────────────────────────────────────
+
+// ── 13. CARTE CRÉNEAU (journal-slot) ─────────────────────────────────────────
 .journal-slot {
   --subject-color: #{$teal};
 
@@ -391,94 +408,23 @@ $radius-xl:     1.25rem;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
 
-  // Top highlight line
+  // Ligne highlight supérieure décorative
   &::after {
     content: '';
     position: absolute;
     inset: 0 0 auto;
     height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
     pointer-events: none;
   }
 
   &:hover {
     background: $surface-3;
     transform: translateY(-3px);
-    box-shadow: 0 10px 24px rgba(0,0,0,0.4), 0 0 0 1px $border-light;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4), 0 0 0 1px $border-light;
   }
 
-
-  // ── Entry preview / footer ───────────────────────────────
-  .slot-footer {
-    margin-top: 0.3rem;
-    padding-top: 0.6rem;
-    border-top: 1px solid $border;
-    display: flex;
-    align-items: center;
-    min-height: 28px;
-
-    .slot-preview {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      width: 100%;
-      font-size: 0.78rem;
-
-      .status-icon {
-        flex-shrink: 0;
-        opacity: 0.7;
-      }
-
-      .preview-text {
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        line-height: 1.4;
-      }
-
-      // Style pour le travail EFFECTUÉ (Actual)
-      &.is-actual {
-        color: $green;
-        font-weight: 500;
-
-        .status-icon {
-          color: $green;
-        }
-
-        .interro-label {
-          color: $violet;
-          font-weight: 700;
-        }
-      }
-
-      // Style pour le travail PRÉVU (Planned)
-      &.is-planned {
-        color: $text-muted;
-        font-style: italic;
-
-        .status-icon {
-          color: $text-muted;
-        }
-
-        // On peut ajouter une petite opacité pour simuler un état "en attente"
-        opacity: 0.8;
-      }
-    }
-
-    .status-tag {
-      font-size: 0.65rem;
-      font-weight: 800;
-      text-transform: uppercase;
-      padding: 2px 6px;
-      border-radius: 4px;
-      &.tag-red   { background: rgba($red, 0.15);   color: $red; }
-      &.tag-amber { background: rgba($amber, 0.15); color: $amber; }
-    }
-
-    .add-hint { font-size: 0.7rem; color: $text-muted; opacity: 0.4; }
-  }
-
-  // ── Slot meta row ────────────────────────────────────────
+  // --- Méta (heure + badge) ---
   .slot-meta,
   .course-header-row {
     display: flex;
@@ -508,7 +454,7 @@ $radius-xl:     1.25rem;
     flex-shrink: 0;
   }
 
-  // ── Slot content ─────────────────────────────────────────
+  // --- Contenu ---
   .slot-content,
   .course-summary {
     display: flex;
@@ -532,10 +478,67 @@ $radius-xl:     1.25rem;
     font-size: 0.75rem;
     color: $text-muted;
     margin-top: 2px;
+
     svg { color: var(--subject-color); opacity: 0.7; }
   }
 
-  // ── Entry preview / footer ───────────────────────────────
+  // --- Pied de carte (aperçu) ---
+  .slot-footer {
+    margin-top: 0.3rem;
+    padding-top: 0.6rem;
+    border-top: 1px solid $border;
+    display: flex;
+    align-items: center;
+    min-height: 28px;
+
+    .slot-preview {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+      font-size: 0.78rem;
+
+      .status-icon { flex-shrink: 0; opacity: 0.7; }
+
+      .preview-text {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 1.4;
+      }
+
+      &.is-actual {
+        color: $green;
+        font-weight: 500;
+
+        .status-icon { color: $green; }
+        .interro-label { color: $violet; font-weight: 700; }
+      }
+
+      &.is-planned {
+        color: $text-muted;
+        font-style: italic;
+        opacity: 0.8;
+
+        .status-icon { color: $text-muted; }
+      }
+    }
+
+    .status-tag {
+      font-size: 0.65rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      border-radius: 4px;
+
+      &.tag-red   { background: rgba($red, 0.15);   color: $red; }
+      &.tag-amber { background: rgba($amber, 0.15); color: $amber; }
+    }
+
+    .add-hint { font-size: 0.7rem; color: $text-muted; opacity: 0.4; }
+  }
+
+  // --- Aperçu entrée (ancien style) ---
   .entry-preview {
     margin-top: 0.25rem;
     padding-top: 0.6rem;
@@ -546,8 +549,7 @@ $radius-xl:     1.25rem;
     min-height: 24px;
 
     .interro-dot {
-      width: 8px;
-      height: 8px;
+      width: 8px; height: 8px;
       background: $violet;
       border-radius: 50%;
       flex-shrink: 0;
@@ -582,6 +584,7 @@ $radius-xl:     1.25rem;
       text-transform: uppercase;
       padding: 2px 6px;
       border-radius: 4px;
+
       &.tag-red   { background: rgba($red, 0.15);   color: $red; }
       &.tag-amber { background: rgba($amber, 0.15); color: $amber; }
     }
@@ -589,7 +592,7 @@ $radius-xl:     1.25rem;
     .add-hint { font-size: 0.7rem; color: $text-muted; opacity: 0.4; }
   }
 
-  // ── Status display (centred overlay) ────────────────────
+  // --- Affichage statut centré ---
   .status-display {
     display: flex;
     flex-direction: column;
@@ -607,6 +610,7 @@ $radius-xl:     1.25rem;
       letter-spacing: 0.1em;
       text-transform: uppercase;
     }
+
     .status-reason {
       font-size: 0.72rem;
       color: $text-muted;
@@ -618,29 +622,41 @@ $radius-xl:     1.25rem;
     &.holiday-display   .status-label { color: $amber; }
   }
 
-  // ── State modifiers ──────────────────────────────────────
+  // --- Modificateurs d'état ---
   &.is-cancelled {
     border-left-color: $red !important;
     background: linear-gradient(135deg, $red-dim, $surface-2);
     opacity: 0.85;
     filter: grayscale(0.3);
   }
+
   &.is-exam {
     border-left-color: $amber !important;
     border-left-width: 6px;
     background: linear-gradient(135deg, $amber-dim, $surface-2);
   }
+
   &.is-holiday-slot {
     border-left-color: $amber !important;
     background: linear-gradient(135deg, rgba($amber, 0.08), $surface-2);
   }
+
   &.is-interro {
     border-left-color: $violet !important;
     background: linear-gradient(135deg, $violet-dim, $surface-2);
   }
 }
 
-// ── Assignments section ──────────────────────────────────────
+// Texte raison annulation
+.cancel-reason-text {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-left: 4px;
+  font-style: italic;
+}
+
+
+// ── 14. SECTION ASSIGNATIONS ─────────────────────────────────────────────────
 .assignments-section {
   background: $surface-1;
   border: 1px solid $border;
@@ -708,6 +724,7 @@ $radius-xl:     1.25rem;
 
     &.fully-done {
       opacity: 0.5;
+
       .assignment-details strong,
       .assignment-details small { text-decoration: line-through; }
     }
@@ -741,11 +758,13 @@ $radius-xl:     1.25rem;
         color: $text-primary;
         margin-bottom: 0.2rem;
       }
+
       small {
         font-size: 0.78rem;
         color: $text-muted;
         display: block;
       }
+
       .assign-desc {
         font-size: 0.78rem;
         color: $text-secondary;
@@ -782,18 +801,14 @@ $radius-xl:     1.25rem;
       padding: 0.3rem 0.6rem;
       border-left: 1px solid $border;
 
-      input[type="checkbox"] {
-        accent-color: $teal-light;
-        cursor: pointer;
-      }
+      input[type="checkbox"] { accent-color: $teal-light; cursor: pointer; }
     }
 
     .btn-icon {
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 30px;
-      height: 30px;
+      width: 30px; height: 30px;
       background: $surface-3;
       border: 1px solid $border;
       border-radius: $radius-sm;
@@ -811,18 +826,19 @@ $radius-xl:     1.25rem;
   }
 }
 
-// ── Modal ────────────────────────────────────────────────────
+
+// ── 15. MODALE ───────────────────────────────────────────────────────────────
 .modal-overlay {
-  position: absolute;           // ← était fixed, maintenant ancré dans .journal-container
+  position: absolute; // Ancré dans .journal-container
   inset: 0;
   background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(8px);
   display: flex;
   justify-content: center;
-  align-items: flex-start;      // ← était center, la modal s'aligne en haut de l'overlay
+  align-items: flex-start;
   z-index: 1000;
   padding: 1rem;
-  padding-top: calc(var(--modal-offset) - 10rem); // ← injecté dynamiquement via JS
+  padding-top: calc(var(--modal-offset) - 10rem);
   animation: fadeSlideIn 0.2s ease both;
 }
 
@@ -836,10 +852,10 @@ $radius-xl:     1.25rem;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 30px 64px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04);
+  box-shadow: 0 30px 64px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.04);
   animation: fadeSlideIn 0.25s ease both;
 
-
+  // Ligne décorative supérieure
   &::before {
     content: '';
     display: block;
@@ -869,8 +885,7 @@ $radius-xl:     1.25rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: 30px; height: 30px;
   background: $surface-3;
   border: 1px solid $border;
   border-radius: $radius-sm;
@@ -897,6 +912,66 @@ $radius-xl:     1.25rem;
   &::-webkit-scrollbar-thumb { background: $surface-3; border-radius: 2px; }
 }
 
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid $border;
+  flex-shrink: 0;
+  background: $surface-2;
+
+  .btn-primary {
+    @include btn-base;
+    padding: 0.55rem 1.25rem;
+    background: $teal;
+    border: none;
+    color: white;
+    font-size: 0.85rem;
+
+    &:hover:not(:disabled) {
+      background: $teal-light;
+      box-shadow: 0 4px 12px $teal-glow;
+      transform: translateY(-1px);
+    }
+
+    &:disabled { opacity: 0.4; cursor: not-allowed; }
+  }
+
+  .btn-secondary {
+    @include btn-base;
+    padding: 0.55rem 1.25rem;
+    background: $surface-3;
+    border: 1px solid $border;
+    color: $text-secondary;
+    font-size: 0.85rem;
+
+    &:hover {
+      background: $surface-2;
+      border-color: $border-light;
+      color: $text-primary;
+    }
+  }
+
+  .btn-danger {
+    @include btn-base;
+    padding: 0.55rem 1.25rem;
+    background: transparent;
+    border: 1px solid rgba($red, 0.3);
+    color: $red;
+    font-size: 0.85rem;
+    margin-right: auto;
+
+    &:hover {
+      background: $red-dim;
+      border-color: $red;
+    }
+  }
+}
+
+
+// ── 16. FORMULAIRES DANS LA MODALE ───────────────────────────────────────────
 .btn-validate-planned {
   display: inline-flex;
   align-items: center;
@@ -917,9 +992,7 @@ $radius-xl:     1.25rem;
     box-shadow: 0 2px 8px rgba($green, 0.4);
   }
 
-  svg {
-    flex-shrink: 0;
-  }
+  svg { flex-shrink: 0; }
 }
 
 .form-group {
@@ -999,97 +1072,14 @@ $radius-xl:     1.25rem;
   }
 }
 
-.modal-footer {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  padding: 1rem 1.5rem;
-  border-top: 1px solid $border;
-  flex-shrink: 0;
-  background: $surface-2;
-
-  .btn-primary {
-    @include btn-base;
-    padding: 0.55rem 1.25rem;
-    background: $teal;
-    border: none;
-    color: white;
-    font-size: 0.85rem;
-
-    &:hover:not(:disabled) {
-      background: $teal-light;
-      box-shadow: 0 4px 12px $teal-glow;
-      transform: translateY(-1px);
-    }
-    &:disabled { opacity: 0.4; cursor: not-allowed; }
-  }
-
-  .btn-secondary {
-    @include btn-base;
-    padding: 0.55rem 1.25rem;
-    background: $surface-3;
-    border: 1px solid $border;
-    color: $text-secondary;
-    font-size: 0.85rem;
-
-    &:hover {
-      background: $surface-2;
-      border-color: $border-light;
-      color: $text-primary;
-    }
-  }
-
-  .btn-danger {
-    @include btn-base;
-    padding: 0.55rem 1.25rem;
-    background: transparent;
-    border: 1px solid rgba($red, 0.3);
-    color: $red;
-    font-size: 0.85rem;
-    margin-right: auto;
-
-    &:hover {
-      background: $red-dim;
-      border-color: $red;
-    }
-  }
-}
-
-// ── Status select options ────────────────────────────────────
+// Options statut colorées
 select.status-select {
   option[value="cancelled"] { color: $red; }
   option[value="exam"]      { color: $amber; }
   option[value="holiday"]   { color: $amber; }
 }
 
-// ── Responsive ───────────────────────────────────────────────
-@media (max-width: 768px) {
-  .journal-container { padding: 1rem; }
-
-  .journal-controls {
-    flex-wrap: wrap;
-    gap: 0.75rem;
-
-    .current-range    { margin-left: 0; order: 3; width: 100%; }
-    .schedule-indicator { order: 4; }
-  }
-
-  .days-grid { grid-template-columns: 1fr; }
-
-  .modal-overlay {
-    align-items: flex-start;                                    // ← était flex-end (bottom sheet), maintenant aligné en haut
-    padding-top: calc(var(--modal-offset, 60px) + 0.5rem);     // ← offset scroll sur mobile aussi
-  }
-
-  .modal {
-    max-height: 95vh;
-    border-radius: $radius-lg $radius-lg 0 0;
-    align-self: flex-end;
-    max-width: 100%;
-  }
-}
-
+// Bouton reset journée
 .btn-reset-day {
   display: flex;
   align-items: center;
@@ -1108,33 +1098,81 @@ select.status-select {
     border-color: #cbd5e1;
   }
 
-  &:active {
-    transform: scale(0.95);
-  }
-}
-
-// Style pour le bouton "Valider le prévu" que nous avions ajouté précédemment
-.btn-validate-planned {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  font-size: 0.75rem;
-  background-color: #f0fdf4;
-  color: #16a34a;
-  border: 1px solid #bbf7d0;
-  border-radius: 4px;
-  cursor: pointer;
-
-  &:hover {
-    background-color: #dcfce7;
-  }
+  &:active { transform: scale(0.95); }
 }
 
 
-  .cancel-reason-text {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    margin-left: 4px;
-    font-style: italic;
+// ── 17. RESPONSIVE ───────────────────────────────────────────────────────────
+// Tablette (≤ 1024px)
+@media (max-width: 1024px) {
+  .days-grid {
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.75rem;
   }
+}
+
+// Mobile (≤ 768px)
+@media (max-width: 768px) {
+  .journal-container { padding: 1rem; }
+
+  .journal-header {
+    flex-direction: column;
+    gap: 0.5rem;
+    text-align: center;
+    padding: 0 0 1rem;
+
+    h1 { font-size: 1.3rem; }
+  }
+
+  .journal-controls {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding: 0.75rem;
+
+    .week-navigation { width: 100%; justify-content: center; }
+    .current-range   { margin-left: 0; order: 3; width: 100%; justify-content: center; }
+    .schedule-indicator { order: 4; width: 100%; justify-content: center; }
+  }
+
+  // Jours en colonne unique
+  .days-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .day-column {
+    min-width: 100%;
+    border: none;
+    border-bottom: 1px solid $border;
+    padding-bottom: 1rem;
+
+    &:last-child { border-bottom: none; }
+
+    .day-header { border-radius: 0.5rem 0.5rem 0 0; }
+
+    &.is-holiday-day .day-header { border-bottom: none; }
+  }
+
+  .holiday-card { border-radius: 0 0 0.5rem 0.5rem; }
+
+  // Modale en bas d'écran style bottom-sheet
+  .modal-overlay {
+    position: fixed; // Override: fixée sur mobile
+    align-items: flex-end;
+    padding: 0;
+    padding-top: 0;
+  }
+
+  .modal {
+    max-height: 95vh;
+    border-radius: $radius-lg $radius-lg 0 0;
+    max-width: 100%;
+  }
+
+  .assignment-item {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+
+    .assignment-details { min-width: 0; flex: 1 1 200px; }
+    .corrected-label    { border-left: none; padding-left: 0; }
+  }
+}

@@ -1,41 +1,78 @@
-/* Settings.scss - Styles spécifiques à la page de paramètres */
+/* ==========================================================================
+   Settings.scss — Page de paramètres
+   Structure : page → sidebar → onglets → contenu → modales → responsive
+   ========================================================================== */
+
 @import '../../App';
 
+
+// ── 1. PAGE RACINE ───────────────────────────────────────────────────────────
 .settings-page {
     @include page-container-base;
+
+    @media (max-width: 768px) {
+        padding: 1rem;
+    }
 }
 
 .settings-header {
     margin-bottom: 2rem;
+
+    h1 {
+        font-size: 2rem;
+        font-weight: 600;
+        color: var(--text-light);
+        margin-bottom: 0.5rem;
+    }
+
+    p { color: #9ca3af; font-size: 1rem; }
 }
 
-.settings-header h1 {
-    font-size: 2rem;
-    font-weight: 600;
-    color: var(--text-light);
-    margin-bottom: 0.5rem;
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
-}
 
-.settings-header p {
-    color: #9ca3af; /* Couleur spécifique */
-    font-size: 1rem;
-}
-
+// ── 2. LAYOUT : SIDEBAR + CONTENU ────────────────────────────────────────────
 .settings-content {
     display: flex;
     gap: 2rem;
     max-width: 1600px;
+    align-items: flex-start;
+
+    @media (max-width: 900px) {
+        flex-direction: column;
+        gap: 1rem;
+    }
 }
 
 .settings-sidebar {
     width: 250px;
+    flex-shrink: 0;
     background: var(--bg-dark-tertiary);
     border-radius: 12px;
     padding: 1rem;
     border: 1px solid #333333;
-    height: fit-content;
+    position: sticky;
+    top: 1rem;
+
+    @media (max-width: 900px) {
+        width: 100%;
+        position: static;
+    }
 }
+
+.settings-main {
+    flex: 1;
+    min-width: 0; // Empêche le débordement
+    background: var(--bg-dark-tertiary);
+    border-radius: 12px;
+    padding: 2rem;
+    border: 1px solid #333333;
+
+    @media (max-width: 768px) {
+        padding: 1rem;
+    }
+}
+
+
+// ── 3. NAVIGATION LATÉRALE ───────────────────────────────────────────────────
 .settings-nav {
     display: flex;
     flex-direction: column;
@@ -47,119 +84,136 @@
         overflow: hidden;
         transition: all 0.3s ease;
 
-        // Styles spécifiques par catégorie
+        // Différenciation visuelle admin vs user
         &.admin-section {
-            background: rgba(30, 41, 59, 0.4); // Bleu ardoise profond
+            background: rgba(30, 41, 59, 0.4);
             border-left: 4px solid var(--red-danger);
         }
 
         &.user-section {
-            background: rgba(15, 23, 42, 0.6); // Plus sombre
+            background: rgba(15, 23, 42, 0.6);
             border-left: 4px solid var(--accent-cyan);
         }
+    }
 
-        .section-header-toggle {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.8rem 1rem;
-            cursor: pointer;
-            user-select: none;
+    .section-header-toggle {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.8rem 1rem;
+        cursor: pointer;
+        user-select: none;
+        transition: background 0.2s;
 
-            &:hover {
-                background: rgba(255, 255, 255, 0.05);
-            }
+        &:hover { background: rgba(255, 255, 255, 0.05); }
 
-            .section-title {
-                font-size: 0.75rem;
-                text-transform: uppercase;
-                letter-spacing: 1px;
-                color: var(--text-light);
-                margin: 0;
-            }
-
-            .toggle-arrow {
-                font-size: 0.7rem;
-                color: var(--text-muted);
-            }
+        .section-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-light);
+            margin: 0;
+            font-weight: 700;
         }
+
+        .toggle-arrow { font-size: 0.7rem; color: var(--text-muted); }
+    }
+
+    .section-content {
+        padding: 0.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        max-height: 500px;
+        overflow: hidden;
+        opacity: 1;
+        transition: max-height 0.3s ease-in-out, opacity 0.2s, padding 0.3s;
+    }
+
+    // État replié
+    .nav-section.collapsed .section-content {
+        max-height: 0;
+        padding: 0;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    // Sur mobile : navigation horizontale scrollable
+    @media (max-width: 900px) {
+        flex-direction: row;
+        overflow-x: auto;
+        gap: 0.5rem;
+        padding-bottom: 0.5rem;
+
+        &::-webkit-scrollbar { height: 3px; }
+        &::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 2px; }
+
+        .nav-section {
+            flex-shrink: 0;
+            border-left-width: 0;
+            border-top: 3px solid transparent;
+
+            &.admin-section { border-top-color: var(--red-danger); }
+            &.user-section  { border-top-color: var(--accent-cyan); }
+        }
+
+        .section-header-toggle { display: none; } // Masque les titres de section
 
         .section-content {
-            padding: 0.5rem;
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
+            max-height: none;
+            padding: 0.5rem;
             gap: 0.25rem;
-            max-height: 500px; // Valeur arbitraire pour l'animation
-            transition: max-height 0.3s ease-in-out, opacity 0.2s;
-            opacity: 1;
-        }
-
-        // État replié
-        &.collapsed {
-            .section-content {
-                max-height: 0;
-                padding: 0;
-                opacity: 0;
-                pointer-events: none;
-            }
-            border-bottom: 1px solid var(--border-color);
+            flex-wrap: nowrap;
         }
     }
 }
 
+
+// ── 4. BOUTONS D'ONGLETS ─────────────────────────────────────────────────────
 .settings-tab {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    padding: 1rem;
+    padding: 0.75rem 1rem;
     background: transparent;
     border: none;
     border-radius: 8px;
-    color: #9ca3af; /* Couleur spécifique */
+    color: #9ca3af;
     cursor: pointer;
     transition: all 0.3s ease;
     font-size: 0.875rem;
     text-align: left;
+    white-space: nowrap;
+    width: 100%;
+
+    &:hover {
+        background: var(--blue-transparent-sm);
+        color: var(--text-light);
+        transform: translateX(4px);
+    }
+
+    &.active {
+        background: linear-gradient(90deg, var(--blue-transparent-md) 0%, rgba(59, 130, 246, 0.08) 100%);
+        color: var(--text-light);
+        border-left: 3px solid white;
+    }
+
+    .tab-icon { font-size: 1.125rem; }
+
+    @media (max-width: 900px) {
+        width: auto;
+        padding: 0.5rem 0.75rem;
+
+        &:hover { transform: none; }
+        &.active { border-left: none; border-bottom: 3px solid white; }
+    }
 }
 
-.settings-tab:hover {
-    background: var(--blue-transparent-sm);
-    color: var(--text-light);
-    transform: translateX(4px);
-}
 
-.settings-tab.active {
-    background: linear-gradient(90deg, var(--blue-transparent-md) 0%, rgba(59, 130, 246, 0.08) 100%);
-    color: var(--text-light);
-    border-left: 3px solid white;
-}
-
-.tab-icon {
-    font-size: 1.125rem;
-}
-
-.settings-main {
-    flex: 1;
-    background: var(--bg-dark-tertiary);
-    border-radius: 12px;
-    padding: 2rem;
-    border: 1px solid #333333;
-}
-
-/* Classes Manager */
-.classes-manager h2 {
-    color: var(--text-light);
-    margin-bottom: 1.5rem;
-    font-size: 1.5rem;
-}
-
-.classes-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.btn-primary { /* Spécifique au settings pour l'ajout */
+// ── 5. BOUTON PRIMAIRE (Settings) ────────────────────────────────────────────
+.btn-primary {
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -173,32 +227,39 @@
     font-size: 0.875rem;
     transition: all 0.3s ease;
     box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
 }
 
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
-}
 
+// ── 6. CARTES CLASSES ────────────────────────────────────────────────────────
 .classes-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 1.5rem;
     margin-top: 2rem;
+
+    @media (max-width: 768px) {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
 }
 
 .class-card {
-    background: var(--bg-dark-secondary); /* Plus clair que le main content */
+    background: var(--bg-dark-secondary);
     border: 1px solid #333333;
     border-radius: 12px;
     padding: 1.5rem;
     transition: all 0.3s ease;
-}
 
-.class-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-    border-color: var(--accent-blue);
+    &:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        border-color: var(--accent-blue);
+    }
 }
 
 .class-card-header {
@@ -206,34 +267,26 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1rem;
-}
 
-.class-card h3 {
-    color: var(--text-light);
-    font-size: 1.25rem;
-    font-weight: 600;
+    h3 {
+        color: var(--text-light);
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
 }
 
 .class-actions {
     display: flex;
     gap: 0.5rem;
-}
 
-.class-actions .btn-edit {
-    @include btn-action-base;
-
-    &:hover {
-        background: var(--blue-transparent-sm);
-        border-color: var(--accent-blue);
+    .btn-edit {
+        @include btn-action-base;
+        &:hover { background: var(--blue-transparent-sm); border-color: var(--accent-blue); }
     }
-}
 
-.class-actions .btn-delete {
-    @include btn-action-base;
-
-    &:hover {
-        background: var(--red-transparent-sm);
-        border-color: var(--red-danger);
+    .btn-delete {
+        @include btn-action-base;
+        &:hover { background: var(--red-transparent-sm); border-color: var(--red-danger); }
     }
 }
 
@@ -249,41 +302,31 @@
     align-items: center;
 }
 
-.info-label {
-    color: #9ca3af;
-    font-size: 0.875rem;
-}
+.info-label { color: #9ca3af; font-size: 0.875rem; }
+.info-value { color: var(--text-light); font-weight: 500; font-size: 0.875rem; }
 
-.info-value {
-    color: var(--text-light);
-    font-weight: 500;
-    font-size: 0.875rem;
-}
 
-/* Modal (utilisant les styles de mixin de util.scss) */
-.settings-page .modal-overlay {
-    @include modal-overlay-base;
-    z-index: 2000; /* Plus haut pour les modales de settings si besoin */
-}
+// ── 7. MODALE (Settings) ─────────────────────────────────────────────────────
+.settings-page {
+    .modal-overlay { @include modal-overlay-base; z-index: 2000; }
 
-.settings-page .modal {
-    @include modal-base;
-    border-radius: 16px; /* Plus grand radius */
-}
+    .modal {
+        @include modal-base;
+        border-radius: 16px;
+    }
 
-.settings-page .modal-header {
-    @include modal-header-base;
-}
+    .modal-header { @include modal-header-base; }
 
-.settings-page .modal-close {
-    @include modal-close-btn-base;
-    background: none; /* Override de fond */
-    border: none; /* Override de bordure */
-    color: #9ca3af; /* Couleur spécifique */
+    .modal-close {
+        @include modal-close-btn-base;
+        background: none;
+        border: none;
+        color: #9ca3af;
 
-    &:hover {
-        background: var(--red-transparent-sm);
-        color: var(--red-danger);
+        &:hover {
+            background: var(--red-transparent-sm);
+            color: var(--red-danger);
+        }
     }
 }
 
@@ -295,132 +338,49 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 2rem;
+
+    @media (max-width: 768px) {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
 }
 
 .class-form .form-group {
     @include form-group-base;
-    label {
-        color: var(--text-light); /* Override pour plus de contraste */
-    }
+
+    label { color: var(--text-light); }
+
     input, select {
-        background: var(--bg-dark-tertiary); /* Override pour un fond plus foncé */
+        background: var(--bg-dark-tertiary);
         border: 1px solid #333333;
-        border-radius: 8px; /* Plus grand radius */
+        border-radius: 8px;
     }
 }
 
-.class-form .form-actions {
-    @include form-actions-base;
-}
+.class-form .form-actions { @include form-actions-base; }
 
 .class-form .btn-secondary {
     @include btn-secondary-base;
-    background: transparent; /* Override pour bouton secondaire transparent */
+    background: transparent;
     color: #9ca3af;
     border: 1px solid #333333;
     border-radius: 8px;
 
-    &:hover {
-        background: #333333;
-        color: var(--text-light);
-    }
+    &:hover { background: #333333; color: var(--text-light); }
 }
 
-/* Empty State */
+
+// ── 8. ÉTAT VIDE ─────────────────────────────────────────────────────────────
 .empty-state {
     text-align: center;
     padding: 3rem;
     color: #9ca3af;
+
+    .empty-icon { font-size: 3rem; display: block; margin-bottom: 1rem; }
+    h3 { color: var(--text-light); margin-bottom: 0.5rem; }
 }
 
-.empty-icon {
-    font-size: 3rem;
-    display: block;
-    margin-bottom: 1rem;
-}
-
-.empty-state h3 {
-    color: var(--text-light);
-    margin-bottom: 0.5rem;
-}
-
-/* Responsive (spécifique aux settings) */
-@media (max-width: 768px) {
-    .settings-content {
-        flex-direction: column;
-    }
-
-    .settings-sidebar {
-        width: 100%;
-    }
-
-    .settings-nav {
-        flex-direction: row;
-        overflow-x: auto;
-    }
-
-    .classes-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .form-row {
-        grid-template-columns: 1fr;
-    }
-}
-
-.container{
+.container {
     display: flex;
     justify-content: center;
-}
-
-/* Ajoutez ou modifiez ces classes dans votre fichier Settings.scss */
-
-.settings-nav {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem; // Espace entre les sections (Admin et User)
-
-    .nav-section {
-        display: flex;
-        flex-direction: column;
-        gap: 0.25rem; // Espace serré entre les boutons d'une même section
-
-        .section-title {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--text-gray); // Ou une couleur assez discrète
-            margin-bottom: 0.5rem;
-            padding-left: 1rem;
-            font-weight: 700;
-        }
-    }
-}
-
-// Optionnel : Un petit filet de séparation visuel entre les sections sur mobile
-@media (max-width: 768px) {
-    .settings-nav {
-        flex-direction: row;
-        overflow-x: auto;
-        gap: 2rem;
-        padding-bottom: 1rem;
-
-        .nav-section {
-            flex-direction: row;
-            align-items: center;
-            border-right: 1px solid #333; // Séparateur vertical sur mobile
-            padding-right: 1rem;
-
-            &:last-child {
-                border-right: none;
-            }
-
-            .section-title {
-                writing-mode: vertical-lr; // Titre vertical pour gagner de la place
-                transform: rotate(180deg);
-                padding: 0;
-                margin: 0 0.5rem 0 0;
-            }
-        }
-    }
 }

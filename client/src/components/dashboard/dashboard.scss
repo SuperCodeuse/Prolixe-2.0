@@ -1,52 +1,46 @@
-/* ============================================================
-   Dashboard.scss — Tableau de bord professionnel
-   Inspiré du design "Journal Refined"
-   Dark refined · Accents teal/cyan · Typographie structurée
-   ============================================================ */
+/* ==========================================================================
+   Dashboard.scss — Tableau de bord
+   Structure : tokens → mixins → composants → responsive
+   ========================================================================== */
 
 @import '../../App.scss';
-@import './dashboard_mobile.scss';
 
-// ── Design tokens (Harmonisés avec le Journal) ────────────────
-$teal:          #0d9488;
-$teal-light:    #14b8a6;
-$teal-dim:      rgba(13, 148, 136, 0.15);
-$teal-glow:     rgba(13, 148, 136, 0.35);
-$cyan:          #22d3ee;
-$cyan-dim:      rgba(34, 211, 238, 0.12);
-$red:           #ef4444;
-$red-dim:       rgba(239, 68, 68, 0.12);
-$amber:         #f59e0b;
-$amber-dim:     rgba(245, 158, 11, 0.12);
-$violet:        #8b5cf6;
-$violet-dim:    rgba(139, 92, 246, 0.12);
-$green:         #22c55e;
+// Note : dashboard_mobile.scss est supprimé — le responsive est géré ici
+// via des media queries directement dans chaque bloc.
 
-$surface-0:     #0a0e17;
-$surface-1:     #111827;
-$surface-2:     #1a2235;
-$surface-3:     #232f42;
+
+// ── 1. DESIGN TOKENS LOCAUX ──────────────────────────────────────────────────
+$teal:        #0d9488;
+$teal-light:  #14b8a6;
+$teal-dim:    rgba(13, 148, 136, 0.15);
+$teal-glow:   rgba(13, 148, 136, 0.35);
+$cyan:        #22d3ee;
+$cyan-dim:    rgba(34, 211, 238, 0.12);
+$red:         #ef4444;
+$red-dim:     rgba(239, 68, 68, 0.12);
+$amber:       #f59e0b;
+$amber-dim:   rgba(245, 158, 11, 0.12);
+$violet:      #8b5cf6;
+$green:       #22c55e;
+
+$surface-0:   #0a0e17;
+$surface-1:   #111827;
+$surface-2:   #1a2235;
+$surface-3:   #232f42;
+
 $border:        rgba(255, 255, 255, 0.07);
 $border-light:  rgba(255, 255, 255, 0.12);
 
-$text-primary:  #f1f5f9;
-$text-secondary:#94a3b8;
-$text-muted:    #64748b;
+$text-primary:   #f1f5f9;
+$text-secondary: #94a3b8;
+$text-muted:     #64748b;
 
-$radius-md:     0.625rem;
-$radius-lg:     1rem;
-$radius-xl:     1.25rem;
+$radius-md: 0.625rem;
+$radius-lg: 1rem;
+$radius-xl: 1.25rem;
 
-// ── Mixins ───────────────────────────────────────────────────
 
-h2{
-  color: #fff;
-}
-
-p{
-  color: #AAA;
-}
-
+// ── 2. MIXIN LOCAL ───────────────────────────────────────────────────────────
 @mixin section-header-style($accent: $teal) {
   font-size: 1.1rem;
   font-weight: 700;
@@ -65,270 +59,232 @@ p{
   }
 }
 
-// ── Root container ───────────────────────────────────────────
+// Override global pour les textes h2/p dans le dashboard
+h2 { color: #fff; }
+p  { color: #aaa; }
+
+
+// ── 3. PAGE RACINE ───────────────────────────────────────────────────────────
 .dashboard-page {
   min-height: 100vh;
   background-color: $surface-0;
   background-image:
-          linear-gradient(rgba(255,255,255,0.01) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(255,255,255,0.01) 1px, transparent 1px);
+          linear-gradient(rgba(255, 255, 255, 0.01) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.01) 1px, transparent 1px);
   background-size: 50px 50px;
   padding: 2rem;
   display: flex;
   flex-direction: column;
   gap: 2rem;
 
-  // ── Header ─────────────────────────────────────────────────
-  .dashboard-header {
+  @media (max-width: 768px) {
+    padding: 1rem;
+    gap: 1.25rem;
+  }
+}
+
+
+// ── 4. EN-TÊTE ───────────────────────────────────────────────────────────────
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  background: $surface-1;
+  border: 1px solid $border;
+  border-radius: $radius-xl;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+
+  h1 {
+    font-size: 1.8rem;
+    font-weight: 800;
+    margin: 0;
+    background: linear-gradient(135deg, $text-primary 70%, $teal-light);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  p {
+    color: $text-muted;
+    margin: 0.25rem 0 0;
+    font-size: 0.95rem;
+  }
+
+  .journal-context-selector {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1.5rem 2rem;
-    background: $surface-1;
-    border: 1px solid $border;
-    border-radius: $radius-xl;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    flex-direction: column;
+    gap: 0.4rem;
 
-    h1 {
-      font-size: 1.8rem;
+    .selector-label {
+      font-size: 0.7rem;
       font-weight: 800;
-      margin: 0;
-      background: linear-gradient(135deg, $text-primary 70%, $teal-light);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: $teal-light;
     }
 
-    p {
-      color: $text-muted;
-      margin: 0.25rem 0 0;
-      font-size: 0.95rem;
-    }
-
-    .journal-context-selector {
-      display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
-
-      .selector-label {
-        font-size: 0.7rem;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        color: $teal-light;
-      }
-
-      .custom-journal-select {
-        background: $surface-2;
-        color: $text-primary;
-        border: 1px solid $border;
-        padding: 0.6rem 1rem;
-        border-radius: $radius-md;
-        font-weight: 600;
-        cursor: pointer;
-        outline: none;
-
-        &:focus { border-color: $teal; box-shadow: 0 0 0 2px $teal-dim; }
-      }
-    }
-  }
-
-  // ── Content Layout ─────────────────────────────────────────
-  .dashboard-content {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 2rem;
-    margin: 1rem;
-  }
-
-  // ── Today Schedule Section ─────────────────────────────────
-  .daily-schedule-section {
-    background: $surface-1;
-    border: 1px solid $border;
-    border-radius: $radius-xl;
-    padding: 1.75rem;
-
-    h2 { @include section-header-style($teal); }
-
-    .daily-schedule-list {
-      display: flex;
-      flex-direction: column;
-      gap: 0.85rem;
-    }
-
-    .daily-journal-slot {
+    .custom-journal-select {
       background: $surface-2;
+      color: $text-primary;
       border: 1px solid $border;
-      border-left: 4px solid var(--subject-color, #{$teal});
+      padding: 0.6rem 1rem;
       border-radius: $radius-md;
-      padding: 1.25rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-      transition: all 0.2s ease;
+      font-weight: 600;
       cursor: pointer;
+      outline: none;
 
-      &:hover {
-        background: $surface-3;
-        transform: translateX(6px);
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-      }
-
-      .course-info-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-
-        .course-class-display {
-          font-weight: 800;
-          color: $cyan;
-          font-size: 1.1rem;
-        }
-
-        .course-time-display {
-          font-size: 0.85rem;
-          font-weight: 700;
-          color: $text-muted;
-          font-variant-numeric: tabular-nums;
-        }
-      }
-
-      .course-details {
-        .course-title-display {
-          font-size: 1rem;
-          font-weight: 700;
-          color: $text-primary;
-        }
-        .course-room-display {
-          font-size: 0.8rem;
-          color: $text-muted;
-          margin-left: 0.5rem;
-        }
-      }
-
-      // Modifier states
-      &.is-cancelled {
-        border-left-color: $red !important;
-        background: rgba($red, 0.05);
-        .course-class-display { text-decoration: line-through; color: $red; }
-      }
-      &.is-interro {
-        border-left-color: $violet !important;
-        background: rgba($violet, 0.05);
-      }
+      &:focus { border-color: $teal; box-shadow: 0 0 0 2px $teal-dim; }
     }
   }
 
-  // ── Stats Grid ─────────────────────────────────────────────
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1.5rem;
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
 
-    @media (min-width: 768px) {
-      grid-template-columns: repeat(4, 1fr);
-    }
-
-    .stat-card {
-      background: $surface-1;
-      border: 1px solid $border;
-      border-radius: $radius-xl;
-      padding: 1.5rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      cursor: pointer;
-
-      &.success {
-        border-left: 4px solid #5ba85b; // Un vert Prolixe
-        .stat-icon { background: rgba(91, 168, 91, 0.1); }
-      }
-
-      &:hover {
-        transform: translateY(-8px);
-        background: $surface-2;
-        border-color: $border-light;
-        box-shadow: 0 12px 30px rgba(0,0,0,0.4);
-      }
-
-      .stat-icon {
-        font-size: 2.2rem;
-        margin-bottom: 0.75rem;
-        filter: drop-shadow(0 0 8px rgba(0,0,0,0.5));
-      }
-
-      .stat-content {
-        h3 {
-          font-size: 1.75rem;
-          font-weight: 800;
-          color: $text-primary;
-          margin: 0;
-        }
-        p {
-          font-size: 0.85rem;
-          font-weight: 600;
-          color: $text-muted;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          margin-top: 0.25rem;
-        }
-      }
-
-      // Colors mapping
-      &.primary .stat-icon { color: $teal-light; }
-      &.info .stat-icon { color: $cyan; }
-      &.warning .stat-icon { color: $amber; }
-      &.success .stat-icon { color: $green; }
-    }
+    h1 { font-size: 1.5rem; }
   }
 }
 
-// ── Banner Archive (Orange) ──────────────────────────────────
-.archive-banner {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  background: rgba($amber, 0.08);
-  border: 1px solid rgba($amber, 0.2);
-  padding: 1.25rem;
-  border-radius: $radius-lg;
-  color: $amber;
-  margin-bottom: 1.5rem;
 
-  .icon { font-size: 1.5rem; }
-  .banner-text {
-    strong { font-size: 1rem; }
-    p { margin: 0; font-size: 0.85rem; opacity: 0.8; }
+// ── 5. LAYOUT COLONNES ───────────────────────────────────────────────────────
+.dashboard-content {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  margin: 1rem;
+
+  @media (max-width: 768px) {
+    margin: 0;
+    gap: 1rem;
   }
 }
 
-// ── No Journal Empty State ──────────────────────────────────
-.no-journal-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 60vh;
+.dashboard-columns {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 2rem;
+  align-items: start;
 
-  .error-card {
-    background: $surface-1;
+  @media (max-width: 1200px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.column { /* colonne générique */ }
+
+
+// ── 6. SECTION EMPLOI DU TEMPS DU JOUR ──────────────────────────────────────
+.daily-schedule-section {
+  background: $surface-1;
+  border: 1px solid $border;
+  border-radius: $radius-xl;
+  padding: 1.75rem;
+
+  h2 { @include section-header-style($teal); }
+
+  .daily-schedule-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+
+  .daily-journal-slot {
+    background: $surface-2;
     border: 1px solid $border;
-    border-radius: $radius-xl;
-    padding: 4rem 2rem;
-    text-align: center;
-    max-width: 500px;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    border-left: 4px solid var(--subject-color, #{$teal});
+    border-radius: $radius-md;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
 
-    .error-icon-wrapper {
-      font-size: 4rem;
-      margin-bottom: 1.5rem;
-      color: $red;
+    &:hover {
+      background: $surface-3;
+      transform: translateX(6px);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
     }
 
-    h2 { color: $text-primary; font-weight: 800; }
-    p { color: $text-muted; margin-bottom: 2rem; }
+    .course-info-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      .course-class-display {
+        font-weight: 800;
+        color: $cyan;
+        font-size: 1.1rem;
+      }
+
+      .course-time-display {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: $text-muted;
+        font-variant-numeric: tabular-nums;
+      }
+    }
+
+    .course-details {
+      .course-title-display {
+        font-size: 1rem;
+        font-weight: 700;
+        color: $text-primary;
+      }
+
+      .course-room-display {
+        font-size: 0.8rem;
+        color: $text-muted;
+        margin-left: 0.5rem;
+      }
+    }
+
+    &.is-cancelled {
+      border-left-color: $red !important;
+      background: rgba($red, 0.05);
+
+      .course-class-display { text-decoration: line-through; color: $red; }
+    }
+
+    &.is-interro {
+      border-left-color: $violet !important;
+      background: rgba($violet, 0.05);
+    }
+
+    @media (max-width: 768px) { padding: 1rem; }
   }
+
+  @media (max-width: 768px) { padding: 1rem; }
 }
+
+// Prévisualisations entrée journal
+.journal-entry-preview {
+  padding-top: 0.5rem;
+  border-top: 1px solid $border;
+  font-size: 0.8rem;
+
+  &.actual-work  .preview-text { color: $green; }
+  &.planned-work .preview-text { color: $text-muted; font-style: italic; }
+}
+
+// Info vacances dans le dashboard
+.holiday-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 2rem 1rem;
+  text-align: center;
+
+  .holiday-icon { font-size: 2rem; }
+  .holiday-name { font-weight: 700; color: $amber; font-size: 1.1rem; }
+}
+
+
+// ── 7. GRILLE STATISTIQUES ───────────────────────────────────────────────────
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -336,29 +292,32 @@ p{
   margin-top: 2rem;
 
   .stat-card {
-    background: white;
+    background: $surface-1;
+    border: 1px solid $border;
+    border-radius: $radius-xl;
     padding: 1.5rem;
-    border-radius: 12px;
     display: flex;
     align-items: center;
     gap: 1.25rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-    transition: transform 0.2s ease;
-    border: 1px solid #f0f0f0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
 
     &:hover {
       transform: translateY(-5px);
+      background: $surface-2;
+      border-color: $border-light;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
     }
 
     .stat-icon {
       font-size: 2rem;
-      width: 50px;
-      height: 50px;
+      width: 50px; height: 50px;
       display: flex;
       align-items: center;
       justify-content: center;
       border-radius: 10px;
-      background: #f8f9fa;
+      background: rgba(255, 255, 255, 0.03);
+      flex-shrink: 0;
     }
 
     .stat-info {
@@ -381,17 +340,81 @@ p{
       }
     }
 
-    // Variantes de couleurs
-    &.primary { border-left: 4px solid #4f86c6; }
-    &.info { border-left: 4px solid #5cbcb0; }
-    &.warning { border-left: 4px solid #ffae00; }
+    // Variantes couleurs
+    &.primary {
+      border-left: 4px solid $teal;
+      .stat-icon { color: $teal-light; }
+    }
+
+    &.info {
+      border-left: 4px solid $cyan;
+      .stat-icon { color: $cyan; }
+    }
+
+    &.warning {
+      border-left: 4px solid $amber;
+      .stat-icon { color: $amber; }
+    }
+
+    &.success {
+      border-left: 4px solid #5ba85b;
+      .stat-icon { color: $green; }
+    }
+  }
+
+  // Tablette : 2 colonnes
+  @media (max-width: 1024px) {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.8rem;
+  }
+
+  // Mobile : 1 colonne
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
   }
 }
 
-// Mobile
-@media (max-width: 768px) {
-  .stats-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
+
+// ── 8. BANNIÈRES ─────────────────────────────────────────────────────────────
+.archive-banner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: rgba($amber, 0.08);
+  border: 1px solid rgba($amber, 0.2);
+  padding: 1.25rem;
+  border-radius: $radius-lg;
+  color: $amber;
+  margin-bottom: 1.5rem;
+
+  .icon { font-size: 1.5rem; }
+
+  .banner-text {
+    strong { font-size: 1rem; }
+    p { margin: 0; font-size: 0.85rem; opacity: 0.8; }
+  }
+}
+
+
+// ── 9. ÉTAT VIDE (pas de journal) ────────────────────────────────────────────
+.no-journal-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 60vh;
+
+  .error-card {
+    background: $surface-1;
+    border: 1px solid $border;
+    border-radius: $radius-xl;
+    padding: 4rem 2rem;
+    text-align: center;
+    max-width: 500px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+
+    .error-icon-wrapper { font-size: 4rem; margin-bottom: 1.5rem; color: $red; }
+    h2 { color: $text-primary; font-weight: 800; }
+    p  { color: $text-muted; margin-bottom: 2rem; }
   }
 }

@@ -1,78 +1,41 @@
 /* ==========================================================================
-   Styles dédiés aux appareils mobiles - Adapté de App.scss
+   _mobile.scss — Règles globales responsive
+   NOTE : La majorité du responsive est désormais co-localisé
+   dans chaque fichier de composant. Ce fichier ne contient que
+   les overrides globaux qui n'ont pas de composant "propriétaire".
    ========================================================================== */
 
-/* --------------------------------------------------------------------------
-   Layout et mixins adaptés
-   -------------------------------------------------------------------------- */
-@media (max-width: 768px) {
-  /* Styles pour les conteneurs de page */
-  .page-container {
-    padding: 1rem;
-  }
 
-  /* Styles pour les en-têtes de page */
-  .page-header {
-    flex-direction: column;
-    gap: 1rem;
-    text-align: center;
-  }
-
-  /* Titres h1 */
-  .section-title {
-    font-size: 2rem;
-  }
-}
-
-/* --------------------------------------------------------------------------
-   Styles des composants principaux
-   -------------------------------------------------------------------------- */
+// ── Menu latéral (comportement global) ───────────────────────────────────────
 @media (max-width: 1599px) {
-  /* Menu latéral */
   .sidemenu {
-    transform: translateX(-100%); /* Caché par défaut sur les petits écrans */
-    &.open {
-      transform: translateX(0); /* Visible si l'état 'open' est appliqué */
-    }
+    transform: translateX(-100%);
+
+    &.open { transform: translateX(0); }
   }
 
-  /* Contenu principal */
   .main-content {
     padding-left: 1rem;
     padding-right: 1rem;
-    padding-top: 5rem; /* Espace pour le bouton burger */
+    padding-top: 5rem;
   }
 
-  /* Bouton d'ouverture du menu (burger) */
-  .menu-toggle-button {
-    display: block; /* Visible sur les petits écrans */
-  }
+  .menu-toggle-button { display: block; }
 }
 
-@media (max-width: 768px) {
-  /* Menu latéral (réadaptation) */
-  .sidemenu {
-    /* Ces règles étaient dans App.scss mais sont redondantes ici.
-       Elles pourraient être utilisées si vous vouliez un menu
-       différent sur les téléphones vs les tablettes. */
-    /* width: 100%;
-    height: auto;
-    position: relative;
-    animation: none; */
-  }
 
-  /* Modale */
-  .modal-content {
-    width: 95%;
-  }
-}
-
-/* --------------------------------------------------------------------------
-   Mise en page de l'application
-   -------------------------------------------------------------------------- */
+// ── Overlay mobile (sidemenu ouvert) ─────────────────────────────────────────
 @media (max-width: 1599px) {
-  .app.menu-open {
-    /* Vous pourriez ajuster le padding ici si nécessaire,
-       mais le style principal est déjà géré par le .main-content. */
+  .sidemenu-overlay { display: block; }
+}
+
+
+// ── Modale responsive générique ──────────────────────────────────────────────
+@media (max-width: 768px) {
+  .modal-content { width: 95%; }
+
+  .main-content {
+    padding: 1rem;
+    padding-top: 5rem;
   }
 }

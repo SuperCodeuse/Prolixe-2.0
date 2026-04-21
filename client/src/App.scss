@@ -1,67 +1,68 @@
-/* App.scss - Styles globaux et utilitaires */
+/* ==========================================================================
+   App.scss — Design System Global
+   Variables · Mixins · Animations · Utilitaires · Layout principal
+   ========================================================================== */
 
-/* Variables de Couleurs - Dark Theme (pour les composants principaux) et Light Theme (pour certains composants) */
+// ── 1. DESIGN TOKENS ─────────────────────────────────────────────────────────
 :root {
-  /* Couleurs du thème sombre (principal de l'application) */
-  --bg-dark-blue: #0f172a; /* Bleu très foncé, fond principal */
-  --bg-dark-secondary: #1e293b; /* Bleu foncé, pour les cartes et conteneurs secondaires */
-  --bg-dark-tertiary: #141414; /* Noir très foncé, pour certains fonds d'inputs ou barres latérales */
-  --border-color: #334155; /* Gris-bleu foncé pour les bordures */
+  // Surfaces (dark theme)
+  --bg-dark-blue:      #0f172a;
+  --bg-dark-secondary: #1e293b;
+  --bg-dark-tertiary:  #141414;
 
-  --text-light: #ffffff; /* Texte blanc principal */
-  --text-muted: #94a3b8; /* Gris-bleu clair, texte secondaire/muet */
-  --text-secondary: #d1d5db; /* Gris clair, pour les labels de formulaire */
-  --text-gray: #64748b; /* Gris moyen, pour des textes moins importants */
+  // Bordures & texte
+  --border-color:    #334155;
+  --text-light:      #ffffff;
+  --text-muted:      #94a3b8;
+  --text-secondary:  #d1d5db;
+  --text-gray:       #64748b;
 
-  /* Couleurs d'accentuation */
-  --accent-blue: rgba(98, 151, 241, 0.94); /* Bleu vif */
-  --accent-dark-blue: rgba(65, 116, 255, 0.87); /* Bleu foncé (hover) */
-  --accent-cyan: #06b6d4; /* Cyan vif */
-  --accent-dark-cyan: #0891b2; /* Cyan foncé (hover) */
-  --accent-orange: #f59e0b; /* Orange vif */
-  --accent-dark-orange: #d97706; /* Orange foncé (hover) */
-  --accent-green: #10b981; /* Vert vif */
-  --accent-dark-green: #059669; /* Vert foncé (hover) */
+  // Accents principaux
+  --accent-blue:      rgba(98, 151, 241, 0.94);
+  --accent-dark-blue: rgba(65, 116, 255, 0.87);
+  --accent-cyan:      #06b6d4;
+  --accent-dark-cyan: #0891b2;
+  --accent-orange:    #f59e0b;
+  --accent-dark-orange: #d97706;
+  --accent-green:     #10b981;
+  --accent-dark-green: #059669;
 
-  /* Couleurs spécifiques (danger, boutons) */
-  --red-danger: #ef4444; /* Rouge pour le danger/erreur */
-  --red-dark-danger: #dc2626; /* Rouge foncé (hover) */
-  --gray-button: #6b7280; /* Gris pour boutons secondaires */
-  --gray-button-hover: #4b5563; /* Gris foncé (hover) */
+  // Couleurs état
+  --red-danger:      #ef4444;
+  --red-dark-danger: #dc2626;
+  --gray-button:     #6b7280;
+  --gray-button-hover: #4b5563;
 
-  /* Couleurs transparentes (pour fonds de hover, bordures légères) */
+  // Transparences
   --white-transparent-sm: rgba(255, 255, 255, 0.05);
   --white-transparent-md: rgba(255, 255, 255, 0.1);
-  --blue-transparent-sm: rgba(59, 130, 246, 0.1);
-  --blue-transparent-md: rgba(59, 130, 246, 0.15);
-  --blue-transparent-lg: rgba(143, 177, 225, 0.53);
-  --red-transparent-sm: rgba(239, 68, 68, 0.1);
+  --blue-transparent-sm:  rgba(59, 130, 246, 0.1);
+  --blue-transparent-md:  rgba(59, 130, 246, 0.15);
+  --blue-transparent-lg:  rgba(143, 177, 225, 0.53);
+  --red-transparent-sm:   rgba(239, 68, 68, 0.1);
 
-  /* Couleurs du thème clair (pour des composants spécifiques comme ScheduleManager, ConfirmModal, Toast) */
-  --gray-light: #f3f4f6; /* Gris très clair, fond de boutons secondaires light */
-  --gray-medium: #e5e7eb; /* Gris clair, hover de boutons secondaires light */
-  --text-dark: #111827; /* Texte très foncé pour thème clair */
-  --text-dark-secondary: #374151; /* Texte foncé secondaire */
-  --text-dark-tertiary: #4a5568; /* Texte gris foncé */
-  --light-border: #e2e8f0; /* Bordure claire */
-  --light-bg-secondary: #f7fafc; /* Fond clair secondaire (ex: items de liste) */
-  --light-bg-tertiary: #edf2f7; /* Fond clair tertiaire (ex: hover items de liste) */
-  --light-border-hover: #cbd5e0; /* Bordure claire au survol */
+  // Thème clair (composants spécifiques)
+  --gray-light:         #f3f4f6;
+  --gray-medium:        #e5e7eb;
+  --text-dark:          #111827;
+  --text-dark-secondary: #374151;
+  --text-dark-tertiary:  #4a5568;
+  --light-border:       #e2e8f0;
+  --light-bg-secondary: #f7fafc;
+  --light-bg-tertiary:  #edf2f7;
+  --light-border-hover: #cbd5e0;
 
-  /* Couleurs de notification/état (thème clair) */
-  --success-light: #f0fdf4; /* Vert très clair */
-  --error-light: #fef2f2; /* Rouge très clair */
-  --warning-light: #fffbeb; /* Jaune très clair */
-  --info-light: #eff6ff; /* Bleu très clair */
+  // États / notifications (thème clair)
+  --success-light: #f0fdf4;
+  --error-light:   #fef2f2;
+  --warning-light: #fffbeb;
+  --info-light:    #eff6ff;
 }
 
-/* Mixins pour les styles réutilisables */
 
+// ── 2. MIXINS LAYOUT & PAGE ───────────────────────────────────────────────────
 @mixin page-container-base {
-  /* Le padding-left sera géré par le .main-content */
-  padding-right: 2rem;
-  padding-top: 2rem;
-  padding-bottom: 2rem;
+  padding: 2rem 2rem 2rem 0;
   background-color: var(--bg-dark-blue);
   color: var(--text-light);
 }
@@ -95,16 +96,14 @@
   border: 1px solid var(--border-color);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   overflow: overlay;
-
-  &:hover {
-    /*
-    transform: translateY(-2px);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);*/
-  }
 }
 
-// Mixins de boutons généraux (pour le thème sombre)
+
+// ── 3. MIXINS BOUTONS ─────────────────────────────────────────────────────────
 @mixin btn-primary-base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 0.75rem 1.5rem;
   border: none;
   border-radius: 0.5rem;
@@ -114,12 +113,13 @@
   background: var(--accent-blue);
   color: white;
 
-  &:hover {
-    background: var(--accent-dark-blue);
-  }
+  &:hover { background: var(--accent-dark-blue); }
 }
 
 @mixin btn-secondary-base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 0.75rem 1.5rem;
   border: none;
   border-radius: 0.5rem;
@@ -129,12 +129,13 @@
   background: var(--gray-button);
   color: white;
 
-  &:hover {
-    background: var(--gray-button-hover);
-  }
+  &:hover { background: var(--gray-button-hover); }
 }
 
 @mixin btn-danger-base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 0.75rem 1.5rem;
   border: none;
   border-radius: 0.5rem;
@@ -144,13 +145,13 @@
   background: var(--red-danger);
   color: white;
 
-  &:hover {
-    background: var(--red-dark-danger);
-  }
+  &:hover { background: var(--red-dark-danger); }
 }
 
-// Mixin pour les petits boutons d'action (edit, delete)
 @mixin btn-action-base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 0.5rem;
   background: transparent;
   border: 1px solid var(--border-color);
@@ -160,7 +161,8 @@
   font-size: 0.875rem;
 }
 
-// Mixins pour les formulaires généraux (pour le thème sombre)
+
+// ── 4. MIXINS FORMULAIRES ─────────────────────────────────────────────────────
 @mixin form-group-base {
   margin-bottom: 1.5rem;
 
@@ -171,9 +173,7 @@
     font-weight: 500;
   }
 
-  input,
-  select,
-  textarea {
+  input, select, textarea {
     width: 100%;
     padding: 0.75rem;
     background: #374151;
@@ -189,15 +189,10 @@
       box-shadow: 0 0 0 3px var(--blue-transparent-sm);
     }
 
-    &.error {
-      border-color: var(--red-danger);
-    }
+    &.error { border-color: var(--red-danger); }
   }
 
-  textarea {
-    resize: vertical;
-    min-height: 80px;
-  }
+  textarea { resize: vertical; min-height: 80px; }
 }
 
 @mixin form-actions-base {
@@ -208,13 +203,11 @@
   justify-content: flex-end;
 }
 
-// Mixins pour les modales (thème sombre)
+
+// ── 5. MIXINS MODALES ─────────────────────────────────────────────────────────
 @mixin modal-overlay-base {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background: rgba(0, 0, 0, 0.7);
   display: flex;
   align-items: center;
@@ -268,16 +261,6 @@
   }
 }
 
-// Mixin pour les boutons de formulaire dans les modales
-@mixin modal-form-btn-base {
-  padding: 0.75rem 1.5rem;
-  border-radius: 0.5rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border: none;
-}
-
 @mixin modal-form-group-base {
   margin-bottom: 1.5rem;
 
@@ -289,9 +272,7 @@
     font-size: 0.95rem;
   }
 
-  input,
-  select,
-  textarea {
+  input, select, textarea {
     width: 100%;
     padding: 0.85rem;
     background: var(--bg-dark-tertiary);
@@ -307,9 +288,7 @@
       box-shadow: 0 0 0 3px var(--blue-transparent-sm);
     }
 
-    &.error {
-      border-color: var(--red-danger);
-    }
+    &.error { border-color: var(--red-danger); }
   }
 }
 
@@ -331,160 +310,98 @@
   border: 1px solid var(--red-danger);
 }
 
-/* Animations communes */
+
+// ── 6. ANIMATIONS ─────────────────────────────────────────────────────────────
 @keyframes fadeIn {
   from { opacity: 0; }
-  to { opacity: 1; }
+  to   { opacity: 1; }
 }
 
 @keyframes scaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
 @keyframes slideInRight {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
 }
 
-/* Utilitaires pour le texte */
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+
+// ── 7. UTILITAIRES TEXTE ──────────────────────────────────────────────────────
 .text-center { text-align: center; }
-.margin-bottom-sm { margin-bottom: 0.5rem; }
-.margin-bottom-md { margin-bottom: 1rem; }
-.margin-bottom-lg { margin-bottom: 1.5rem; width: inherit }
-.font-bold { font-weight: 700; }
+.font-bold    { font-weight: 700; }
 .font-semibold { font-weight: 600; }
-.font-medium { font-weight: 500; }
-.text-sm { font-size: 0.875rem; }
-.text-md { font-size: 1rem; }
-.text-lg { font-size: 1.125rem; }
-.text-xl { font-size: 1.25rem; }
+.font-medium  { font-weight: 500; }
+.text-sm  { font-size: 0.875rem; }
+.text-md  { font-size: 1rem; }
+.text-lg  { font-size: 1.125rem; }
+.text-xl  { font-size: 1.25rem; }
 .text-2xl { font-size: 1.5rem; }
 
-/* Scrollbar personnalisée (pour éléments avec overflow) */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
+.margin-bottom-sm { margin-bottom: 0.5rem; }
+.margin-bottom-md { margin-bottom: 1rem; }
+.margin-bottom-lg { margin-bottom: 1.5rem; }
 
-::-webkit-scrollbar-track {
-  background: var(--bg-dark-blue);
-  border-radius: 4px;
-}
+.pb-1 { padding-bottom: 1rem; }
 
-::-webkit-scrollbar-thumb {
-  background: var(--border-color);
-  border-radius: 4px;
-}
+.icon-lucid { margin-right: 0.5rem; }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #475569;
-}
 
-/* Styles généraux de l'application */
+// ── 8. SCROLLBAR GLOBALE ─────────────────────────────────────────────────────
+::-webkit-scrollbar        { width: 8px; height: 8px; }
+::-webkit-scrollbar-track  { background: var(--bg-dark-blue); border-radius: 4px; }
+::-webkit-scrollbar-thumb  { background: var(--border-color); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+
+// ── 9. LAYOUT PRINCIPAL ──────────────────────────────────────────────────────
 .app {
   display: flex;
   min-height: 100vh;
-  background-color: var(--bg-dark-blue); /* Couleur de fond principale */
-}
+  background-color: var(--bg-dark-blue);
 
-.icon-lucid{
-  margin-right: 0.5rem;
-}
-
-
-.app.menu-open{
-  @media (min-width: 1600px) {
-    padding-left: 280px;
+  // Décale le contenu quand le menu est fixé sur grand écran
+  &.menu-open {
+    @media (min-width: 1600px) {
+      padding-left: 280px;
+    }
   }
 }
 
-/* Styles pour le menu latéral */
-.sidemenu {
-  width: 280px;
-  height: 100vh;
-  position: fixed; /* Le menu est maintenant toujours fixé */
-  left: 0;
-  top: 0;
-  background: var(--bg-dark-secondary);
-  border-right: 1px solid var(--border-color);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 1000;
-  backface-visibility: hidden;
-
-  .sidemenu-header {
-    padding: 1.5rem;
-    border-bottom: 1px solid var(--border-color);
-    background: var(--bg-dark-tertiary);
-  }
-
-  .logo { display: flex; align-items: center; gap: 0.75rem; }
-  .logo-icon { font-size: 1.5rem; filter: brightness(1.2); }
-  .logo-text { font-size: 1.25rem; font-weight: 600; color: var(--text-light); text-shadow: 0 0 10px rgba(255, 255, 255, 0.1); }
-  .sidemenu-nav { flex: 1; padding: 1.5rem 0; }
-  .menu-list { list-style: none; padding: 0; margin: 0; }
-  .menu-item { margin: 0.25rem 0; }
-  .menu-link {
-    display: flex; align-items: center; padding: 1rem 1.5rem; color: #b0b0b0; text-decoration: none;
-    transition: all 0.3s ease; border-left: 3px solid transparent; font-size: 0.875rem; position: relative;
-    &:hover { background: linear-gradient(90deg, var(--blue-transparent-sm) 0%, rgba(59, 130, 246, 0.05) 100%); color: var(--text-light); border-left-color: var(--accent-blue); transform: translateX(2px); }
-    &.active { background: linear-gradient(90deg, var(--blue-transparent-md) 0%, rgba(59, 130, 246, 0.08) 100%); color: var(--text-light); border-left-color: var(--accent-blue); font-weight: 500; box-shadow: inset 0 0 20px var(--blue-transparent-sm); }
-    &.active::after { content: ''; position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); width: 4px; height: 4px; background: var(--accent-blue); border-radius: 50%; box-shadow: 0 0 8px var(--accent-blue); }
-  }
-  .menu-icon { font-size: 1.125rem; margin-right: 0.875rem; width: 20px; text-align: center; filter: brightness(1.1); }
-  .menu-label { font-size: 0.875rem; font-weight: 400; }
-  .sidemenu-footer { padding: 1.5rem; border-top: 1px solid var(--border-color); background: var(--bg-dark-tertiary); }
-  .user-profile {
-    display: flex; align-items: center; gap: 0.875rem; color: var(--text-light); padding: 0.75rem;
-    border-radius: 8px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--white-transparent-md); transition: all 0.3s ease;
-    &:hover { background: rgba(255, 255, 255, 0.05); transform: translateY(-1px); }
-  }
-  .user-avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-blue), var(--accent-dark-blue)); display: flex; align-items: center; justify-content: center; font-size: 1.125rem; color: var(--text-light); box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3); text-shadow: 0 0 5px rgba(255, 255, 255, 0.3); }
-  .user-info { display: flex; flex-direction: column; flex: 1; }
-  .user-name { font-weight: 500; font-size: 0.875rem; color: var(--text-light); text-shadow: 0 0 5px rgba(255, 255, 255, 0.1); }
-  .user-role { font-size: 0.75rem; color: #9ca3af; margin-top: 0.125rem; }
-}
-
-/* Styles pour le contenu principal */
 .main-content {
-  flex-grow: 1; /* Prend tout l'espace restant */
-  padding: 2rem; /* Padding uniforme */
-  width: 100%; /* S'assure de prendre toute la largeur disponible */
-  transition: padding 0.3s ease, margin 0.3s ease;
-  overflow-y: auto; /* Ajouté pour gérer le défilement vertical interne */
+  flex-grow: 1;
+  padding: 2rem;
+  width: 100%;
+  transition: padding 0.3s ease;
+  overflow-y: auto;
   position: relative;
 }
 
-/* Overlay pour mobile/tablet quand sidemenu est ouvert */
+// Overlay mobile quand le menu latéral est ouvert
 .sidemenu-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background: rgba(0, 0, 0, 0.7);
-  z-index: 999; /* En dessous du sidemenu (1000) mais au-dessus du contenu principal */
+  z-index: 999;
   display: none;
 }
 
-/* Bouton pour ouvrir/fermer le menu (burger) */
+// Bouton burger (caché par défaut sur grand écran)
 .menu-toggle-button {
   position: fixed;
   top: 1rem;
   left: 1rem;
-  z-index: 1001; /* Au-dessus de tout le reste */
+  z-index: 1001;
   background: var(--accent-blue);
   color: white;
   border: none;
@@ -492,40 +409,114 @@
   padding: 0.5rem 0.8rem;
   font-size: 1.5rem;
   cursor: pointer;
-  display: none; /* Caché par défaut sur grand écran */
-  transition: all 0.3s ease; /* Transition pour le déplacement et le fond */
+  display: none;
+  transition: all 0.3s ease;
 
-  &:hover {
-    background: var(--accent-dark-blue);
-  }
+  &:hover { background: var(--accent-dark-blue); }
 
-  /* Ajustement de position quand le menu est ouvert sur mobile */
   .app.menu-open & {
-    left: calc(280px + 1rem); /* Décale le bouton à droite du menu ouvert */
+    left: calc(280px + 1rem);
   }
 }
 
-/* Votre mixin page-container-base ajusté pour ne plus gérer le padding-left du menu */
-@mixin page-container-base {
-  padding-right: 2rem;
-  padding-top: 2rem;
-  padding-bottom: 2rem;
-  background-color: var(--bg-dark-blue);
-  color: var(--text-light);
+
+// ── 10. MENU LATÉRAL (styles partagés App) ───────────────────────────────────
+.sidemenu {
+  width: 280px;
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+  background: var(--bg-dark-secondary);
+  border-right: 1px solid var(--border-color);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1000;
+
+  .sidemenu-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-dark-tertiary);
+  }
+
+  .logo            { display: flex; align-items: center; gap: 0.75rem; }
+  .logo-icon       { font-size: 1.5rem; }
+  .logo-text       { font-size: 1.25rem; font-weight: 600; color: var(--text-light); }
+
+  .sidemenu-nav    { flex: 1; padding: 1.5rem 0; }
+  .menu-list       { list-style: none; padding: 0; margin: 0; }
+  .menu-item       { margin: 0.25rem 0; }
+
+  .menu-link {
+    display: flex;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    color: #b0b0b0;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border-left: 3px solid transparent;
+
+    &:hover, &.active {
+      background: var(--blue-transparent-sm);
+      color: var(--text-light);
+      border-left-color: var(--accent-blue);
+    }
+
+    &.active {
+      background: var(--blue-transparent-md);
+      font-weight: 500;
+    }
+  }
+
+  .menu-icon  { font-size: 1.125rem; margin-right: 0.875rem; width: 20px; text-align: center; }
+  .menu-label { font-size: 0.875rem; }
+
+  .sidemenu-footer {
+    padding: 1.5rem;
+    border-top: 1px solid var(--border-color);
+    background: var(--bg-dark-tertiary);
+  }
+
+  .user-profile {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    color: var(--text-light);
+    padding: 0.75rem;
+    border-radius: 8px;
+    background: var(--white-transparent-sm);
+    border: 1px solid var(--white-transparent-md);
+    transition: all 0.3s ease;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.05);
+      transform: translateY(-1px);
+    }
+  }
+
+  .user-avatar {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-dark-blue));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.125rem; color: var(--text-light);
+  }
+
+  .user-info { display: flex; flex-direction: column; flex: 1; }
+  .user-name { font-weight: 500; font-size: 0.875rem; color: var(--text-light); }
+  .user-role { font-size: 0.75rem; color: #9ca3af; margin-top: 0.125rem; }
 }
 
 
-/* Ajoutez ceci à votre App.scss ou fichier de styles global */
-
+// ── 11. TOAST CONTAINER ──────────────────────────────────────────────────────
 .toast-container {
   position: fixed;
   top: 1.5rem;
   right: 1.5rem;
-  z-index: 9999; // Pour s'assurer qu'il est au-dessus de tout
+  z-index: 9999;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  width: clamp(300px, 90vw, 400px); // Largeur responsive
+  width: clamp(300px, 90vw, 400px);
 }
 
 .loading-fullscreen {
@@ -538,8 +529,43 @@
   color: var(--text-light);
 }
 
-.pb-1{
-  padding-bottom: 1rem;
+
+// ── 12. RESPONSIVE ───────────────────────────────────────────────────────────
+// Tablettes et écrans inférieurs à 1600px : menu caché par défaut
+@media (max-width: 1599px) {
+  .sidemenu {
+    transform: translateX(-100%);
+
+    &.open { transform: translateX(0); }
+  }
+
+  .main-content {
+    padding-left: 1rem;
+    padding-right: 1rem;
+    padding-top: 5rem; // Espace pour le bouton burger
+  }
+
+  .menu-toggle-button { display: block; }
 }
 
-@import "./_mobile.scss";
+// Mobile
+@media (max-width: 768px) {
+  .main-content { padding: 1rem; padding-top: 5rem; }
+
+  .toast-container {
+    top: auto;
+    bottom: 1rem;
+    right: 1rem;
+    left: 1rem;
+    width: auto;
+  }
+
+  .menu-toggle-button {
+    top: 0.75rem;
+    left: 0.75rem;
+    font-size: 1.25rem;
+    padding: 0.4rem 0.65rem;
+
+    .app.menu-open & { left: auto; right: 1rem; }
+  }
+}
