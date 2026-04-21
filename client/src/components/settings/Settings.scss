@@ -1,14 +1,13 @@
 /* ==========================================================================
-   Settings.scss — Page de paramètres
-   Structure : page → sidebar → onglets → contenu → modales → responsive
+   Settings.scss — Page de paramètres améliorée
    ========================================================================== */
 
 @import '../../App';
 
-
 // ── 1. PAGE RACINE ───────────────────────────────────────────────────────────
 .settings-page {
     @include page-container-base;
+    position: relative;
 
     @media (max-width: 768px) {
         padding: 1rem;
@@ -22,12 +21,9 @@
         font-size: 2rem;
         font-weight: 600;
         color: var(--text-light);
-        margin-bottom: 0.5rem;
     }
-
-    p { color: #9ca3af; font-size: 1rem; }
+    p { color: #9ca3af; }
 }
-
 
 // ── 2. LAYOUT : SIDEBAR + CONTENU ────────────────────────────────────────────
 .settings-content {
@@ -35,15 +31,10 @@
     gap: 2rem;
     max-width: 1600px;
     align-items: flex-start;
-
-    @media (max-width: 900px) {
-        flex-direction: column;
-        gap: 1rem;
-    }
 }
 
 .settings-sidebar {
-    width: 250px;
+    width: 280px;
     flex-shrink: 0;
     background: var(--bg-dark-tertiary);
     border-radius: 12px;
@@ -52,292 +43,151 @@
     position: sticky;
     top: 1rem;
 
+    // COMPORTEMENT MOBILE (Hamburger Menu)
     @media (max-width: 900px) {
-        width: 100%;
-        position: static;
+        position: fixed;
+        top: 0;
+        right: 0; // Il arrive de la droite pour ne pas bousculer le menu principal
+        height: 100vh;
+        z-index: 2001;
+        border-radius: 0;
+        border-left: 1px solid #444;
+        transform: translateX(100%);
+        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+
+        &.active {
+            transform: translateX(0);
+        }
     }
 }
 
 .settings-main {
     flex: 1;
-    min-width: 0; // Empêche le débordement
+    min-width: 0;
     background: var(--bg-dark-tertiary);
     border-radius: 12px;
-    padding: 2rem;
+    padding: 2.5rem;
     border: 1px solid #333333;
 
     @media (max-width: 768px) {
-        padding: 1rem;
+        padding: 1.5rem;
     }
 }
 
+// ── 3. BOUTON DÉCLENCHEUR MOBILE (Le Hamburger de paramètres) ────────────────
+.settings-mobile-trigger {
+    display: none;
 
-// ── 3. NAVIGATION LATÉRALE ───────────────────────────────────────────────────
+    @media (max-width: 900px) {
+        display: flex;
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: var(--accent-blue);
+        color: white;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        z-index: 2002;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        border: none;
+        cursor: pointer;
+
+        &:active { transform: scale(0.9); }
+    }
+}
+
+// ── 4. NAVIGATION LATÉRALE ───────────────────────────────────────────────────
 .settings-nav {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 1.5rem;
 
     .nav-section {
-        border-radius: 10px;
-        border: 1px solid var(--border-color);
-        overflow: hidden;
-        transition: all 0.3s ease;
-
-        // Différenciation visuelle admin vs user
-        &.admin-section {
-            background: rgba(30, 41, 59, 0.4);
-            border-left: 4px solid var(--red-danger);
-        }
-
-        &.user-section {
-            background: rgba(15, 23, 42, 0.6);
-            border-left: 4px solid var(--accent-cyan);
+        .section-header-toggle {
+            padding: 0.5rem 0;
+            .section-title {
+                font-size: 0.7rem;
+                color: var(--text-muted);
+                text-transform: uppercase;
+                letter-spacing: 1.5px;
+            }
+            .toggle-arrow { display: none; } // Inutile en mode liste pleine
         }
     }
 
-    .section-header-toggle {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0.8rem 1rem;
-        cursor: pointer;
-        user-select: none;
-        transition: background 0.2s;
-
-        &:hover { background: rgba(255, 255, 255, 0.05); }
-
-        .section-title {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--text-light);
-            margin: 0;
-            font-weight: 700;
-        }
-
-        .toggle-arrow { font-size: 0.7rem; color: var(--text-muted); }
-    }
-
-    .section-content {
-        padding: 0.5rem;
-        display: flex;
-        flex-direction: column;
-        gap: 0.25rem;
-        max-height: 500px;
-        overflow: hidden;
-        opacity: 1;
-        transition: max-height 0.3s ease-in-out, opacity 0.2s, padding 0.3s;
-    }
-
-    // État replié
-    .nav-section.collapsed .section-content {
-        max-height: 0;
-        padding: 0;
-        opacity: 0;
-        pointer-events: none;
-    }
-
-    // Sur mobile : navigation horizontale scrollable
     @media (max-width: 900px) {
-        flex-direction: row;
-        overflow-x: auto;
-        gap: 0.5rem;
-        padding-bottom: 0.5rem;
-
-        &::-webkit-scrollbar { height: 3px; }
-        &::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 2px; }
-
-        .nav-section {
-            flex-shrink: 0;
-            border-left-width: 0;
-            border-top: 3px solid transparent;
-
-            &.admin-section { border-top-color: var(--red-danger); }
-            &.user-section  { border-top-color: var(--accent-cyan); }
-        }
-
-        .section-header-toggle { display: none; } // Masque les titres de section
-
-        .section-content {
-            display: flex;
-            flex-direction: row;
-            max-height: none;
-            padding: 0.5rem;
-            gap: 0.25rem;
-            flex-wrap: nowrap;
-        }
+        padding-top: 3rem; // Place pour un bouton fermer en haut du menu mobile
     }
 }
 
-
-// ── 4. BOUTONS D'ONGLETS ─────────────────────────────────────────────────────
+// ── 5. BOUTONS D'ONGLETS ─────────────────────────────────────────────────────
 .settings-tab {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem 1rem;
+    gap: 1rem;
+    padding: 0.85rem 1rem;
     background: transparent;
     border: none;
-    border-radius: 8px;
+    border-radius: 10px;
     color: #9ca3af;
     cursor: pointer;
-    transition: all 0.3s ease;
-    font-size: 0.875rem;
-    text-align: left;
-    white-space: nowrap;
+    transition: all 0.2s ease;
     width: 100%;
+    margin-bottom: 0.25rem;
+
+    .tab-icon { font-size: 1.2rem; }
 
     &:hover {
-        background: var(--blue-transparent-sm);
+        background: rgba(255, 255, 255, 0.05);
         color: var(--text-light);
-        transform: translateX(4px);
     }
 
     &.active {
-        background: linear-gradient(90deg, var(--blue-transparent-md) 0%, rgba(59, 130, 246, 0.08) 100%);
-        color: var(--text-light);
-        border-left: 3px solid white;
+        background: var(--accent-blue);
+        color: white;
+        font-weight: 600;
     }
-
-    .tab-icon { font-size: 1.125rem; }
 
     @media (max-width: 900px) {
-        width: auto;
-        padding: 0.5rem 0.75rem;
-
-        &:hover { transform: none; }
-        &.active { border-left: none; border-bottom: 3px solid white; }
+        padding: 1.2rem 1rem; // Plus grand sur mobile pour le tactile
+        font-size: 1rem;
     }
 }
 
-
-// ── 5. BOUTON PRIMAIRE (Settings) ────────────────────────────────────────────
-.btn-primary {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
-    background: linear-gradient(135deg, var(--accent-blue), var(--accent-dark-blue));
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 500;
-    font-size: 0.875rem;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
-
-    &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
-    }
-}
-
-
-// ── 6. CARTES CLASSES ────────────────────────────────────────────────────────
+// ── 6. GRILLE ET CARTES ──────────────────────────────────────────────────────
 .classes-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 1.5rem;
-    margin-top: 2rem;
+    margin-top: 1.5rem;
 
-    @media (max-width: 768px) {
+    @media (max-width: 600px) {
         grid-template-columns: 1fr;
-        gap: 1rem;
     }
 }
 
 .class-card {
     background: var(--bg-dark-secondary);
-    border: 1px solid #333333;
+    border: 1px solid #333;
     border-radius: 12px;
     padding: 1.5rem;
-    transition: all 0.3s ease;
 
     &:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
         border-color: var(--accent-blue);
+        transform: translateY(-2px);
     }
 }
 
-.class-card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-
-    h3 {
-        color: var(--text-light);
-        font-size: 1.25rem;
-        font-weight: 600;
-    }
-}
-
-.class-actions {
-    display: flex;
-    gap: 0.5rem;
-
-    .btn-edit {
-        @include btn-action-base;
-        &:hover { background: var(--blue-transparent-sm); border-color: var(--accent-blue); }
-    }
-
-    .btn-delete {
-        @include btn-action-base;
-        &:hover { background: var(--red-transparent-sm); border-color: var(--red-danger); }
-    }
-}
-
-.class-info {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-}
-
-.info-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.info-label { color: #9ca3af; font-size: 0.875rem; }
-.info-value { color: var(--text-light); font-weight: 500; font-size: 0.875rem; }
-
-
-// ── 7. MODALE (Settings) ─────────────────────────────────────────────────────
-.settings-page {
-    .modal-overlay { @include modal-overlay-base; z-index: 2000; }
-
-    .modal {
-        @include modal-base;
-        border-radius: 16px;
-    }
-
-    .modal-header { @include modal-header-base; }
-
-    .modal-close {
-        @include modal-close-btn-base;
-        background: none;
-        border: none;
-        color: #9ca3af;
-
-        &:hover {
-            background: var(--red-transparent-sm);
-            color: var(--red-danger);
-        }
-    }
-}
-
-.class-form {
-    padding: 1.5rem;
-}
-
+// ── 7. FORMULAIRES ET MODALES ────────────────────────────────────────────────
 .form-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 2rem;
+    gap: 1.5rem;
 
     @media (max-width: 768px) {
         grid-template-columns: 1fr;
@@ -345,42 +195,26 @@
     }
 }
 
-.class-form .form-group {
-    @include form-group-base;
-
-    label { color: var(--text-light); }
-
-    input, select {
-        background: var(--bg-dark-tertiary);
-        border: 1px solid #333333;
-        border-radius: 8px;
-    }
-}
-
-.class-form .form-actions { @include form-actions-base; }
-
-.class-form .btn-secondary {
-    @include btn-secondary-base;
-    background: transparent;
-    color: #9ca3af;
-    border: 1px solid #333333;
+.btn-primary {
+    @include btn-primary-base; // Assumant qu'il existe dans tes mixins
+    padding: 0.8rem 1.5rem;
+    background: var(--accent-blue);
+    color: white;
     border-radius: 8px;
-
-    &:hover { background: #333333; color: var(--text-light); }
+    font-weight: 600;
 }
 
-
-// ── 8. ÉTAT VIDE ─────────────────────────────────────────────────────────────
-.empty-state {
-    text-align: center;
-    padding: 3rem;
-    color: #9ca3af;
-
-    .empty-icon { font-size: 3rem; display: block; margin-bottom: 1rem; }
-    h3 { color: var(--text-light); margin-bottom: 0.5rem; }
-}
-
-.container {
-    display: flex;
-    justify-content: center;
+// ── 8. OVERLAY SPÉCIFIQUE SETTINGS (Mobile) ──────────────────────────────────
+.settings-mobile-overlay {
+    display: none;
+    @media (max-width: 900px) {
+        &.active {
+            display: block;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(2px);
+            z-index: 2000;
+        }
+    }
 }

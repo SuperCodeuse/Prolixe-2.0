@@ -1,41 +1,46 @@
 /* ==========================================================================
    _mobile.scss — Règles globales responsive
-   NOTE : La majorité du responsive est désormais co-localisé
-   dans chaque fichier de composant. Ce fichier ne contient que
-   les overrides globaux qui n'ont pas de composant "propriétaire".
    ========================================================================== */
 
+// Empêche le défilement du contenu derrière un menu ouvert
+.no-scroll {
+  overflow: hidden;
+}
 
-// ── Menu latéral (comportement global) ───────────────────────────────────────
+// ── Menu latéral (Sidebar principale du site) ────────────────────────────────
 @media (max-width: 1599px) {
   .sidemenu {
     transform: translateX(-100%);
+    z-index: 1000;
+    transition: transform 0.3s ease;
 
     &.open { transform: translateX(0); }
   }
 
   .main-content {
-    padding-left: 1rem;
-    padding-right: 1rem;
-    padding-top: 5rem;
+    padding: 1rem;
+    padding-top: 5rem; // Espace pour le header mobile
   }
 
   .menu-toggle-button { display: block; }
 }
 
+// ── Overlay global ──────────────────────────────────────────────────────────
+.sidemenu-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 900;
 
-// ── Overlay mobile (sidemenu ouvert) ─────────────────────────────────────────
-@media (max-width: 1599px) {
-  .sidemenu-overlay { display: block; }
+  &.open { display: block; }
 }
-
 
 // ── Modale responsive générique ──────────────────────────────────────────────
 @media (max-width: 768px) {
-  .modal-content { width: 95%; }
-
-  .main-content {
-    padding: 1rem;
-    padding-top: 5rem;
+  .modal-content {
+    width: 95%;
+    margin: 10px auto;
   }
 }
