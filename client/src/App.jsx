@@ -1,6 +1,6 @@
 // App.jsx
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import SideMenu from './components/navigation/SideMenu';
 import Settings from './components/settings/Settings';
 import Dashboard from './components/dashboard/Dashboard';
@@ -53,6 +53,7 @@ const AuthenticatedAppContent = ({ isMenuOpen, toggleMenu }) => {
 const App = () => {
     const { isAuthenticated, loadingAuth } = useAuth();
     const navigate = useNavigate();
+        const location = useLocation();
 
     const { toasts, removeToast } = useToast(); // Récupération des toasts
 
@@ -86,20 +87,15 @@ const App = () => {
 
     useEffect(() => {
         if (!loadingAuth) {
-            const currentPath = window.location.pathname;
+            const currentPath = location.pathname;
+            
             if (isAuthenticated) {
                 if (currentPath === '/login' || currentPath === '/' || currentPath === '/register') {
                     navigate('/dashboard', { replace: true });
                 }
-            } else {
-                if (currentPath !== '/login' &&
-                    currentPath !== '/register' &&
-                    currentPath !== '/reset-password') {
-                    navigate('/login', { replace: true });
-                }
             }
         }
-    }, [isAuthenticated, loadingAuth, navigate]);
+    }, [isAuthenticated, loadingAuth, navigate, location.pathname]);
 
     if (loadingAuth) {
         return <div className="loading-fullscreen">Chargement...</div>;
@@ -117,7 +113,6 @@ const App = () => {
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
                     <Route path="/reset-password" element={<ResetPassword />} />
-                    <Route path="*" element={<Navigate to="/login" replace />} />
                 </Routes>
             )}
 
