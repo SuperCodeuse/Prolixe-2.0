@@ -17,6 +17,7 @@ import DocumentGenerator from "./components/DocumentGenerator/DocumentGenerator"
 import './App.scss';
 import ConseilDeClasse from "./components/cc/conseilClasse";
 import ResetPassword from "./components/authentification/ResetPassword";
+import { replace } from 'lodash';
 
 const AuthenticatedAppContent = ({ isMenuOpen, toggleMenu }) => {
     const breakpoint = 1600;
@@ -92,6 +93,10 @@ const App = () => {
             if (isAuthenticated) {
                 if (currentPath === '/login' || currentPath === '/' || currentPath === '/register') {
                     navigate('/dashboard', { replace: true });
+                }
+                else{
+                    console.log("here : ");
+                    navigate('/register', {replace: true});
                 }
             }
         }
