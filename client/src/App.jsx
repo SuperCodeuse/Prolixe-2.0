@@ -94,10 +94,6 @@ const App = () => {
                 if (currentPath === '/login' || currentPath === '/' || currentPath === '/register') {
                     navigate('/dashboard', { replace: true });
                 }
-                else{
-                    console.log("here : ");
-                    navigate('/register', {replace: true});
-                }
             }
         }
     }, [isAuthenticated, loadingAuth, navigate, location.pathname]);

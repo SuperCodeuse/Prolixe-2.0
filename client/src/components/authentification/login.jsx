@@ -138,7 +138,7 @@ const Login = () => {
 
                 <div className="login-footer" style={{ marginTop: '2rem' }}>
                     <p>
-                        Pas encore de compte ? <Link to="/register" style={{ color: 'var(--accent-blue)', fontWeight: '600' }}>S'inscrire</Link>
+                        Pas encore de compte ? <Link to="../register" style={{ color: 'var(--accent-blue)', fontWeight: '600' }}>S'inscrire</Link>
                     </p>
                 </div>
             </div>
