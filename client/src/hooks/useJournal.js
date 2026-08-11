@@ -1,10 +1,12 @@
 // client/src/hooks/useJournal.js
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import JournalService from '../services/JournalService';
+import { useAuth } from './useAuth';
 
 const JournalContext = createContext(null);
 
 export const JournalProvider = ({ children }) => {
+    const { isAuthenticated } = useAuth();
     const [journals, setJournals] = useState([]);
     const [currentJournal, setCurrentJournal] = useState(null);
     const [archivedJournals, setArchivedJournals] = useState([]);
@@ -35,9 +37,21 @@ export const JournalProvider = ({ children }) => {
         }
     }, []);
 
+    // On (re)charge les journaux dès que l'utilisateur est authentifié
+    // (login OU session restaurée au refresh). Évite le fetch pré-auth qui
+    // échouait faute de token et laissait currentJournal à null jusqu'au refresh.
     useEffect(() => {
-        loadAllJournals();
-    }, [loadAllJournals]);
+        if (isAuthenticated) {
+            loadAllJournals();
+        } else {
+            // Déconnexion : on repart d'un état propre.
+            setCurrentJournal(null);
+            setJournals([]);
+            setJournalEntries([]);
+            setAssignments([]);
+            setLoading(false);
+        }
+    }, [isAuthenticated, loadAllJournals]);
 
     const selectJournal = (journal) => {
         if (journal && journal.id) {
