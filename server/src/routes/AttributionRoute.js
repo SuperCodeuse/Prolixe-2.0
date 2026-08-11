@@ -7,6 +7,7 @@ router.use(verifyToken);
 
 router.get('/', AttributionController.getAttributions);
 router.post('/', AttributionController.createAttribution);
+router.put('/:id', AttributionController.updateAttribution);
 router.delete('/:id', AttributionController.deleteAttribution);
 
 module.exports = router;
