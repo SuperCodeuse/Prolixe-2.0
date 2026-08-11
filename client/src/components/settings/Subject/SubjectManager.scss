@@ -1,5 +1,5 @@
 // client/src/components/settings/Subject/SubjectManager.scss
-@import '../../../App';
+@import '../../../tokens';
 
 .subject-manager {
     position: relative; // Nécessaire pour l'overlay
@@ -206,7 +206,11 @@
     .table-responsive {
         border-radius: 8px;
         border: 1px solid #333333;
-        overflow: hidden;
+        // `overflow: hidden` clipait le tableau au lieu de le laisser défiler :
+        // sur téléphone les dernières colonnes devenaient inatteignables.
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
     }
 
     .prolixe-table {

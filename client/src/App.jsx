@@ -1,38 +1,61 @@
 // App.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import SideMenu from './components/navigation/SideMenu';
-import Settings from './components/settings/Settings';
-import Dashboard from './components/dashboard/Dashboard';
-import Horaire from "./components/horaire/Horaire";
-import Journal from "./components/journal/Journal";
-import Login from './components/authentification/login';
-import Register from './components/authentification/Register';
+import MobileTabBar from './components/navigation/MobileTabBar';
 import { useAuth } from './hooks/useAuth';
 import { useToast } from './hooks/useToast';
+import { useMediaQuery } from './hooks/useMediaQuery';
+import { MEDIA } from './utils/breakpoints';
 import Toast from './components/Toast';
-import CorrectionList from "./components/Correction/CorrectionList";
-import CorrectionView from "./components/Correction/CorrectionView";
-import DocumentGenerator from "./components/DocumentGenerator/DocumentGenerator";
+import Login from './components/authentification/login';
 import './App.scss';
-import ConseilDeClasse from "./components/cc/conseilClasse";
-import ResetPassword from "./components/authentification/ResetPassword";
-import { replace } from 'lodash';
 
-const AuthenticatedAppContent = ({ isMenuOpen, toggleMenu }) => {
-    const breakpoint = 1600;
+// Écrans chargés à la demande : la page de connexion n'embarque plus le
+// Journal, le générateur de PDF ni les dépendances de glisser-déposer.
+const Register = lazy(() => import('./components/authentification/Register'));
+const ResetPassword = lazy(() => import('./components/authentification/ResetPassword'));
+const Dashboard = lazy(() => import('./components/dashboard/Dashboard'));
+const Journal = lazy(() => import('./components/journal/Journal'));
+const Horaire = lazy(() => import('./components/horaire/Horaire'));
+const CorrectionList = lazy(() => import('./components/Correction/CorrectionList'));
+const CorrectionView = lazy(() => import('./components/Correction/CorrectionView'));
+const ConseilDeClasse = lazy(() => import('./components/cc/conseilClasse'));
+const DocumentGenerator = lazy(() => import('./components/DocumentGenerator/DocumentGenerator'));
+const Settings = lazy(() => import('./components/settings/Settings'));
 
-    return (
-        <>
-            {isMenuOpen && window.innerWidth < breakpoint && (
-                <div className="sidemenu-overlay" onClick={toggleMenu}></div>
-            )}
+const RouteFallback = () => (
+    <div className="route-loading" role="status" aria-live="polite">
+        <span className="route-spinner" aria-hidden="true"></span>
+        Chargement…
+    </div>
+);
 
-            <SideMenu isMenuOpen={isMenuOpen} toggleMenu={toggleMenu} />
-            <main className="main-content">
-                <button className="menu-toggle-button" onClick={toggleMenu}>
+const AuthenticatedAppContent = ({ isMenuOpen, toggleMenu, closeMenu, isMenuFixed }) => (
+    <>
+        {!isMenuFixed && (
+            <div
+                className={`sidemenu-overlay${isMenuOpen ? ' open' : ''}`}
+                onClick={closeMenu}
+                aria-hidden="true"
+            ></div>
+        )}
+
+        <SideMenu isMenuOpen={isMenuOpen} toggleMenu={toggleMenu} />
+
+        <main className="main-content">
+            {!isMenuFixed && (
+                <button
+                    className="menu-toggle-button"
+                    onClick={toggleMenu}
+                    aria-label={isMenuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
+                    aria-expanded={isMenuOpen}
+                >
                     {isMenuOpen ? '✕' : '☰'}
                 </button>
+            )}
+
+            <Suspense fallback={<RouteFallback />}>
                 <Routes>
                     <Route path="/dashboard" element={<Dashboard />} />
                     <Route path="/journal" element={<Journal />} />
@@ -42,58 +65,61 @@ const AuthenticatedAppContent = ({ isMenuOpen, toggleMenu }) => {
                     <Route path="/correction/:evaluationId" element={<CorrectionView />} />
                     <Route path="/document-generator" element={<DocumentGenerator />} />
                     <Route path="/settings" element={<Settings />} />
-                    <Route path="*" element={<Navigate to="/dashboard" replace />} />
                     <Route path="/reset-password" element={<ResetPassword />} />
+                    <Route path="*" element={<Navigate to="/dashboard" replace />} />
                 </Routes>
-            </main>
-        </>
-    );
-};
+            </Suspense>
+        </main>
+
+        <MobileTabBar />
+    </>
+);
 
 // Composant principal
 const App = () => {
     const { isAuthenticated, loadingAuth } = useAuth();
     const navigate = useNavigate();
-        const location = useLocation();
+    const location = useLocation();
+    const { toasts, removeToast } = useToast();
 
-    const { toasts, removeToast } = useToast(); // Récupération des toasts
+    // Au-dessus du seuil, le menu est fixé et toujours visible.
+    const isMenuFixed = useMediaQuery(MEDIA.menuFixed);
+    const [isMenuOpen, setIsMenuOpen] = useState(isMenuFixed);
 
-    const breakpoint = 1600;
-    const [isMenuOpen, setIsMenuOpen] = useState(window.innerWidth >= breakpoint);
+    // Le menu suit le seuil : ouvert d'office sur grand écran, replié en dessous.
+    useEffect(() => {
+        setIsMenuOpen(isMenuFixed);
+    }, [isMenuFixed]);
 
+    const toggleMenu = useCallback(() => {
+        if (!isMenuFixed) setIsMenuOpen(prev => !prev);
+    }, [isMenuFixed]);
+
+    const closeMenu = useCallback(() => {
+        if (!isMenuFixed) setIsMenuOpen(false);
+    }, [isMenuFixed]);
+
+    // Échap ferme le tiroir, et le fond ne défile plus derrière lui.
+    useEffect(() => {
+        const drawerOpen = isMenuOpen && !isMenuFixed;
+        document.body.classList.toggle('no-scroll', drawerOpen);
+
+        if (!drawerOpen) return undefined;
+
+        const onKeyDown = (event) => {
+            if (event.key === 'Escape') setIsMenuOpen(false);
+        };
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, [isMenuOpen, isMenuFixed]);
+
+    useEffect(() => () => document.body.classList.remove('no-scroll'), []);
 
     useEffect(() => {
-        let timeoutId;
-
-        const handleResize = () => {
-            clearTimeout(timeoutId);
-
-            timeoutId = setTimeout(() => {
-                setIsMenuOpen(window.innerWidth >= breakpoint);
-            }, 100);
-        };
-
-        window.addEventListener('resize', handleResize);
-        return () => {
-            window.removeEventListener('resize', handleResize);
-            clearTimeout(timeoutId);
-        };
-    }, [breakpoint]);
-
-    const toggleMenu = () => {
-        if(window.innerWidth < breakpoint){
-            setIsMenuOpen(prev => !prev);
-        }
-    }
-
-    useEffect(() => {
-        if (!loadingAuth) {
+        if (!loadingAuth && isAuthenticated) {
             const currentPath = location.pathname;
-            
-            if (isAuthenticated) {
-                if (currentPath === '/login' || currentPath === '/' || currentPath === '/register') {
-                    navigate('/dashboard', { replace: true });
-                }
+            if (currentPath === '/login' || currentPath === '/' || currentPath === '/register') {
+                navigate('/dashboard', { replace: true });
             }
         }
     }, [isAuthenticated, loadingAuth, navigate, location.pathname]);
@@ -108,14 +134,18 @@ const App = () => {
                 <AuthenticatedAppContent
                     isMenuOpen={isMenuOpen}
                     toggleMenu={toggleMenu}
+                    closeMenu={closeMenu}
+                    isMenuFixed={isMenuFixed}
                 />
             ) : (
-                <Routes>
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/register" element={<Register />} />
-                    <Route path="/reset-password" element={<ResetPassword />} />
-                    <Route path="*" element={<Navigate to="/login" replace />} />
-                </Routes>
+                <Suspense fallback={<RouteFallback />}>
+                    <Routes>
+                        <Route path="/login" element={<Login />} />
+                        <Route path="/register" element={<Register />} />
+                        <Route path="/reset-password" element={<ResetPassword />} />
+                        <Route path="*" element={<Navigate to="/login" replace />} />
+                    </Routes>
+                </Suspense>
             )}
 
             <div className="toast-container">

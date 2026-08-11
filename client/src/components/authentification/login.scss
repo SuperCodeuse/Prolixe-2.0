@@ -1,5 +1,5 @@
 /* Login.scss */
-@import '../../App.scss'; // Assurez-vous que le chemin est correct vers votre App.scss global
+@import '../../tokens'; // Assurez-vous que le chemin est correct vers votre App.scss global
 
 .login-container {
   display: grid;
@@ -96,7 +96,7 @@
 }
 
 /* Login.scss */
-@import '../../App.scss'; // Assurez-vous que le chemin est correct vers votre App.scss global
+@import '../../tokens'; // Assurez-vous que le chemin est correct vers votre App.scss global
 
 .login-container {
   display: grid;

@@ -106,7 +106,11 @@
     backdrop-filter: var(--glass-blur);
     border: 1px solid var(--glass-border);
     border-radius: 16px;
-    overflow: hidden;
+    // `overflow: hidden` clipait le tableau au lieu de le laisser défiler :
+    // sur téléphone les dernières colonnes devenaient inatteignables.
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
     box-shadow: 0 10px 40px rgba(0,0,0,0.4);
   }
 

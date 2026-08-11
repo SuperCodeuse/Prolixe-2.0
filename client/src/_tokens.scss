@@ -1,0 +1,267 @@
+/* ==========================================================================
+   _tokens.scss — mixins partages du design system
+   N'emet AUCUNE regle CSS : peut donc etre importe par tous les composants
+   sans dupliquer la feuille globale. Les variables (:root), les @keyframes et
+   les classes utilitaires restent dans App.scss, charge une seule fois.
+   ========================================================================== */
+@import 'breakpoints';
+
+
+// ── 2. MIXINS LAYOUT & PAGE ───────────────────────────────────────────────────
+@mixin page-container-base {
+  padding: 2rem;
+  background-color: var(--bg-dark-blue);
+  color: var(--text-light);
+
+  @include below($bp-mobile) { padding: 1rem; }
+}
+
+@mixin page-header-base {
+  margin-bottom: 2rem;
+  padding: 2rem;
+  background: linear-gradient(135deg, var(--bg-dark-secondary) 0%, var(--border-color) 100%);
+  border-radius: 1rem;
+  border: 1px solid var(--border-color);
+  text-align: center;
+
+  @include below($bp-mobile) {
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+}
+
+@mixin section-title-h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+  color: var(--text-light);
+}
+
+@mixin section-paragraph {
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+@mixin card-base {
+  background: var(--bg-dark-secondary);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  border: 1px solid var(--border-color);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  overflow: overlay;
+}
+
+
+// ── 3. MIXINS BOUTONS ─────────────────────────────────────────────────────────
+@mixin btn-primary-base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: var(--accent-blue);
+  color: white;
+
+  &:hover { background: var(--accent-dark-blue); }
+}
+
+@mixin btn-secondary-base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: var(--gray-button);
+  color: white;
+
+  &:hover { background: var(--gray-button-hover); }
+}
+
+@mixin btn-danger-base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: var(--red-danger);
+  color: white;
+
+  &:hover { background: var(--red-dark-danger); }
+}
+
+@mixin btn-action-base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.875rem;
+}
+
+
+// ── 4. MIXINS FORMULAIRES ─────────────────────────────────────────────────────
+@mixin form-group-base {
+  margin-bottom: 1.5rem;
+
+  label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  input, select, textarea {
+    width: 100%;
+    padding: 0.75rem;
+    background: #374151;
+    border: 1px solid #4b5563;
+    border-radius: 0.5rem;
+    color: var(--text-light);
+    font-size: 1rem;
+    transition: all 0.3s ease;
+
+    &:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 3px var(--blue-transparent-sm);
+    }
+
+    &.error { border-color: var(--red-danger); }
+  }
+
+  textarea { resize: vertical; min-height: 80px; }
+}
+
+@mixin form-actions-base {
+  display: flex;
+  gap: 1rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color);
+  justify-content: flex-end;
+}
+
+
+// ── 5. MIXINS MODALES ─────────────────────────────────────────────────────────
+@mixin modal-overlay-base {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.2s ease-out;
+}
+
+@mixin modal-base {
+  padding: 1.5rem;
+  background: var(--bg-dark-secondary);
+  border-radius: 1rem;
+  border: 1px solid var(--border-color);
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  overflow-y: auto;
+  animation: scaleIn 0.2s ease-out;
+}
+
+@mixin modal-header-base {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 0;
+  border-bottom: 1px solid var(--border-color);
+
+  h3 {
+    margin: 0;
+    color: var(--text-light);
+    font-size: 1.3rem;
+    font-weight: 600;
+  }
+}
+
+@mixin modal-close-btn-base {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: var(--border-color);
+    color: var(--text-light);
+  }
+}
+
+@mixin modal-form-group-base {
+  margin-bottom: 1.5rem;
+
+  label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    font-size: 0.95rem;
+  }
+
+  input, select, textarea {
+    width: 100%;
+    padding: 0.85rem;
+    background: var(--bg-dark-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    color: var(--text-light);
+    font-size: 1rem;
+    transition: all 0.3s ease;
+
+    &:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 3px var(--blue-transparent-sm);
+    }
+
+    &.error { border-color: var(--red-danger); }
+  }
+}
+
+@mixin modal-form-actions-base {
+  display: flex;
+  gap: 1rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color);
+  justify-content: flex-end;
+}
+
+@mixin validation-error-base {
+  background: var(--red-transparent-sm);
+  color: var(--red-danger);
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  border: 1px solid var(--red-danger);
+}
+
+

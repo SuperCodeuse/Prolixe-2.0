@@ -217,7 +217,7 @@ const CorrectionList = () => {
                                                         <button
                                                             onClick={() => handleOpenEditModal(ev)}
                                                             className="btn-edit"
-                                                            title="Modifier"
+                                                            title="Modifier" aria-label="Modifier"
                                                         >
                                                             <Pencil size={18} />
                                                         </button>
@@ -226,7 +226,7 @@ const CorrectionList = () => {
                                                     <button
                                                         onClick={() => handleOpenCopyModal(ev)}
                                                         className="btn-copy"
-                                                        title="Copier"
+                                                        title="Copier" aria-label="Copier"
                                                     >
                                                         <Copy size={18} />
                                                     </button>
@@ -234,7 +234,7 @@ const CorrectionList = () => {
                                                     <button
                                                         onClick={() => handleExportPDF(ev.id, ev.name)}
                                                         className="btn-export"
-                                                        title="Exporter en PDF"
+                                                        title="Exporter en PDF" aria-label="Exporter en PDF"
                                                     >
                                                         <FileDown size={18}/>
                                                     </button>
@@ -243,7 +243,7 @@ const CorrectionList = () => {
                                                         <button
                                                             onClick={() => handleDeleteClick(ev)}
                                                             className="btn-delete"
-                                                            title="Supprimer"
+                                                            title="Supprimer" aria-label="Supprimer"
                                                         >
                                                             <Trash2 size={18}/>
                                                         </button>

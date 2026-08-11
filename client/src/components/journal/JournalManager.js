@@ -124,7 +124,7 @@ const JournalManager = () => {
                     <button
                         onClick={() => handleExport(journal.id, journal.name)}
                         className="btn-export-icon"
-                        title="Exporter"
+                        title="Exporter" aria-label="Exporter"
                     >
                         <Download size={18} />
                     </button>

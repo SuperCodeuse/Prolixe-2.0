@@ -1,0 +1,14 @@
+{
+  "files": {
+    "main.css": "/GPT/static/css/main.b677d213.css",
+    "main.js": "/GPT/static/js/main.ff85ea43.js",
+    "static/js/760.41d19010.chunk.js": "/GPT/static/js/760.41d19010.chunk.js",
+    "static/js/239.8253a5d9.chunk.js": "/GPT/static/js/239.8253a5d9.chunk.js",
+    "static/js/206.b2cf6c63.chunk.js": "/GPT/static/js/206.b2cf6c63.chunk.js",
+    "index.html": "/GPT/index.html"
+  },
+  "entrypoints": [
+    "static/css/main.b677d213.css",
+    "static/js/main.ff85ea43.js"
+  ]
+}

@@ -86,7 +86,7 @@ const SubjectManager = () => {
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}
                 onConfirm={handleConfirmDelete}
-                title="Supprimer la matière"
+                title="Supprimer la matière" aria-label="Supprimer la matière"
                 message={`Êtes-vous sûr de vouloir supprimer la matière "${subjectToDelete?.name}" ? Cette action est irréversible.`}
                 confirmText="Supprimer"
                 type="danger"

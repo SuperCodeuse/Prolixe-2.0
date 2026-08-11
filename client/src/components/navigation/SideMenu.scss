@@ -3,7 +3,7 @@
    Structure : variables → composant → dropdown → responsive
    ========================================================================== */
 
-@import '../../App.scss';
+@import '../../tokens';
 
 
 // ── 1. MENU PRINCIPAL ────────────────────────────────────────────────────────
@@ -22,13 +22,13 @@
     z-index: 1000;
     transition: transform 0.3s ease-in-out;
 
-    // Caché par défaut sous 1600px (géré dans App.scss via .open)
-    @media (max-width: 1599px) {
+    // Caché par défaut sous le seuil (géré dans App.scss via .open)
+    @include below($bp-menu) {
         transform: translateX(-100%);
     }
 
     // Fixé et toujours visible sur grand écran
-    @media (min-width: 1600px) {
+    @include above($bp-menu) {
         position: relative;
     }
 
@@ -112,16 +112,28 @@
     }
 }
 
+// <button> pour être atteignable au clavier (c'était une <div> cliquable)
 .user-profile {
     display: flex;
     align-items: center;
     gap: 0.875rem;
+    width: 100%;
     padding: 0.75rem;
+    border: none;
     border-radius: 8px;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
     cursor: pointer;
     transition: background 0.2s ease;
 
     &:hover { background: rgba(255, 255, 255, 0.05); }
+
+    &:focus-visible {
+        outline: 2px solid var(--accent-blue);
+        outline-offset: 2px;
+    }
 }
 
 .user-avatar {

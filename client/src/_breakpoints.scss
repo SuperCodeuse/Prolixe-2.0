@@ -1,0 +1,20 @@
+/* ==========================================================================
+   _breakpoints.scss — seuils responsive partagés
+   Miroir de `src/utils/breakpoints.js` : garder les deux fichiers alignés.
+   Ce fichier n'émet aucune règle, il peut donc être importé partout.
+   ========================================================================== */
+
+// Au-dessus : le menu latéral est fixé en permanence.
+$bp-menu:   1200px;
+// En dessous : disposition téléphone.
+$bp-mobile: 768px;
+// Palier intermédiaire (tablette / petit portable).
+$bp-tablet: 1024px;
+
+@mixin below($bp) {
+  @media (max-width: $bp) { @content; }
+}
+
+@mixin above($bp) {
+  @media (min-width: $bp + 1) { @content; }
+}

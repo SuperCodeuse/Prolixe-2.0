@@ -122,7 +122,7 @@ const ConseilDeClasse = () => {
                 )}
             </header>
 
-            <main className="main-content">
+            <main className="conseil-content">
                 {isManageMode ? (
                     <div className="session-manager-view">
                         <h3>Configuration des conseils de l'année</h3>

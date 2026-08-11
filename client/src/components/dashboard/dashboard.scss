@@ -3,7 +3,7 @@
    Structure : tokens → mixins → composants → responsive
    ========================================================================== */
 
-@import '../../App.scss';
+@import '../../tokens';
 
 // Note : dashboard_mobile.scss est supprimé — le responsive est géré ici
 // via des media queries directement dans chaque bloc.
@@ -59,9 +59,13 @@ $radius-xl: 1.25rem;
   }
 }
 
-// Override global pour les textes h2/p dans le dashboard
-h2 { color: #fff; }
-p  { color: #aaa; }
+// Textes du dashboard. Ces règles étaient auparavant non scopées (`h2 {}`,
+// `p {}`) : le CSS de CRA étant un bundle unique, elles teintaient tous les
+// titres et paragraphes de l'application.
+.dashboard-page {
+  h2 { color: #fff; }
+  p  { color: #aaa; }
+}
 
 
 // ── 3. PAGE RACINE ───────────────────────────────────────────────────────────
@@ -368,10 +372,25 @@ p  { color: #aaa; }
     gap: 0.8rem;
   }
 
-  // Mobile : 1 colonne
+  // Mobile : deux tuiles par ligne, remontées en tête de page. Les chiffres
+  // du jour sont l'information la plus dense de l'écran : ils ouvraient la
+  // page sur ordinateur mais se retrouvaient tout en bas en une colonne.
   @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-    gap: 0.75rem;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.6rem;
+    margin-top: 0;
+    order: -1;
+
+    .stat-card {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.6rem;
+      padding: 0.9rem;
+
+      .stat-icon { width: 34px; height: 34px; font-size: 1.25rem; }
+      .stat-info .stat-value { font-size: 1.35rem; }
+      .stat-info .stat-label { font-size: 0.7rem; letter-spacing: 0.3px; }
+    }
   }
 }
 

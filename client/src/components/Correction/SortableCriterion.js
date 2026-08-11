@@ -62,7 +62,7 @@ const SortableCriterion = memo(({
                                     type="button"
                                     className="toggle-btn"
                                     onClick={handleSwitchToSelect}
-                                    title="Choisir une section existante"
+                                    title="Choisir une section existante" aria-label="Choisir une section existante"
                                 >
                                     <List size={14} />
                                 </button>
@@ -84,7 +84,7 @@ const SortableCriterion = memo(({
                                 type="button"
                                 className="toggle-btn"
                                 onClick={handleSwitchToInput}
-                                title="Créer une nouvelle section"
+                                title="Créer une nouvelle section" aria-label="Créer une nouvelle section"
                             >
                                 <Plus size={14} />
                             </button>
@@ -121,7 +121,7 @@ const SortableCriterion = memo(({
                     type="button"
                     className="btn-delete-criterion"
                     onClick={handleRemove}
-                    title="Supprimer ce critère"
+                    title="Supprimer ce critère" aria-label="Supprimer ce critère"
                 >
                     <Trash2 size={18} />
                 </button>

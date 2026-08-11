@@ -10,7 +10,6 @@ import { fr } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
 
 import './dashboard.scss';
-import './dashboard_mobile.scss';
 import NoteSection from './NoteSection';
 import TodayScheduleSection from './TodayScheduleSection';
 

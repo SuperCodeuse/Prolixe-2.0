@@ -10,6 +10,10 @@ const SideMenu = ({ isMenuOpen, toggleMenu }) => {
     const { logout, user } = useAuth();
     const [isLogoutDropdownOpen, setIsLogoutDropdownOpen] = React.useState(false);
 
+    // `user?.firstname[0]` plantait le rendu du menu dès qu'un prénom était
+    // absent ou vide : l'optional chaining s'arrête à `user`.
+    const initials = `${user?.firstname?.[0] || ''}${user?.name?.[0] || ''}`.toUpperCase();
+
     // Utilisation du hook pour détecter les clics en dehors du menu
     const menuRef = useOutsideClick(() => {
         if (isMenuOpen) {
@@ -76,14 +80,20 @@ const SideMenu = ({ isMenuOpen, toggleMenu }) => {
 
                 <div className="sidemenu-footer">
                     <div className={`user-menu-dropdown ${isLogoutDropdownOpen ? 'active' : ''}`}>
-                        <div className="user-profile" onClick={handleUserProfileClick}>
-                            <div className="user-avatar">{user?.firstname[0]}{user?.name[0]}</div>
+                        <button
+                            type="button"
+                            className="user-profile"
+                            onClick={handleUserProfileClick}
+                            aria-expanded={isLogoutDropdownOpen}
+                            aria-label="Menu du compte"
+                        >
+                            <div className="user-avatar">{initials || '?'}</div>
                             <div className="user-info">
                                 <span className="user-name">{user?.name}</span>
                                 <span className="user-role">{user?.role}</span>
                             </div>
                             <span className="dropdown-arrow"></span>
-                        </div>
+                        </button>
 
                         <div className="dropdown-content">
                             <button onClick={handleLogout} className="logout-btn">

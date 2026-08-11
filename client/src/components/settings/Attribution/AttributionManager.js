@@ -333,9 +333,9 @@ const AttributionManager = () => {
                                     <p className="hours-pill">ESI: {item.esi_hours}h | ESS: {item.ess_hours}h</p>
                                 </div>
                                 <div className="item-actions">
-                                    <button className="btn-edit" title="Modifier" onClick={() => handleEdit(item)}><Pencil size={16}/></button>
-                                    <button className="btn-duplicate" title="Dupliquer" onClick={() => handleDuplicate(item)}><Copy size={16}/></button>
-                                    <button className="btn-delete" title="Supprimer" onClick={() => handleDelete(item)}><Trash2 size={16}/></button>
+                                    <button className="btn-edit" title="Modifier" aria-label="Modifier" onClick={() => handleEdit(item)}><Pencil size={16}/></button>
+                                    <button className="btn-duplicate" title="Dupliquer" aria-label="Dupliquer" onClick={() => handleDuplicate(item)}><Copy size={16}/></button>
+                                    <button className="btn-delete" title="Supprimer" aria-label="Supprimer" onClick={() => handleDelete(item)}><Trash2 size={16}/></button>
                                 </div>
                             </div>
                         ))}

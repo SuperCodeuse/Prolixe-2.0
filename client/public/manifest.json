@@ -1,15 +1,26 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "name": "Prolixe — gestion de classe",
+  "short_name": "Prolixe",
+  "description": "Horaire, journal de cours, devoirs, corrections et conseils de classe.",
+  "lang": "fr",
+  "dir": "ltr",
   "icons": [
     {
-      "src": "favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
+      "src": "icon-256.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "prolixe.ico",
+      "sizes": "256x256",
       "type": "image/x-icon"
     }
   ],
-  "start_url": ".",
+  "start_url": "/GPT/",
+  "scope": "/GPT/",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "orientation": "portrait-primary",
+  "theme_color": "#0a0e17",
+  "background_color": "#0a0e17"
 }

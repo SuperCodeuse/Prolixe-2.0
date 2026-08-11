@@ -3,6 +3,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useScheduleHours } from '../../hooks/useScheduleHours';
 import { useSchedule } from '../../hooks/useSchedule';
 import { useJournal } from "../../hooks/useJournal";
+import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { MEDIA } from '../../utils/breakpoints';
 import './Horaire.scss';
 import {
     Calendar,
@@ -10,23 +12,35 @@ import {
     MapPin,
     User,
     Loader2,
-    ChevronDown,
-    AlertCircle
+    ChevronDown
 } from "lucide-react";
 
 const ALL_DAYS = [
-    { id: 1, name: 'Lundi' },
-    { id: 2, name: 'Mardi' },
-    { id: 3, name: 'Mercredi' },
-    { id: 4, name: 'Jeudi' },
-    { id: 5, name: 'Vendredi' },
-    { id: 6, name: 'Samedi' }
+    { id: 1, name: 'Lundi', short: 'Lun' },
+    { id: 2, name: 'Mardi', short: 'Mar' },
+    { id: 3, name: 'Mercredi', short: 'Mer' },
+    { id: 4, name: 'Jeudi', short: 'Jeu' },
+    { id: 5, name: 'Vendredi', short: 'Ven' },
+    { id: 6, name: 'Samedi', short: 'Sam' }
 ];
+
+// Couleurs dérivées de la matière, partagées par les deux vues.
+const courseVars = (assignment) => {
+    const c = assignment?.color || assignment?.subject_color || '#0d9488';
+    return {
+        '--course-color': c,
+        '--course-bg': `${c}15`,
+        '--course-bg-hover': `${c}25`,
+        '--course-glow': `${c}40`,
+    };
+};
 
 const Horaire = () => {
     const { currentJournal } = useJournal();
     const journalId = currentJournal?.id;
     const [selectedSetId, setSelectedSetId] = useState("");
+
+    const isMobile = useMediaQuery(MEDIA.mobile);
 
     const {
         slots,
@@ -59,13 +73,34 @@ const Horaire = () => {
         return ALL_DAYS.filter(day => Object.keys(slots).some(key => key.startsWith(`${day.id}-`)));
     }, [slots]);
 
+    // Les libellés sont au format HH:MM-HH:MM, mais la validation côté serveur
+    // accepte aussi « 8:30 ». Un tri texte placerait alors 10:00 avant 8:30 :
+    // on compare donc les minutes du début de créneau.
     const sortedHours = useMemo(() => {
-        return [...hours].sort((a, b) => a.libelle.localeCompare(b.libelle));
+        const startMinutes = (libelle) => {
+            const [h, m] = String(libelle || '').split('-')[0].split(':');
+            const minutes = Number(h) * 60 + Number(m);
+            return Number.isFinite(minutes) ? minutes : Number.MAX_SAFE_INTEGER;
+        };
+        return [...hours].sort((a, b) => startMinutes(a.libelle) - startMinutes(b.libelle));
     }, [hours]);
 
     const setsList = useMemo(() => {
         return Array.isArray(availableSets?.data) ? availableSets.data : (Array.isArray(availableSets) ? availableSets : []);
     }, [availableSets]);
+
+    // Vue mobile : un jour à la fois, celui du jour par défaut.
+    const [selectedDayId, setSelectedDayId] = useState(() => {
+        const today = new Date().getDay();
+        return today >= 1 && today <= 6 ? today : 1;
+    });
+
+    useEffect(() => {
+        if (activeDays.length === 0) return;
+        if (!activeDays.some(day => day.id === selectedDayId)) {
+            setSelectedDayId(activeDays[0].id);
+        }
+    }, [activeDays, selectedDayId]);
 
     const gridStyle = {
         gridTemplateColumns: `60px repeat(${activeDays.length}, minmax(140px, 1fr))`
@@ -80,6 +115,12 @@ const Horaire = () => {
         );
     }
 
+    const selectedDay = activeDays.find(day => day.id === selectedDayId) || activeDays[0];
+    const daySlots = selectedDay
+        ? sortedHours.map(hour => ({ hour, assignment: slots[`${selectedDay.id}-${hour.id}`] }))
+        : [];
+    const dayHasCourse = daySlots.some(entry => entry.assignment);
+
     return (
         <div className="horaire-container">
             <header className="horaire-header">
@@ -90,7 +131,9 @@ const Horaire = () => {
 
                 <div className="select-container">
                     <div className="custom-select-wrapper">
+                        <label className="sr-only" htmlFor="horaire-set">Planning affiché</label>
                         <select
+                            id="horaire-set"
                             value={selectedSetId}
                             onChange={(e) => setSelectedSetId(e.target.value)}
                             className="custom-select"
@@ -107,54 +150,90 @@ const Horaire = () => {
                 </div>
             </header>
 
-            <div className="horaire-grid-card">
-                <div className="grid-responsive-wrapper">
-                    <div className="horaire-grid" style={gridStyle}>
-                        <div className="grid-header-cell corner"><Clock size={18} /></div>
+            {isMobile ? (
+                <>
+                    <div className="day-tabs" role="tablist" aria-label="Jour affiché">
                         {activeDays.map(day => (
-                            <div key={day.id} className="grid-header-cell day-header">
-                                <span className="day-full">{day.name}</span>
-                            </div>
-                        ))}
-
-                        {sortedHours.map((hour) => (
-                            <React.Fragment key={hour.id}>
-                                <div className="time-label-cell">{hour.libelle}</div>
-                                {activeDays.map((day) => {
-                                    const assignment = slots[`${day.id}-${hour.id}`];
-
-                                    // --- DEFINITION DES COULEURS ---
-                                    const c = assignment?.color || assignment?.subject_color || '#0d9488';
-
-                                    return (
-                                        <div key={`${day.id}-${hour.id}`} className="slot-cell">
-                                            {assignment ? (
-                                                <div
-                                                    className="assignment-card"
-                                                    style={{
-                                                        '--course-color': c,
-                                                        '--course-bg': `${c}15`,       // Couleur à 8% opacité
-                                                        '--course-bg-hover': `${c}25`, // Couleur à 15% opacité
-                                                        '--course-glow': `${c}40`,     // Lueur douce
-                                                    }}
-                                                >
-                                                    <div className="subject-name">{assignment.subject_name}</div>
-                                                    <div className="assignment-meta">
-                                                        <span className="meta-item"><MapPin size={10} /> {assignment.room || '-'}</span>
-                                                        <span className="meta-item"><User size={10} /> {assignment.class_name || 'N/A'}</span>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <span className="empty-mark"></span>
-                                            )}
-                                        </div>
-                                    );
-                                })}
-                            </React.Fragment>
+                            <button
+                                key={day.id}
+                                type="button"
+                                role="tab"
+                                aria-selected={day.id === selectedDayId}
+                                className={`day-tab${day.id === selectedDayId ? ' active' : ''}`}
+                                onClick={() => setSelectedDayId(day.id)}
+                            >
+                                {day.short}
+                            </button>
                         ))}
                     </div>
+
+                    <div className="horaire-day-list">
+                        {!dayHasCourse && (
+                            <p className="day-empty">Aucun cours {selectedDay ? `le ${selectedDay.name.toLowerCase()}` : 'ce jour'}.</p>
+                        )}
+
+                        {dayHasCourse && daySlots.map(({ hour, assignment }) => (
+                            <div
+                                key={hour.id}
+                                className={`day-row${assignment ? ' has-course' : ' is-free'}`}
+                                style={assignment ? courseVars(assignment) : undefined}
+                            >
+                                <span className="day-row-time">{hour.libelle}</span>
+
+                                {assignment ? (
+                                    <div className="day-row-body">
+                                        <div className="subject-name">{assignment.subject_name}</div>
+                                        <div className="assignment-meta">
+                                            <span className="meta-item"><MapPin size={12} aria-hidden="true" /> {assignment.room || '—'}</span>
+                                            <span className="meta-item"><User size={12} aria-hidden="true" /> {assignment.class_name || 'N/A'}</span>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <span className="day-row-free">Libre</span>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </>
+            ) : (
+                <div className="horaire-grid-card">
+                    <div className="grid-responsive-wrapper">
+                        <div className="horaire-grid" style={gridStyle}>
+                            <div className="grid-header-cell corner"><Clock size={18} /></div>
+                            {activeDays.map(day => (
+                                <div key={day.id} className="grid-header-cell day-header">
+                                    <span className="day-full">{day.name}</span>
+                                </div>
+                            ))}
+
+                            {sortedHours.map((hour) => (
+                                <React.Fragment key={hour.id}>
+                                    <div className="time-label-cell">{hour.libelle}</div>
+                                    {activeDays.map((day) => {
+                                        const assignment = slots[`${day.id}-${hour.id}`];
+
+                                        return (
+                                            <div key={`${day.id}-${hour.id}`} className="slot-cell">
+                                                {assignment ? (
+                                                    <div className="assignment-card" style={courseVars(assignment)}>
+                                                        <div className="subject-name">{assignment.subject_name}</div>
+                                                        <div className="assignment-meta">
+                                                            <span className="meta-item"><MapPin size={10} aria-hidden="true" /> {assignment.room || '-'}</span>
+                                                            <span className="meta-item"><User size={10} aria-hidden="true" /> {assignment.class_name || 'N/A'}</span>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <span className="empty-mark"></span>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </React.Fragment>
+                            ))}
+                        </div>
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 };

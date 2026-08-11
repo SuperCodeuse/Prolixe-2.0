@@ -8,7 +8,6 @@ import { JournalProvider } from './hooks/useJournal';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
-import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
@@ -25,5 +24,6 @@ root.render(
     </React.StrictMode>
 );
 
-serviceWorkerRegistration.register();
+// Pas de service worker : CRA 5 n'en génère plus sans workbox-webpack-plugin.
+// L'enregistrement précédent échouait silencieusement (nginx renvoyait index.html).
 reportWebVitals();

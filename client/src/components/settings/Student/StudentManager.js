@@ -157,7 +157,7 @@ const StudentManager = () => {
                                         <button
                                             onClick={() => handleDeleteStudent(student.id, `${student.firstname} ${student.lastname}`)}
                                             className="btn-delete"
-                                            title="Supprimer"
+                                            title="Supprimer" aria-label="Supprimer"
                                         >
                                             🗑️
                                         </button>

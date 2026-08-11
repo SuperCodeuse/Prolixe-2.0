@@ -969,11 +969,11 @@ const JournalView = ({ journalId, isArchived }) => {
             {/* ---- Controls ---- */}
             <div className="journal-controls">
                 <div className="week-navigation">
-                    <button className="nav-btn" onClick={goToStart} disabled={isPrevDisabled} title="Début"><ChevronLeft size={16} /><ChevronLeft size={16} /></button>
-                    <button className="nav-btn" onClick={prevWeek} disabled={isPrevDisabled} title="Semaine précédente"><ChevronLeft size={20} /></button>
+                    <button className="nav-btn" onClick={goToStart} disabled={isPrevDisabled} title="Début" aria-label="Début"><ChevronLeft size={16} /><ChevronLeft size={16} /></button>
+                    <button className="nav-btn" onClick={prevWeek} disabled={isPrevDisabled} title="Semaine précédente" aria-label="Semaine précédente"><ChevronLeft size={20} /></button>
                     <button className="today-btn" onClick={goToToday}>Aujourd'hui</button>
-                    <button className="nav-btn" onClick={nextWeek} disabled={isNextDisabled} title="Semaine suivante"><ChevronRight size={20} /></button>
-                    <button className="nav-btn" onClick={goToEnd} disabled={isNextDisabled} title="Fin"><ChevronRight size={16} /><ChevronRight size={16} /></button>
+                    <button className="nav-btn" onClick={nextWeek} disabled={isNextDisabled} title="Semaine suivante" aria-label="Semaine suivante"><ChevronRight size={20} /></button>
+                    <button className="nav-btn" onClick={goToEnd} disabled={isNextDisabled} title="Fin" aria-label="Fin"><ChevronRight size={16} /><ChevronRight size={16} /></button>
                 </div>
 
                 <div className="current-range">
@@ -1139,7 +1139,7 @@ const JournalView = ({ journalId, isArchived }) => {
                                                 message: 'Voulez-vous repasser TOUS les créneaux de cette journée en "Cours donné" et effacer les notes d\'annulation ou de vacances ?',
                                                 onConfirm: handleResetEntireDay
                                             })}
-                                            title="Rétablir toute la journée (F5)"
+                                            title="Rétablir toute la journée (F5)" aria-label="Rétablir toute la journée (F5)"
                                         >
                                             <RotateCcw size={14} />
                                         </button>
@@ -1174,7 +1174,7 @@ const JournalView = ({ journalId, isArchived }) => {
                                                     type="button"
                                                     className="btn-validate-planned"
                                                     onClick={handleValidatePlannedWork}
-                                                    title="Copier le travail prévu ici"
+                                                    title="Copier le travail prévu ici" aria-label="Copier le travail prévu ici"
                                                 >
                                                     <CheckSquare size={14} /> Effectué
                                                 </button>

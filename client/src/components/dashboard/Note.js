@@ -68,10 +68,10 @@ const Note = ({ note, onDelete, onUpdate, stateLabel }) => {
                     {note.text && <p className="note-text">{note.text}</p>}
                 </div>
                 <div className="note-actions-buttons">
-                    <button onClick={() => setIsEditing(true)} className="edit-note-btn" title="Modifier">
+                    <button onClick={() => setIsEditing(true)} className="edit-note-btn" title="Modifier" aria-label="Modifier">
                         <Pencil size={16} />
                     </button>
-                    <button onClick={() => setIsConfirmOpen(true)} className="delete-note-btn" title="Supprimer">
+                    <button onClick={() => setIsConfirmOpen(true)} className="delete-note-btn" title="Supprimer" aria-label="Supprimer">
                         <Trash2 size={16} />
                     </button>
                 </div>
@@ -121,7 +121,7 @@ const Note = ({ note, onDelete, onUpdate, stateLabel }) => {
                         isOpen={isConfirmOpen}
                         onClose={() => setIsConfirmOpen(false)}
                         onConfirm={performDelete}
-                        title="Supprimer la note"
+                        title="Supprimer la note" aria-label="Supprimer la note"
                         message="Voulez-vous vraiment supprimer cette note ?"
                         confirmText="Supprimer"
                         type="danger"

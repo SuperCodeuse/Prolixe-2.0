@@ -315,7 +315,7 @@ const ScheduleCreator = () => {
                                 onChange={(e) => setNewSetName(e.target.value)}
                                 className="glass-input"
                             />
-                            <button type="submit" className="glass-btn primary circle" title="Ajouter">
+                            <button type="submit" className="glass-btn primary circle" title="Ajouter" aria-label="Ajouter">
                                 <Plus size={20} />
                             </button>
                         </form>
@@ -332,7 +332,7 @@ const ScheduleCreator = () => {
                         <div className="validity-badge">
                             <Clock size={14} />
                             <span>Du {new Date(currentSetData?.start_time).toLocaleDateString()} au {new Date(currentSetData?.end_time).toLocaleDateString()}</span>
-                            <button className="edit-meta-btn" onClick={openEdit} title="Modifier les dates/nom">
+                            <button className="edit-meta-btn" onClick={openEdit} title="Modifier les dates/nom" aria-label="Modifier les dates/nom">
                                 <Edit2 size={14} />
                             </button>
                         </div>
@@ -340,10 +340,10 @@ const ScheduleCreator = () => {
                             <button className="glass-btn success" onClick={handleSave} disabled={isSubmitting}>
                                 <Save size={18} /> <span>Sauvegarder</span>
                             </button>
-                            <button className="glass-btn secondary" onClick={openDuplicate} title="Dupliquer">
+                            <button className="glass-btn secondary" onClick={openDuplicate} title="Dupliquer" aria-label="Dupliquer">
                                 <Copy size={18} />
                             </button>
-                            <button className="glass-btn danger-text" onClick={handleDelete} title="Supprimer">
+                            <button className="glass-btn danger-text" onClick={handleDelete} title="Supprimer" aria-label="Supprimer">
                                 <Trash2 size={18} />
                             </button>
                         </div>
@@ -375,7 +375,7 @@ const ScheduleCreator = () => {
                                         <td key={`${d.id}-${h.id}`} className="grid-cell" style={{ '--subject-color': cellColor }}>
                                             <div className="cell-content">
                                                 {hasContent && (
-                                                    <button className="btn-clear-slot" onClick={() => clearCell(d.id, h.id)} title="Supprimer ce cours">
+                                                    <button className="btn-clear-slot" onClick={() => clearCell(d.id, h.id)} title="Supprimer ce cours" aria-label="Supprimer ce cours">
                                                         <X size={12} />
                                                     </button>
                                                 )}

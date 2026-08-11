@@ -1,5 +1,5 @@
 /* ConfirmModal.scss - Styles spécifiques à la modale de confirmation (Thème Clair) */
-@import '../App';
+@import '../tokens';
 
 .confirm-modal-overlay { /* Renommée pour éviter conflit avec .modal-overlay de util.scss */
     position: fixed;

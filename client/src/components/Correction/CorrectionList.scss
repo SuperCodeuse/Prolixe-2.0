@@ -1,4 +1,4 @@
-@import '../../App.scss';
+@import '../../tokens';
 
 .correction-list-view {
   @include page-container-base;
@@ -181,7 +181,7 @@
   }
 }
 
-@import '../../App.scss';
+@import '../../tokens';
 
 .correction-list-view {
   @include page-container-base;
