@@ -7,6 +7,7 @@
   --glass-blur: blur(12px);
   --accent-color: #3b82f6;
   --danger-color: #ef4444;
+  --duplicate-color: #14b8a6;
   --text-main: #e2e8f0;
   --text-muted: #94a3b8;
 
@@ -249,6 +250,12 @@
             color: var(--accent-color);
             border-color: var(--accent-color);
             background: rgba(59, 130, 246, 0.05);
+          }
+
+          &.btn-duplicate:hover {
+            color: var(--duplicate-color);
+            border-color: var(--duplicate-color);
+            background: rgba(20, 184, 166, 0.05);
           }
 
           &.btn-delete:hover {

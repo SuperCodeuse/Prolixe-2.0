@@ -5,15 +5,30 @@ import { useToast } from '../../../hooks/useToast';
 import ConfirmModal from '../../ConfirmModal';
 import SchoolYearDisplay from '../../../hooks/SchoolYearDisplay';
 import { format } from 'date-fns';
-import { Briefcase, Plus, X, Pencil, Trash2 } from 'lucide-react'; // Imports icônes pour le look moderne
+import { Briefcase, Plus, X, Pencil, Trash2, Copy } from 'lucide-react'; // Imports icônes pour le look moderne
 import './AttributionManager.scss';
+
+// L'API renvoie déjà des dates 'YYYY-MM-DD' (pool mysql2 en dateStrings).
+// On évite le détour par new Date(), qui les interprète en UTC et peut
+// décaler d'un jour la valeur affichée dans un input type="date".
+const toInputDate = (value) => {
+    if (!value) return '';
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value)) return value.slice(0, 10);
+    return format(new Date(value), 'yyyy-MM-dd');
+};
+
+const FORM_TITLES = {
+    create: 'Nouvelle attribution',
+    edit: 'Modifier',
+    duplicate: 'Dupliquer'
+};
 
 const AttributionManager = () => {
     const { schoolYears, loading: schoolYearsLoading } = useSchoolYears();
     const [attributions, setAttributions] = useState([]);
     const [attributionsLoading, setAttributionsLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
-    const [editing, setEditing] = useState(null);
+    const [formMode, setFormMode] = useState('create'); // 'create' | 'edit' | 'duplicate'
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, onConfirm: null });
 
     const [formData, setFormData] = useState({
@@ -47,24 +62,37 @@ const AttributionManager = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
+    // Champs du formulaire déduits d'une attribution existante, sans son id :
+    // c'est la présence de l'id qui fait basculer AttributionService entre
+    // PUT (mise à jour) et POST (création).
+    const formFieldsFrom = (attribution) => ({
+        school_year_id: attribution.school_year_id,
+        school_name: attribution.school_name,
+        start_date: toInputDate(attribution.start_date),
+        end_date: toInputDate(attribution.end_date),
+        className: attribution.class || '',
+        esi_hours: attribution.esi_hours || 0,
+        ess_hours: attribution.ess_hours || 0,
+    });
+
     const handleAddNew = () => {
-        setEditing(null);
+        setFormMode('create');
         setFormData({ school_year_id: '', school_name: '', start_date: '', end_date: '', esi_hours: 0, ess_hours: 0, className: '' });
         setShowForm(true);
     };
 
     const handleEdit = (attribution) => {
-        setEditing(attribution);
-        setFormData({
-            id: attribution.id,
-            school_year_id: attribution.school_year_id,
-            school_name: attribution.school_name,
-            start_date: format(new Date(attribution.start_date), 'yyyy-MM-dd'),
-            end_date: format(new Date(attribution.end_date), 'yyyy-MM-dd'),
-            className: attribution.class || '',
-            esi_hours: attribution.esi_hours || 0,
-            ess_hours: attribution.ess_hours || 0,
-        });
+        setFormMode('edit');
+        setFormData({ id: attribution.id, ...formFieldsFrom(attribution) });
+        setShowForm(true);
+    };
+
+    // Duplication : on pré-remplit le formulaire avec les données de la source
+    // mais sans id, donc rien n'est écrit en base tant que l'utilisateur n'a
+    // pas validé. Annuler ne laisse aucune attribution orpheline.
+    const handleDuplicate = (attribution) => {
+        setFormMode('duplicate');
+        setFormData(formFieldsFrom(attribution));
         setShowForm(true);
     };
 
@@ -76,7 +104,7 @@ const AttributionManager = () => {
         }
         try {
             await AttributionService.saveAttribution(formData);
-            success(`Attribution sauvegardée.`);
+            success(formMode === 'duplicate' ? 'Attribution dupliquée.' : 'Attribution sauvegardée.');
             setShowForm(false);
             fetchAttributions();
         } catch (err) {
@@ -132,7 +160,7 @@ const AttributionManager = () => {
             {showForm && (
                 <div className="glass-modal-overlay">
                     <div className="glass-modal">
-                        <h3>{editing ? 'Modifier' : 'Nouvelle attribution'}</h3>
+                        <h3>{FORM_TITLES[formMode]}</h3>
                         <form onSubmit={handleSave} className="attribution-form">
                             {/* Section Année Scolaire */}
                             <div className="input-group">
@@ -261,8 +289,9 @@ const AttributionManager = () => {
                                     <p className="hours-pill">ESI: {item.esi_hours}h | ESS: {item.ess_hours}h</p>
                                 </div>
                                 <div className="item-actions">
-                                    <button className="btn-edit" onClick={() => handleEdit(item)}><Pencil size={16}/></button>
-                                    <button className="btn-delete" onClick={() => handleDelete(item)}><Trash2 size={16}/></button>
+                                    <button className="btn-edit" title="Modifier" onClick={() => handleEdit(item)}><Pencil size={16}/></button>
+                                    <button className="btn-duplicate" title="Dupliquer" onClick={() => handleDuplicate(item)}><Copy size={16}/></button>
+                                    <button className="btn-delete" title="Supprimer" onClick={() => handleDelete(item)}><Trash2 size={16}/></button>
                                 </div>
                             </div>
                         ))}
