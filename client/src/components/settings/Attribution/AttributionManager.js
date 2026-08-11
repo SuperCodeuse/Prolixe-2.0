@@ -5,7 +5,8 @@ import { useToast } from '../../../hooks/useToast';
 import ConfirmModal from '../../ConfirmModal';
 import SchoolYearDisplay from '../../../hooks/SchoolYearDisplay';
 import { format } from 'date-fns';
-import { Briefcase, Plus, X, Pencil, Trash2, Copy } from 'lucide-react'; // Imports icônes pour le look moderne
+import { Briefcase, Plus, X, Pencil, Trash2, Copy, ChevronDown, ChevronRight } from 'lucide-react'; // Imports icônes pour le look moderne
+import { summarizeYearHours, formatHours } from '../../../utils/attributionHours';
 import './AttributionManager.scss';
 
 // L'API renvoie déjà des dates 'YYYY-MM-DD' (pool mysql2 en dateStrings).
@@ -29,6 +30,7 @@ const AttributionManager = () => {
     const [attributionsLoading, setAttributionsLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [formMode, setFormMode] = useState('create'); // 'create' | 'edit' | 'duplicate'
+    const [collapsedYears, setCollapsedYears] = useState(() => new Set());
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, onConfirm: null });
 
     const [formData, setFormData] = useState({
@@ -137,6 +139,21 @@ const AttributionManager = () => {
     }, {});
 
     const sortedGroupKeys = Object.keys(groupedAttributions).sort((a, b) => b - a);
+
+    const toggleYear = (yearId) => {
+        setCollapsedYears(prev => {
+            const next = new Set(prev);
+            if (next.has(yearId)) next.delete(yearId);
+            else next.add(yearId);
+            return next;
+        });
+    };
+
+    // L'année de rentrée vient de SCHOOL_YEARS via l'alias school_year_start ;
+    // repli sur le hook si un ancien cache ne le contient pas encore.
+    const startYearOf = (yearId, items) =>
+        items[0]?.school_year_start
+        ?? schoolYears.find(sy => String(sy.id) === String(yearId))?.start_date;
 
     if (attributionsLoading || schoolYearsLoading) {
         return <div className="state-message">Chargement...</div>;
@@ -278,10 +295,37 @@ const AttributionManager = () => {
             )}
 
             <div className="attribution-list">
-                {sortedGroupKeys.map(yearId => (
-                    <div key={yearId} className="year-group">
-                        <h4 className="year-title"><SchoolYearDisplay schoolYearId={yearId} /></h4>
-                        {groupedAttributions[yearId].map(item => (
+                {sortedGroupKeys.map(yearId => {
+                    const items = groupedAttributions[yearId];
+                    const collapsed = collapsedYears.has(yearId);
+                    const summary = summarizeYearHours(items, startYearOf(yearId, items));
+
+                    return (
+                    <div key={yearId} className={`year-group${collapsed ? ' is-collapsed' : ''}`}>
+                        <h4 className="year-heading">
+                            <button
+                                type="button"
+                                className="year-header"
+                                onClick={() => toggleYear(yearId)}
+                                aria-expanded={!collapsed}
+                                title={collapsed ? 'Déplier l\'année' : 'Replier l\'année'}
+                            >
+                                {collapsed
+                                    ? <ChevronRight className="year-chevron" size={18} />
+                                    : <ChevronDown className="year-chevron" size={18} />}
+                                <span className="year-title"><SchoolYearDisplay schoolYearId={yearId} /></span>
+                                {summary && (
+                                    <span className="year-totals">
+                                        <span className="hours-summary">ESI {formatHours(summary.esi)}</span>
+                                        <span className="hours-summary">ESS {formatHours(summary.ess)}</span>
+                                        <span className="hours-summary is-total">Total {formatHours(summary.total)}</span>
+                                    </span>
+                                )}
+                                <span className="year-rule" />
+                                <span className="year-count">{items.length}</span>
+                            </button>
+                        </h4>
+                        {!collapsed && items.map(item => (
                             <div className="attribution-item" key={item.id}>
                                 <div className="item-details">
                                     <strong>{item.school_name} {item.class && ` - ${item.class}`}</strong>
@@ -296,7 +340,8 @@ const AttributionManager = () => {
                             </div>
                         ))}
                     </div>
-                ))}
+                    );
+                })}
             </div>
 
             <ConfirmModal

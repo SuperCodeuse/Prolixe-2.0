@@ -169,22 +169,97 @@
     .year-group {
       margin-bottom: 2rem;
 
-      .year-title {
-        font-size: 0.9rem;
-        color: var(--accent-color);
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
+      &.is-collapsed {
         margin-bottom: 1rem;
+      }
+
+      .year-heading {
+        margin: 0 0 1rem;
+      }
+
+      // En-tête cliquable : chevron, libellé, totaux, filet, compteur.
+      .year-header {
         display: flex;
         align-items: center;
+        gap: 0.7rem;
+        width: 100%;
+        padding: 0.15rem 0;
+        background: none;
+        border: none;
+        cursor: pointer;
+        text-align: left;
+        font: inherit;
 
-        &::after {
-          content: "";
+        .year-chevron {
+          flex-shrink: 0;
+          color: var(--text-muted);
+          transition: color 0.2s;
+        }
+
+        .year-title {
+          font-size: 0.9rem;
+          color: var(--accent-color);
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          white-space: nowrap;
+        }
+
+        .year-totals {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.35rem;
+
+          .hours-summary {
+            font-size: 0.7rem;
+            font-weight: 600;
+            white-space: nowrap;
+            padding: 0.12rem 0.5rem;
+            border-radius: 999px;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg);
+            color: var(--text-muted);
+
+            &.is-total {
+              color: var(--text-main);
+              border-color: rgba(59, 130, 246, 0.35);
+            }
+          }
+        }
+
+        .year-rule {
           flex: 1;
+          min-width: 0.5rem;
           height: 1px;
           background: var(--glass-border);
-          margin-left: 1rem;
+        }
+
+        .year-count {
+          flex-shrink: 0;
+          font-size: 0.7rem;
+          font-weight: 600;
+          color: var(--text-muted);
+          min-width: 1.4rem;
+          text-align: center;
+          padding: 0.12rem 0.4rem;
+          border-radius: 999px;
+          background: var(--glass-bg);
+          border: 1px solid var(--glass-border);
+        }
+
+        &:hover {
+          .year-chevron { color: var(--accent-color); }
+          .year-rule { background: rgba(59, 130, 246, 0.25); }
+        }
+
+        // Le filet ne survit pas à un écran étroit : on le retire et on laisse
+        // les pastilles passer à la ligne sous le libellé de l'année.
+        @media (max-width: 640px) {
+          flex-wrap: wrap;
+          gap: 0.5rem;
+
+          .year-rule { display: none; }
+          .year-count { margin-left: auto; }
         }
       }
     }
