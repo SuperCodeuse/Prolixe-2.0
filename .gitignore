@@ -142,3 +142,9 @@ vite.config.ts.timestamp-*
 /client/build
 /client/src/api/axiosConfig.js
 /server/.env
+
+# Sorties de build alternatives et sauvegardes locales
+/client/build_new
+*.bak
+*.bak.*
+*.bak_*
