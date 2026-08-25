@@ -39,6 +39,9 @@ const HolidaysManager = () => {
 
     const handleFileChange = async (event) => {
         const file = event.target.files[0];
+        // On vide le champ tout de suite : réimporter le même fichier doit
+        // relancer un onChange.
+        event.target.value = '';
         if (!file || !selectedYearId) return;
 
         const formData = new FormData();
@@ -47,11 +50,11 @@ const HolidaysManager = () => {
 
         try {
             setIsLoading(true);
-            await HolidaysManagerService.uploadHolidaysFile(formData);
-            showSuccess(`Calendrier mis à jour avec succès.`);
+            const result = await HolidaysManagerService.uploadHolidaysFile(formData);
+            showSuccess(result?.message || 'Calendrier mis à jour avec succès.');
             await fetchYears(); // Rafraîchissement pour voir la pastille changer
         } catch (error) {
-            showError("Erreur lors de l'importation.");
+            showError(error?.response?.data?.message || "Erreur lors de l'importation.");
         } finally {
             setIsLoading(false);
         }
@@ -61,7 +64,7 @@ const HolidaysManager = () => {
         <div className="holidays-manager container-fluid">
             <div className="header-section">
                 <h2> <CalendarDays /> Gestion des Congés Scolaires</h2>
-                <p className="subtitle">Liez les calendriers JSON aux années académiques</p>
+                <p className="subtitle">Liez un calendrier (JSON ou PDF de l'école) aux années académiques</p>
             </div>
 
             <div className="main-grid">
@@ -90,13 +93,14 @@ const HolidaysManager = () => {
                             <input
                                 id="file-upload"
                                 type="file"
-                                accept=".json"
+                                accept=".json,.pdf,application/json,application/pdf"
                                 onChange={handleFileChange}
                                 disabled={isLoading}
                             />
                             <label htmlFor="file-upload" className="btn-upload">
-                                {isLoading ? 'Traitement...' : '📤 Remplacer le JSON'}
+                                {isLoading ? 'Traitement...' : '📤 Remplacer le calendrier'}
                             </label>
+                            <p className="upload-hint">Formats acceptés : .json ou le .pdf du calendrier scolaire</p>
                         </div>
                     )}
 
@@ -140,7 +144,7 @@ const HolidaysManager = () => {
                         </div>
                     ) : (
                         <div className="empty-state">
-                            <p>{selectedYearId ? "Aucune donnée JSON pour cette année." : "Sélectionnez une année pour voir les détails."}</p>
+                            <p>{selectedYearId ? "Aucun calendrier importé pour cette année." : "Sélectionnez une année pour voir les détails."}</p>
                         </div>
                     )}
                 </div>

@@ -148,3 +148,6 @@ vite.config.ts.timestamp-*
 *.bak
 *.bak.*
 *.bak_*
+/client/build_backup_*
+/client/build_prev_*
+/client/build_v*
