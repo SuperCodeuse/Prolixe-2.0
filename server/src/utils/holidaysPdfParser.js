@@ -265,17 +265,69 @@ function nextDay(isoDate) {
     return d.toISOString().slice(0, 10);
 }
 
+// --- 5. Normalisation des intitules ----------------------------------------
+//
+// Le PDF ecrit ce qui tient dans la cellule ("Conge", "Vacances", "Conge" +
+// "de detente" sur deux lignes...). On rend le vocabulaire officiel de la
+// Federation Wallonie-Bruxelles, deja utilise dans les JSON des annees
+// precedentes.
+
+const LONG_BREAK_MIN_DAYS = 5;
+
+// Repere par mot-cle, pour les jours feries et les congés nommes dans le PDF.
+const CANONICAL_LABELS = [
+    [/detente|carnaval/, 'Congé de détente'],
+    [/printemps/, 'Vacances de printemps'],
+    [/automne|toussaint/, "Congé d'automne"],
+    [/hiver|noel/, "Vacances d'hiver"],
+    [/\bete\b|grandes? vacances/, "Vacances d'été"],
+    [/mardi gras/, 'Mardi gras'],
+    [/armistice/, 'Armistice'],
+    [/ascension/, 'Ascension'],
+    [/pentecote/, 'Lundi de Pentecôte'],
+    [/paques/, 'Lundi de Pâques'],
+    [/morts/, 'Fête des morts'],
+    [/communaute/, 'Fête de la Communauté Française'],
+    [/travail|1er mai/, 'Fête du Travail']
+];
+
+// Repere par periode, pour les quatre congés legaux : leur cellule ne porte
+// souvent qu'un "Conge" ou "Vacances" sans qualificatif.
+function longBreakName(dates) {
+    const has = (mmdd) => dates.some(d => d.slice(5) === mmdd);
+    if (has('12-25') || has('01-01')) return "Vacances d'hiver";
+    if (has('11-01') || has('10-31')) return "Congé d'automne";
+    const middle = dates[Math.floor(dates.length / 2)];
+    const month = parseInt(middle.slice(5, 7), 10);
+    if (month === 2 || month === 3) return 'Congé de détente';
+    if (month === 4 || month === 5) return 'Vacances de printemps';
+    if (month === 7 || month === 8) return "Vacances d'été";
+    return null;
+}
+
 function nameFor(group) {
+    const dates = group.map(d => d.date);
+
+    // Un bloc de deux semaines est forcement l'un des congés legaux : la
+    // periode est un indice plus fiable que le texte de la cellule.
+    if (group.length >= LONG_BREAK_MIN_DAYS) {
+        const byPeriod = longBreakName(dates);
+        if (byPeriod) return byPeriod;
+    }
+
     const labels = [];
     for (const d of group) {
         if (d.label && !labels.includes(d.label)) labels.push(d.label);
     }
-    if (!labels.length) {
-        const month = parseInt(group[0].date.slice(5, 7), 10);
-        return (month === 7 || month === 8) ? 'Vacances d’été' : 'Congé';
+    const raw = stripAccents(labels.join(' ')).toLowerCase();
+    for (const [pattern, name] of CANONICAL_LABELS) {
+        if (pattern.test(raw)) return name;
     }
-    // Un fragment qui commence en minuscule est la suite du precedent : le PDF
-    // ecrit "Conge" / "de detente" sur deux lignes de la cellule fusionnee.
+
+    // Intitule inconnu : on garde le texte du PDF plutot que de le perdre. Un
+    // fragment qui commence en minuscule est la suite du precedent, le PDF
+    // ecrivant "Conge" / "de detente" sur deux lignes d'une cellule fusionnee.
+    if (!labels.length) return 'Congé';
     return labels.reduce((acc, label, i) =>
         i === 0 ? label : acc + (/^[a-zà-ÿ]/.test(label) ? ' ' : ' - ') + label, '');
 }
