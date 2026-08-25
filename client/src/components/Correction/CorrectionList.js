@@ -105,7 +105,7 @@ const CorrectionList = () => {
         setConfirmModal({
             isOpen: true,
             title: 'Confirmer la suppression',
-            message: `Êtes-vous sûr de vouloir supprimer l'évaluation "${ev.name}" ? Cette action est irréversible.`,
+            message: `Êtes-vous sûr de vouloir supprimer l'évaluation "${ev.title}" ? Cette action est irréversible.`,
             onConfirm: () => performDelete(ev.id),
         });
     };
@@ -138,19 +138,23 @@ const CorrectionList = () => {
         }
     };
 
-    const handleExportPDF = async (evaluationId, evaluationName) => {
+    const handleExportPDF = async (evaluation) => {
+        const evaluationName = evaluation.title || evaluation.name || 'évaluation';
         const loadingToastId = info(`Exportation de "${evaluationName}" en cours...`, 60000);
 
         try {
-            const response = await getEvaluationForGrading(evaluationId);
-            const { evaluation, students, criteria, grades: globalGrades, criteriaGrades } = response.data.data;
+            const response = await getEvaluationForGrading(evaluation.id);
+            const {
+                evaluation: evaluationDetails, students, criteria,
+                grades: globalGrades, criteriaGrades,
+            } = response.data.data;
 
             // --- Transformation des données pour le PDF ---
             // On recrée l'objet de "mapping" exactement comme dans ton useEffect de CorrectionView
             const gradesObject = {};
 
             // 1. On mappe les notes des critères (scores individuels)
-            criteriaGrades.forEach(cg => {
+            (criteriaGrades || []).forEach(cg => {
                 gradesObject[`${cg.student_id}-${cg.criterion_id}`] = {
                     score: cg.score_obtained,
                     comment: cg.comment || '',
@@ -158,7 +162,7 @@ const CorrectionList = () => {
             });
 
             // 2. On mappe les données globales (absences et commentaires de bilan)
-            globalGrades.forEach(g => {
+            (globalGrades || []).forEach(g => {
                 gradesObject[`global-${g.student_id}`] = {
                     comment: g.comment || '',
                     is_absent: !!g.is_absent // On s'assure que c'est un booléen
@@ -166,10 +170,10 @@ const CorrectionList = () => {
             });
 
             // Appel de la génération avec l'objet formaté
-            await generateEvaluationPDF(evaluation, students, criteria, gradesObject);
+            const fileName = await generateEvaluationPDF(evaluationDetails, students, criteria, gradesObject);
 
             removeToast(loadingToastId);
-            success('PDF exporté avec succès !');
+            success(`PDF exporté : ${fileName}`);
         } catch (err) {
             console.error('Export Error:', err);
             removeToast(loadingToastId);
@@ -232,7 +236,7 @@ const CorrectionList = () => {
                                                     </button>
 
                                                     <button
-                                                        onClick={() => handleExportPDF(ev.id, ev.name)}
+                                                        onClick={() => handleExportPDF(ev)}
                                                         className="btn-export"
                                                         title="Exporter en PDF" aria-label="Exporter en PDF"
                                                     >

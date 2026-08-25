@@ -158,6 +158,14 @@ exports.getEvaluationForGrading = async (req, res) => {
     } catch (error) { res.status(500).json({ success: false, error: error.message }); }
 };
 
+// MySQL refuse un NaN (mysql2 l'injecte tel quel dans la requête) : toute valeur
+// non numérique doit devenir NULL, sinon l'INSERT échoue et la transaction est annulée.
+const toDbNumber = (value) => {
+    if (value === null || value === undefined || value === '') return null;
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+};
+
 exports.saveDetailedGrades = async (req, res) => {
     const { evaluationId } = req.params;
     const { studentGrades, is_corrected, is_completed } = req.body;
@@ -165,17 +173,30 @@ exports.saveDetailedGrades = async (req, res) => {
     try {
         await connection.beginTransaction();
         for (const sg of studentGrades) {
-            await connection.query(`
-                INSERT INTO STUDENT_GRADES (evaluation_id, student_id, score, is_absent)
-                VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE score = VALUES(score), is_absent = VALUES(is_absent)`,
-                [evaluationId, sg.student_id, sg.total_score, sg.is_absent || false]);
+            // Le bilan général (sg.comment) doit être persisté : sans lui, il disparaît
+            // au rechargement de la correction et n'apparaît jamais dans l'export PDF.
+            try {
+                await connection.query(`
+                    INSERT INTO STUDENT_GRADES (evaluation_id, student_id, score, is_absent, comment)
+                    VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE score = VALUES(score), is_absent = VALUES(is_absent), comment = VALUES(comment)`,
+                    [evaluationId, sg.student_id, toDbNumber(sg.total_score) || 0, sg.is_absent || false, sg.comment || null]);
+            } catch (error) {
+                if (error.code !== 'ER_BAD_FIELD_ERROR' || !/comment/i.test(error.message || '')) throw error;
+                // Base sans colonne STUDENT_GRADES.comment : on sauvegarde au moins les notes.
+                console.warn("STUDENT_GRADES.comment absent : le bilan général n'est pas enregistré. " +
+                    'Correctif : ALTER TABLE STUDENT_GRADES ADD COLUMN comment TEXT NULL;');
+                await connection.query(`
+                    INSERT INTO STUDENT_GRADES (evaluation_id, student_id, score, is_absent)
+                    VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE score = VALUES(score), is_absent = VALUES(is_absent)`,
+                    [evaluationId, sg.student_id, toDbNumber(sg.total_score) || 0, sg.is_absent || false]);
+            }
 
             if (sg.criteria_scores) {
                 for (const cs of sg.criteria_scores) {
                     await connection.query(`
                         INSERT INTO STUDENT_CRITERIA_GRADES (student_id, criterion_id, score_obtained, comment)
                         VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE score_obtained = VALUES(score_obtained), comment = VALUES(comment)`,
-                        [sg.student_id, cs.criterion_id, cs.score, cs.comment || null]);
+                        [sg.student_id, cs.criterion_id, toDbNumber(cs.score), cs.comment || null]);
                 }
             }
         }

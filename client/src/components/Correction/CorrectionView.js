@@ -147,16 +147,19 @@ const CorrectionView = () => {
 
         const criteriaScores = criteria.map(criterion => {
             const gradeInfo = grades[`${studentId}-${criterion.id}`] || { score: null, comment: '' };
+            // Un critère non rempli vaut null : parseFloat renverrait NaN, que MySQL
+            // refuse (l'INSERT échouait et TOUTE la sauvegarde de l'élève était annulée).
+            const parsedScore = parseFloat(gradeInfo.score);
             return {
                 criterion_id: criterion.id,
-                score: isAbsent ? null : (gradeInfo.score === '' ? null : parseFloat(gradeInfo.score)),
-                comment: isAbsent ? null : gradeInfo.comment
+                score: isAbsent || !Number.isFinite(parsedScore) ? null : parsedScore,
+                comment: isAbsent ? null : (gradeInfo.comment || null)
             };
         });
 
         return {
             student_id: studentId,
-            total_score: totalScore,
+            total_score: Number.isFinite(totalScore) ? totalScore : 0,
             is_absent: isAbsent,
             comment: isAbsent ? null : (grades[`global-${studentId}`]?.comment || null),
             criteria_scores: criteriaScores
