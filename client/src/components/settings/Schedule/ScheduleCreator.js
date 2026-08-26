@@ -6,9 +6,10 @@ import { useJournal } from '../../../hooks/useJournal';
 import { useSubjects } from '../../../hooks/useSubjects';
 import { useClasses } from '../../../hooks/useClasses';
 import ConfirmModal from '../../ConfirmModal';
+import ScheduleImportModal from './ScheduleImportModal';
 import {
     Plus, Save, Calendar, MapPin, BookOpen,
-    Users, Loader2, Copy, Trash2, Clock, X, Edit2, AlertTriangle
+    Users, Loader2, Copy, Trash2, Clock, X, Edit2, AlertTriangle, FileUp
 } from 'lucide-react';
 import './ScheduleCreator.scss';
 
@@ -38,10 +39,11 @@ const ScheduleCreator = () => {
     const [loadingSets, setLoadingSets] = useState(true);
 
     const [collisionData, setCollisionData] = useState(null);
+    const [showImport, setShowImport] = useState(false);
 
-    const { hours, loading: loadingHours } = useScheduleHours();
+    const { hours, loading: loadingHours, loadHours } = useScheduleHours();
     const { subjects, loadSubjects } = useSubjects();
-    const { getClassesForSchedule, loading: loadingCls } = useClasses(journalId);
+    const { getClassesForSchedule, loadClasses: reloadClasses, loading: loadingCls } = useClasses(journalId);
 
     const [confirmModal, setConfirmModal] = useState({
         isOpen: false, title: '', message: '', onConfirm: null
@@ -115,6 +117,20 @@ const ScheduleCreator = () => {
     }, [journalId, loadSubjects, showError, handleSelectSet]);
 
     useEffect(() => { loadInitialData(); }, [loadInitialData]);
+
+    // L'import PDF a pu creer des classes, des matieres et un modele :
+    // on recharge tout puis on affiche la grille importee.
+    const handleImported = async (setId) => {
+        setShowImport(false);
+        await loadSubjects(journalId);
+        await reloadClasses();
+        await loadHours();
+        try {
+            const resSets = await ScheduleService.getScheduleSets(journalId);
+            setSets(resSets.data || []);
+        } catch (err) { /* la grille reste affichable malgre tout */ }
+        handleSelectSet(setId);
+    };
 
     // --- ACTIONS API ---
     const executeCreate = async () => {
@@ -320,6 +336,15 @@ const ScheduleCreator = () => {
                             </button>
                         </form>
                         <div className="v-divider" />
+                        <button
+                            type="button"
+                            className="glass-btn secondary"
+                            onClick={() => setShowImport(true)}
+                            title="Importer un emploi du temps PDF"
+                        >
+                            <FileUp size={18} /> <span>Importer un PDF</span>
+                        </button>
+                        <div className="v-divider" />
                         <select value={selectedSet} onChange={(e) => handleSelectSet(e.target.value)} className="glass-select">
                             <option value="">Sélectionner un horaire...</option>
                             {sets.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -478,6 +503,18 @@ const ScheduleCreator = () => {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {showImport && (
+                <ScheduleImportModal
+                    journalId={journalId}
+                    sets={sets}
+                    selectedSet={selectedSet}
+                    subjects={subjects}
+                    classes={getClassesForSchedule()}
+                    onClose={() => setShowImport(false)}
+                    onImported={handleImported}
+                />
             )}
 
             <ConfirmModal

@@ -77,6 +77,26 @@ const ScheduleService = {
      * @param {number|string} setId - L'ID du modèle d'emploi du temps (schedule_set)
      * @param {Array} slots - Tableau d'objets { day, time_slot_id, subject, className, room }
      */
+    /**
+     * Lit un PDF d'emploi du temps et renvoie ce qu'il contient, avec les
+     * correspondances proposees. N'ecrit rien en base.
+     */
+    previewPdfImport: async (journalId, file) => {
+        const formData = new FormData();
+        formData.append('schedulePdf', file);
+        formData.append('journal_id', journalId);
+        const response = await axios.post('/schedule/import/preview', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        return response.data;
+    },
+
+    /** Applique la grille validee par l'utilisateur (creation ou remplacement). */
+    applyPdfImport: async (payload) => {
+        const response = await axios.post('/schedule/import/apply', payload);
+        return response.data;
+    },
+
     saveSlots: async (setId, slots) => {
         const response = await axios.post('/schedule/slots/save', {
             schedule_set_id: setId,

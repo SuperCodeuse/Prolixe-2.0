@@ -119,6 +119,7 @@ export const useClasses = (journalId) => {
         classes,
         loading,
         error,
+        loadClasses,
         addClass,
         updateClass,
         removeClass,
