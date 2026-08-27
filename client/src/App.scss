@@ -120,10 +120,21 @@
   min-height: 100vh;
   background-color: var(--bg-dark-blue);
 
+  // Largeur du menu latéral : héritée par `.sidemenu` et réutilisée pour le
+  // décalage du contenu, afin que les deux ne puissent pas diverger.
+  --sidemenu-width: 280px;
+
+  // Menu replié en barre d'icônes (grand écran trop étroit pour afficher
+  // à la fois le menu déployé et un contenu large — cf. WIDE_CONTENT_ROUTES).
+  &.menu-collapsed {
+    --sidemenu-width: 76px;
+  }
+
   // Décale le contenu quand le menu est fixé sur grand écran
   &.menu-open {
     @include above($bp-menu) {
-      padding-left: 280px;
+      padding-left: var(--sidemenu-width);
+      transition: padding-left 0.25s ease;
     }
   }
 }
@@ -179,21 +190,21 @@
   &:hover { background: var(--accent-dark-blue); }
 
   .app.menu-open & {
-    left: calc(280px + 1rem);
+    left: calc(var(--sidemenu-width, 280px) + 1rem);
   }
 }
 
 
 // ── 10. MENU LATÉRAL (styles partagés App) ───────────────────────────────────
 .sidemenu {
-  width: 280px;
+  width: var(--sidemenu-width, 280px);
   height: 100vh;
   position: fixed;
   left: 0;
   top: 0;
   background: var(--bg-dark-secondary);
   border-right: 1px solid var(--border-color);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.25s ease;
   z-index: 1000;
 
   .sidemenu-header {

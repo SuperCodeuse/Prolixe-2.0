@@ -10,6 +10,8 @@ $bp-menu:   1200px;
 $bp-mobile: 768px;
 // Palier intermédiaire (tablette / petit portable).
 $bp-tablet: 1024px;
+// En dessous : plus la place pour un menu déployé ET une semaine de 5 colonnes.
+$bp-menu-collapse: 1520px;
 
 @mixin below($bp) {
   @media (max-width: $bp) { @content; }

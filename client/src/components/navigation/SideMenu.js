@@ -1,12 +1,13 @@
 // components/navigation/SideMenu.js
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import useOutsideClick from '../../hooks/useOutsideClick'; // Assurez-vous que le chemin est correct
 
 import './SideMenu.scss';
 
-const SideMenu = ({ isMenuOpen, toggleMenu }) => {
+const SideMenu = ({ isMenuOpen, toggleMenu, isCollapsed = false, toggleCollapse, canCollapse = false }) => {
     const { logout, user } = useAuth();
     const [isLogoutDropdownOpen, setIsLogoutDropdownOpen] = React.useState(false);
 
@@ -52,12 +53,28 @@ const SideMenu = ({ isMenuOpen, toggleMenu }) => {
 
     return (
         // On attache la référence au conteneur principal du menu
-        <div ref={menuRef} className={`sidemenu ${isMenuOpen ? 'open' : 'closed'}`}>
+        <div
+            ref={menuRef}
+            className={`sidemenu ${isMenuOpen ? 'open' : 'closed'}${isCollapsed ? ' collapsed' : ''}`}
+        >
             <div className="sidemenu-header">
                 <div className="logo">
                     <span className="logo-icon">🎓</span>
                     <span className="logo-text">Prolixe</span>
                 </div>
+
+                {canCollapse && (
+                    <button
+                        type="button"
+                        className="collapse-toggle"
+                        onClick={toggleCollapse}
+                        aria-label={isCollapsed ? 'Déployer le menu' : 'Replier le menu'}
+                        aria-expanded={!isCollapsed}
+                        title={isCollapsed ? 'Déployer le menu' : 'Replier le menu'}
+                    >
+                        {isCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+                    </button>
+                )}
             </div>
 
             <div className="sidemenu-content">
@@ -69,6 +86,7 @@ const SideMenu = ({ isMenuOpen, toggleMenu }) => {
                                     to={item.path}
                                     className="menu-link"
                                     onClick={handleMenuItemClick}
+                                    title={item.label}
                                 >
                                     <span className="menu-icon">{item.icon}</span>
                                     <span className="menu-label">{item.label}</span>
@@ -86,6 +104,7 @@ const SideMenu = ({ isMenuOpen, toggleMenu }) => {
                             onClick={handleUserProfileClick}
                             aria-expanded={isLogoutDropdownOpen}
                             aria-label="Menu du compte"
+                            title={isCollapsed ? user?.name || 'Menu du compte' : undefined}
                         >
                             <div className="user-avatar">{initials || '?'}</div>
                             <div className="user-info">

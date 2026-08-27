@@ -24,6 +24,9 @@ const ConseilDeClasse = lazy(() => import('./components/cc/conseilClasse'));
 const DocumentGenerator = lazy(() => import('./components/DocumentGenerator/DocumentGenerator'));
 const Settings = lazy(() => import('./components/settings/Settings'));
 
+// Routes dont le contenu réclame toute la largeur disponible.
+const WIDE_CONTENT_ROUTES = ['/journal'];
+
 const RouteFallback = () => (
     <div className="route-loading" role="status" aria-live="polite">
         <span className="route-spinner" aria-hidden="true"></span>
@@ -31,7 +34,14 @@ const RouteFallback = () => (
     </div>
 );
 
-const AuthenticatedAppContent = ({ isMenuOpen, toggleMenu, closeMenu, isMenuFixed }) => (
+const AuthenticatedAppContent = ({
+    isMenuOpen,
+    toggleMenu,
+    closeMenu,
+    isMenuFixed,
+    isMenuCollapsed,
+    toggleCollapse,
+}) => (
     <>
         {!isMenuFixed && (
             <div
@@ -41,7 +51,13 @@ const AuthenticatedAppContent = ({ isMenuOpen, toggleMenu, closeMenu, isMenuFixe
             ></div>
         )}
 
-        <SideMenu isMenuOpen={isMenuOpen} toggleMenu={toggleMenu} />
+        <SideMenu
+            isMenuOpen={isMenuOpen}
+            toggleMenu={toggleMenu}
+            isCollapsed={isMenuCollapsed}
+            toggleCollapse={toggleCollapse}
+            canCollapse={isMenuFixed}
+        />
 
         <main className="main-content">
             {!isMenuFixed && (
@@ -91,6 +107,27 @@ const App = () => {
         setIsMenuOpen(isMenuFixed);
     }, [isMenuFixed]);
 
+    // Écrans qui ont besoin de toute la largeur (la semaine du journal tient sur
+    // une seule ligne de 5 colonnes) : plutôt que de laisser le vendredi passer
+    // à la ligne, on réduit le menu à sa barre d'icônes.
+    const needsWideContent = WIDE_CONTENT_ROUTES.some(
+        route => location.pathname === route || location.pathname.startsWith(`${route}/`)
+    );
+    const isViewportTight = useMediaQuery(MEDIA.menuCollapse);
+    const shouldAutoCollapse = isMenuFixed && needsWideContent && isViewportTight;
+
+    // Même logique que `isMenuOpen` : l'état suit le contexte (route + largeur),
+    // et reste basculable à la main entre deux changements.
+    const [isMenuCollapsed, setIsMenuCollapsed] = useState(shouldAutoCollapse);
+
+    useEffect(() => {
+        setIsMenuCollapsed(shouldAutoCollapse);
+    }, [shouldAutoCollapse]);
+
+    const toggleCollapse = useCallback(() => {
+        if (isMenuFixed) setIsMenuCollapsed(prev => !prev);
+    }, [isMenuFixed]);
+
     const toggleMenu = useCallback(() => {
         if (!isMenuFixed) setIsMenuOpen(prev => !prev);
     }, [isMenuFixed]);
@@ -129,13 +166,19 @@ const App = () => {
     }
 
     return (
-        <div className={`app ${isMenuOpen ? 'menu-open' : 'menu-closed'}`}>
+        <div
+            className={`app ${isMenuOpen ? 'menu-open' : 'menu-closed'}${
+                isMenuCollapsed && isMenuFixed ? ' menu-collapsed' : ''
+            }`}
+        >
             {isAuthenticated ? (
                 <AuthenticatedAppContent
                     isMenuOpen={isMenuOpen}
                     toggleMenu={toggleMenu}
                     closeMenu={closeMenu}
                     isMenuFixed={isMenuFixed}
+                    isMenuCollapsed={isMenuCollapsed && isMenuFixed}
+                    toggleCollapse={toggleCollapse}
                 />
             ) : (
                 <Suspense fallback={<RouteFallback />}>

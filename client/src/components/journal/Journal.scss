@@ -313,6 +313,17 @@ $radius-xl: 1.25rem;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1rem;
   align-items: start;
+
+  // Au-dessus de la tablette, la semaine reste sur une seule ligne : quand la
+  // fenêtre se resserre, c'est le menu latéral qui se replie en barre d'icônes
+  // (cf. WIDE_CONTENT_ROUTES dans App.jsx) plutôt que le vendredi qui passe à
+  // la ligne. `auto-flow: column` suit le nombre de jours réellement rendus —
+  // les jours sans cours ni congé sont filtrés en amont.
+  @media (min-width: #{$bp-tablet + 1}) {
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-template-columns: none;
+  }
 }
 
 .day-column {
@@ -1103,9 +1114,10 @@ select.status-select {
 
 
 // ── 17. RESPONSIVE ───────────────────────────────────────────────────────────
-// Tablette (≤ 1024px)
+// Tablette (≤ 1024px) — retour à une grille qui peut passer à la ligne
 @media (max-width: 1024px) {
   .days-grid {
+    grid-auto-flow: row;
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     gap: 0.75rem;
   }

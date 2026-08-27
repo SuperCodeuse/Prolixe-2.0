@@ -8,7 +8,9 @@
 
 // ── 1. MENU PRINCIPAL ────────────────────────────────────────────────────────
 .sidemenu {
-    width: 280px;
+    // Largeur pilotée par `--sidemenu-width`, posée sur `.app` (cf. App.scss)
+    // et réduite lorsque le menu passe en barre d'icônes.
+    width: var(--sidemenu-width, 280px);
     height: 100vh;
     display: flex;
     flex-direction: column;
@@ -20,7 +22,7 @@
     top: 0;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
     z-index: 1000;
-    transition: transform 0.3s ease-in-out;
+    transition: transform 0.3s ease-in-out, width 0.25s ease;
 
     // Caché par défaut sous le seuil (géré dans App.scss via .open)
     @include below($bp-menu) {
@@ -53,9 +55,42 @@
     background: var(--bg-dark-tertiary);
     flex-shrink: 0;
 
-    .logo      { display: flex; align-items: center; gap: 0.75rem; }
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+
+    .logo      { display: flex; align-items: center; gap: 0.75rem; min-width: 0; }
     .logo-icon { font-size: 1.5rem; }
-    .logo-text { font-size: 1.25rem; font-weight: 600; color: var(--text-light); }
+    .logo-text { font-size: 1.25rem; font-weight: 600; color: var(--text-light); white-space: nowrap; }
+}
+
+// Bouton de repli manuel (n'existe que quand le menu est fixé, cf. SideMenu.js)
+.collapse-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+
+    &:hover {
+        background: var(--blue-transparent-sm);
+        border-color: var(--accent-blue);
+        color: var(--text-light);
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--accent-blue);
+        outline-offset: 2px;
+    }
 }
 
 
@@ -224,7 +259,54 @@
 }
 
 
-// ── 7. RESPONSIVE ────────────────────────────────────────────────────────────
+// ── 7. MENU REPLIÉ (barre d'icônes) ──────────────────────────────────────────
+// Utilisé sur les écrans larges quand la fenêtre n'a pas la place d'afficher
+// à la fois le menu déployé et un contenu large (semaine complète du journal).
+// Sélecteur à deux classes : passe devant les règles `.sidemenu` d'App.scss.
+.sidemenu.collapsed {
+    // Laisse le dropdown du compte déborder du rail (il est plus large que lui)
+    .sidemenu-content { overflow: visible; }
+
+    .sidemenu-header {
+        flex-direction: column;
+        gap: 0.75rem;
+        padding: 1rem 0.5rem;
+    }
+
+    .logo      { justify-content: center; gap: 0; }
+    .logo-text { display: none; }
+
+    .sidemenu-nav .menu-link {
+        justify-content: center;
+        padding: 0.875rem 0;
+
+        .menu-icon  { margin-right: 0; }
+        .menu-label { display: none; }
+    }
+
+    .sidemenu-footer {
+        padding: 0.75rem 0.5rem;
+    }
+
+    .user-profile {
+        justify-content: center;
+        gap: 0;
+        padding: 0.5rem 0;
+    }
+
+    .user-info,
+    .dropdown-arrow { display: none; }
+
+    // Le dropdown ne peut pas tenir dans la largeur du rail : il déborde.
+    .dropdown-content {
+        left: 0.5rem;
+        right: auto;
+        min-width: 190px;
+    }
+}
+
+
+// ── 8. RESPONSIVE ────────────────────────────────────────────────────────────
 // Sur mobile, le menu prend toute la largeur disponible si ouvert
 @media (max-width: 480px) {
     .sidemenu {
