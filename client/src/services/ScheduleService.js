@@ -27,8 +27,10 @@ const ScheduleService = {
         });
     },
 
-    getScheduleIdByDate: async (date) => {
-        const response = await axios.get(`/schedule/active-set?date=${date}`);
+    getScheduleIdByDate: async (date, journalId) => {
+        const response = await axios.get('/schedule/active-set', {
+            params: journalId ? { date, journalId } : { date }
+        });
         return response.data;
     },
 

@@ -114,6 +114,14 @@
       border: 1px solid rgba(245, 158, 11, 0.25);
       color: #fcd34d;
     }
+
+    // Rien de bloquant : on annonce simplement ce que l'import va modifier
+    // en plus de la grille (la cloture de l'horaire precedent).
+    &.info {
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.25);
+      color: #bfdbfe;
+    }
   }
 
   section {

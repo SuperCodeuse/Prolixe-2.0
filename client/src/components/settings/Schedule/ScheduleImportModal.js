@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import ScheduleService from '../../../services/ScheduleService';
 import { useToast } from '../../../hooks/useToast';
+import { findOverlappingSet, dayBefore, nextMonday, toDateKey } from '../../../utils/scheduleSets';
 import './ScheduleImportModal.scss';
 
 const DAY_LABELS = { 1: 'Lundi', 2: 'Mardi', 3: 'Mercredi', 4: 'Jeudi', 5: 'Vendredi', 6: 'Samedi', 7: 'Dimanche' };
@@ -68,7 +69,15 @@ const ScheduleImportModal = ({ journalId, sets, selectedSet, subjects, classes, 
             setMode(hasSets && selectedSet ? 'replace' : 'create');
             setTargetSet(selectedSet || (hasSets ? sets[0].id : ''));
             setName(data.suggestion.name);
-            setStartDate(data.suggestion.start_date);
+
+            // Le PDF ne porte pas de periode de validite : le serveur propose
+            // l'annee scolaire entiere. Si un horaire couvre deja cette periode,
+            // un nouvel horaire ne peut pas demarrer le 1er septembre sans
+            // reecrire le passe — on le fait donc prendre effet lundi prochain,
+            // ce qui laisse intactes les semaines deja completees.
+            const suggestedStart = data.suggestion.start_date;
+            const clash = findOverlappingSet(sets, suggestedStart, data.suggestion.end_date);
+            setStartDate(clash ? (nextMonday() || suggestedStart) : suggestedStart);
             setEndDate(data.suggestion.end_date);
             setStep('review');
         } catch (err) {
@@ -79,6 +88,19 @@ const ScheduleImportModal = ({ journalId, sets, selectedSet, subjects, classes, 
         }
     };
 
+    // Un modele deja en place couvre-t-il la periode demandee ? Deux horaires
+    // valides le meme jour, c'est le journal qui affiche l'un ou l'autre sans
+    // que l'utilisateur puisse savoir lequel : on cloture le sortant la veille.
+    const collision = useMemo(() => {
+        if (mode !== 'create' || !startDate || !endDate) return null;
+        const clash = findOverlappingSet(sets, startDate, endDate);
+        if (!clash) return null;
+        const newEnd = dayBefore(startDate);
+        // Le sortant commencerait apres sa nouvelle fin : le tronquer le viderait.
+        const swallowed = !newEnd || newEnd < toDateKey(clash.start_time);
+        return { set: clash, newEnd, swallowed };
+    }, [mode, startDate, endDate, sets]);
+
     // --- Étape 2 : écriture ------------------------------------------------
     const handleImport = async () => {
         if (mode === 'create' && (!name.trim() || !startDate || !endDate)) {
@@ -87,6 +109,10 @@ const ScheduleImportModal = ({ journalId, sets, selectedSet, subjects, classes, 
         }
         if (mode === 'create' && new Date(endDate) < new Date(startDate)) {
             showError('La date de fin ne peut pas être avant la date de début.');
+            return;
+        }
+        if (collision?.swallowed) {
+            showError(`« ${collision.set.name} » commence après cette date : reculez le début, ou remplacez ce modèle plutôt que d'en créer un second.`);
             return;
         }
         setBusy(true);
@@ -103,12 +129,33 @@ const ScheduleImportModal = ({ journalId, sets, selectedSet, subjects, classes, 
                 slots: preview.slots
             });
             const { set_id, slots, created } = res.data;
+
+            // Cloture du modele sortant, une fois l'import reussi : le faire
+            // avant laisserait un trou dans le calendrier si l'import echouait.
+            let closed = null;
+            if (collision) {
+                try {
+                    await ScheduleService.updateScheduleSet(collision.set.id, {
+                        name: collision.set.name,
+                        startDate: toDateKey(collision.set.start_time),
+                        endDate: collision.newEnd
+                    });
+                    closed = collision.set.name;
+                } catch {
+                    showError(`Horaire importé, mais « ${collision.set.name} » n'a pas pu être clôturé : corrigez sa date de fin, sinon deux horaires restent valides en même temps.`);
+                }
+            }
+
             const extras = [
                 created.classes.length && `${created.classes.length} classe(s)`,
                 created.subjects.length && `${created.subjects.length} matière(s)`,
                 created.hours.length && `${created.hours.length} créneau(x)`
             ].filter(Boolean);
-            success(`${slots} cours importés${extras.length ? ` — créé : ${extras.join(', ')}` : ''}`);
+            success(
+                `${slots} cours importés`
+                + (extras.length ? ` — créé : ${extras.join(', ')}` : '')
+                + (closed ? ` — « ${closed} » clôturé` : '')
+            );
             onImported(set_id);
         } catch (err) {
             showError(err.response?.data?.message || err.message || "Échec de l'import");
@@ -326,6 +373,28 @@ const ScheduleImportModal = ({ journalId, sets, selectedSet, subjects, classes, 
                                             <label>Fin</label>
                                             <input type="date" className="glass-input" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
                                         </div>
+                                    </div>
+                                )}
+
+                                {mode === 'create' && collision && (
+                                    <div className={`notice ${collision.swallowed ? 'warn' : 'info'}`}>
+                                        <AlertTriangle size={15} />
+                                        <span>
+                                            {collision.swallowed ? (
+                                                <>
+                                                    <strong>{collision.set.name}</strong> commence après le début choisi.
+                                                    Reculez la date de début, ou remplacez ce modèle au lieu d’en créer un second —
+                                                    deux horaires valides le même jour, et le journal en affiche un au hasard.
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <strong>{collision.set.name}</strong> couvre déjà cette période : il sera clôturé
+                                                    au <strong>{new Date(`${collision.newEnd}T00:00:00`).toLocaleDateString('fr-BE')}</strong>,
+                                                    le nouvel horaire prenant le relais le lendemain. Les semaines déjà encodées
+                                                    gardent l’ancien horaire.
+                                                </>
+                                            )}
+                                        </span>
                                     </div>
                                 )}
                             </section>

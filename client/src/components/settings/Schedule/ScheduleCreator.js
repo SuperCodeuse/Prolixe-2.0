@@ -7,6 +7,7 @@ import { useSubjects } from '../../../hooks/useSubjects';
 import { useClasses } from '../../../hooks/useClasses';
 import ConfirmModal from '../../ConfirmModal';
 import ScheduleImportModal from './ScheduleImportModal';
+import { findOverlappingSet } from '../../../utils/scheduleSets';
 import {
     Plus, Save, Calendar, MapPin, BookOpen,
     Users, Loader2, Copy, Trash2, Clock, X, Edit2, AlertTriangle, FileUp
@@ -66,16 +67,10 @@ const ScheduleCreator = () => {
     };
 
     // --- LOGIQUE DE COLLISION ---
-    const checkCollision = (newStart, newEnd, currentSets, excludeId = null) => {
-        const start = new Date(newStart);
-        const end = new Date(newEnd);
-        return currentSets.find(s => {
-            if (excludeId && Number(s.id) === Number(excludeId)) return false;
-            const sStart = new Date(s.start_time);
-            const sEnd = new Date(s.end_time);
-            return start <= sEnd && end >= sStart;
-        });
-    };
+    // Meme regle que le journal, le tableau de bord et l'import PDF : cf.
+    // utils/scheduleSets.js.
+    const checkCollision = (newStart, newEnd, currentSets, excludeId = null) =>
+        findOverlappingSet(currentSets, newStart, newEnd, excludeId);
 
     const handleSelectSet = useCallback(async (setId) => {
         setSelectedSet(setId);

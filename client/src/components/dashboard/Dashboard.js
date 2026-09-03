@@ -5,9 +5,10 @@ import { useJournal } from '../../hooks/useJournal';
 import { useSchedule } from '../../hooks/useSchedule';
 import { useHolidays } from '../../hooks/useHolidays';
 import { useScheduleHours } from '../../hooks/useScheduleHours';
-import { format, parseISO, isWithinInterval } from 'date-fns';
+import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
+import { findSetForDate } from '../../utils/scheduleSets';
 
 import './dashboard.scss';
 import NoteSection from './NoteSection';
@@ -48,15 +49,11 @@ const Dashboard = () => {
     useEffect(() => {
         const sets = Array.isArray(availableSets) ? availableSets : (availableSets?.data || []);
         if (sets.length > 0) {
-            const currentSet = sets.find(set => {
-                try {
-                    if (!set.start_time || !set.end_time) return false;
-                    return isWithinInterval(today, {
-                        start: parseISO(set.start_time),
-                        end: parseISO(set.end_time)
-                    });
-                } catch (e) { return false; }
-            });
+            // Plusieurs modeles peuvent couvrir aujourd'hui : findSetForDate
+            // applique la meme regle que le journal et le serveur (le dernier
+            // entre en vigueur gagne), sans quoi le tableau de bord affichait
+            // l'horaire remplace.
+            const currentSet = findSetForDate(sets, today);
             if (currentSet && currentSet.id !== activeSetId) {
                 setActiveSetId(currentSet.id);
             }

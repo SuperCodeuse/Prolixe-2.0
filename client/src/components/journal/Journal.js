@@ -256,7 +256,9 @@ const JournalView = ({ journalId, isArchived }) => {
         const detect = async () => {
             try {
                 const dateStr = format(currentWeekStart, 'yyyy-MM-dd');
-                const res = await ScheduleService.getScheduleIdByDate(dateStr);
+                // journalId : sans lui, un horaire appartenant a un autre journal
+                // et couvrant la meme periode peut etre retenu.
+                const res = await ScheduleService.getScheduleIdByDate(dateStr, journalId);
                 if (cancelled) return;
                 if (res?.success && res.id) {
                     setActiveSetId(res.id);
@@ -266,7 +268,7 @@ const JournalView = ({ journalId, isArchived }) => {
         };
         detect();
         return () => { cancelled = true; };
-    }, [currentWeekStart]);
+    }, [currentWeekStart, journalId]);
 
     // -----------------------------------------------------------------------
     // Step 2 – Reload slots whenever activeSetId OR the week changes.

@@ -25,17 +25,38 @@ class ScheduleController {
         }
     }
 
+    // Quel horaire fait foi a une date donnee ?
+    //
+    // Rien n'empeche deux modeles de couvrir la meme date : importer un nouvel
+    // horaire sans cloturer le precedent suffit. Sans tri, le `LIMIT 1` renvoyait
+    // alors l'un ou l'autre au gre de MySQL — en pratique le plus ancien, si bien
+    // que le journal continuait d'afficher l'horaire remplace. La regle est
+    // desormais explicite : parmi les modeles valides ce jour-la, celui entre en
+    // vigueur le plus tard l'emporte ; a egalite, le plus recemment cree.
+    // `client/src/utils/scheduleSets.js` applique exactement la meme regle.
     static async getScheduleByDate(req, res) {
-        const { date } = req.query;
+        const { date, journalId } = req.query;
         const userId = req.user.id;
+
+        if (!date) {
+            return res.status(400).json({ success: false, message: 'La date est requise.' });
+        }
+
         try {
-            const [rows] = await pool.execute(
-                `SELECT id, name FROM SCHEDULE_SETS 
-             WHERE user_id = ? 
-             AND ? BETWEEN start_time AND end_time
-             LIMIT 1`,
-                [userId, date]
-            );
+            // DATE() : les colonnes peuvent etre des DATETIME, sans quoi le
+            // dernier jour de validite serait exclu.
+            let sql = `SELECT id, name FROM SCHEDULE_SETS
+                       WHERE user_id = ?
+                         AND ? BETWEEN DATE(start_time) AND DATE(end_time)`;
+            const params = [userId, date];
+
+            if (journalId) {
+                sql += ' AND journal_id = ?';
+                params.push(journalId);
+            }
+            sql += ' ORDER BY start_time DESC, id DESC LIMIT 1';
+
+            const [rows] = await pool.execute(sql, params);
 
             if (rows.length === 0) {
                 return res.json({ success: true, id: null });
@@ -59,7 +80,9 @@ class ScheduleController {
 
         try {
             const [rows] = await pool.execute(
-                'SELECT * FROM SCHEDULE_SETS WHERE user_id = ? AND journal_id = ?',
+                `SELECT * FROM SCHEDULE_SETS
+                 WHERE user_id = ? AND journal_id = ?
+                 ORDER BY start_time ASC, id ASC`,
                 [userId, journalId]
             );
             res.json({ success: true, data: rows });
