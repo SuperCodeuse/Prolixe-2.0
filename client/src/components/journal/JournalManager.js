@@ -4,7 +4,8 @@ import { useSchoolYears } from '../../hooks/useSchoolYear';
 import { useToast } from '../../hooks/useToast';
 import ConfirmModal from '../ConfirmModal';
 import JournalService from '../../services/JournalService';
-import { BookMarked, Download, Plus, FileJson } from 'lucide-react';
+import JournalPropagationModal from './JournalPropagationModal';
+import { BookMarked, Download, Plus, FileJson, CopyCheck } from 'lucide-react';
 import './JournalManager.scss';
 
 const JournalManager = () => {
@@ -37,6 +38,9 @@ const JournalManager = () => {
     const [selectedFile, setSelectedFile] = useState(null);
     const [isImporting, setIsImporting] = useState(false);
     const [importTargetJournalId, setImportTargetJournalId] = useState('');
+
+    // Journal dont on rejoue l'année sur un autre (null = fenêtre fermée).
+    const [propagationSource, setPropagationSource] = useState(null);
 
     const activeJournals = useMemo(() => journals.filter(j => !j.is_archived), [journals]);
     const otherActiveJournals = useMemo(() =>
@@ -128,6 +132,19 @@ const JournalManager = () => {
                     >
                         <Download size={18} />
                     </button>
+
+                    {/* Rejouer cette année-là comme prévisionnel d'un autre journal.
+                        Sans leçons encodées, il n'y a rien à propager. */}
+                    {hasEntries && activeJournals.some(j => j.id !== journal.id) && (
+                        <button
+                            onClick={() => setPropagationSource(journal)}
+                            className="btn-propagate-icon"
+                            title="Propager vers un autre journal"
+                            aria-label="Propager vers un autre journal"
+                        >
+                            <CopyCheck size={18} />
+                        </button>
+                    )}
 
                     {!isSelected && (
                         <button onClick={() => selectJournal(journal)} className="btn-select">
@@ -277,6 +294,15 @@ const JournalManager = () => {
                         </form>
                     </div>
                 </div>
+            )}
+
+            {propagationSource && (
+                <JournalPropagationModal
+                    source={propagationSource}
+                    journals={activeJournals}
+                    onClose={() => setPropagationSource(null)}
+                    onDone={loadAllJournals}
+                />
             )}
 
             <ConfirmModal

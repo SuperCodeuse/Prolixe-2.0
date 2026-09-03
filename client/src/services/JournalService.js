@@ -100,6 +100,27 @@ class JournalService {
     }
 
     // ==========================================
+    // --- PROPAGATION D'UNE ANNÉE À L'AUTRE ---
+    // ==========================================
+
+    /**
+     * Ce que donnerait la propagation, sans rien écrire : leçons disponibles
+     * par cours et appariement des classes proposé.
+     */
+    static async previewPropagation(sourceJournalId, targetJournalId) {
+        const response = await ApiService.get(`${JOURNAL_API_URL}/propagation/preview`, {
+            params: { source_journal_id: sourceJournalId, target_journal_id: targetJournalId }
+        });
+        return response.data;
+    }
+
+    /** Écrit le travail prévu du journal cible. */
+    static async applyPropagation(payload) {
+        const response = await ApiService.post(`${JOURNAL_API_URL}/propagation/apply`, payload);
+        return response.data;
+    }
+
+    // ==========================================
     // --- IMPORT / EXPORT ---
     // ==========================================
 

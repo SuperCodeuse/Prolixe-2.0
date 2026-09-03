@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const JournalController = require('../controllers/JournalController');
+const JournalPropagationController = require('../controllers/JournalPropagationController');
 const multer = require('multer');
 
 const storage = multer.memoryStorage();
@@ -11,6 +12,10 @@ router.get('/',                              JournalController.getAllJournals);
 router.post('/',                             JournalController.createJournal);
 router.get('/current',                       JournalController.getCurrentJournal);
 router.post('/import', upload.single('journalFile'), JournalController.importJournal);
+
+// Propagation : rejouer une annee de cours sur un autre journal.
+router.get('/propagation/preview',           JournalPropagationController.preview);
+router.post('/propagation/apply',            JournalPropagationController.apply);
 
 
 router.get('/:id/export', JournalController.exportJournal); // Nouvelle route d'export
