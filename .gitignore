@@ -151,3 +151,5 @@ vite.config.ts.timestamp-*
 /client/build_backup_*
 /client/build_prev_*
 /client/build_v*
+/client/build_deploy
+/client/build_check*
