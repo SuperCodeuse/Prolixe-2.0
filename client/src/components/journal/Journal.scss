@@ -78,6 +78,15 @@ $radius-xl: 1.25rem;
   to   { opacity: 1; transform: translateY(0); }
 }
 
+// Variante sans transform : `fadeSlideIn` laisse, via `animation-fill-mode: both`,
+// un `transform: translateY(0)` persistant. Or tout transform != none fait de
+// l'élément le bloc conteneur de ses descendants `position: fixed`. À réserver
+// donc aux éléments qui n'enveloppent pas de modale.
+@keyframes fadeInOnly {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
 @keyframes shimmer {
   0%   { background-position: -200% center; }
   100% { background-position:  200% center; }
@@ -95,7 +104,7 @@ $radius-xl: 1.25rem;
 
 // ── 4. CONTENEUR RACINE ──────────────────────────────────────────────────────
 .journal-container {
-  position: relative; // Ancre le .modal-overlay
+  position: relative;
   min-height: 100vh;
   background-color: $surface-0;
   background-image:
@@ -103,7 +112,7 @@ $radius-xl: 1.25rem;
           linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
   background-size: 40px 40px;
   padding: 2rem;
-  animation: fadeSlideIn 0.35s ease both;
+  animation: fadeInOnly 0.35s ease both; // cf. fadeInOnly : enveloppe les modales
 }
 
 
@@ -201,7 +210,7 @@ $radius-xl: 1.25rem;
   display: flex;
   flex-direction: column;
   gap: 1.75rem;
-  animation: fadeSlideIn 0.3s ease both;
+  animation: fadeInOnly 0.3s ease both; // cf. fadeInOnly : enveloppe les modales
 }
 
 
@@ -840,16 +849,18 @@ $radius-xl: 1.25rem;
 
 // ── 15. MODALE ───────────────────────────────────────────────────────────────
 .modal-overlay {
-  position: absolute; // Ancré dans .journal-container
+  // Ancrée sur la fenêtre : la modale s'ouvre là où on se trouve, sans déplacer
+  // la page. Le conteneur de défilement est .main-content, pas le document :
+  // toute tentative de positionnement à partir d'un scrollTop est vaine.
+  position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(8px);
   display: flex;
   justify-content: center;
-  align-items: flex-start;
+  align-items: center;
   z-index: 1000;
   padding: 1rem;
-  padding-top: calc(var(--modal-offset) - 10rem);
   animation: fadeSlideIn 0.2s ease both;
 }
 
