@@ -1045,6 +1045,14 @@ $radius-xl: 1.25rem;
 
   textarea { min-height: 80px; }
 
+  .field-hint {
+    font-size: 0.72rem;
+    color: $text-muted;
+    text-transform: none;
+    letter-spacing: 0;
+    line-height: 1.35;
+  }
+
   &.checkbox-group {
     flex-direction: row;
     align-items: center;

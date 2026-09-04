@@ -100,6 +100,48 @@ const getStatusFromActualWork = (actualWork) => {
     return 'given';
 };
 
+// ---------------------------------------------------------------------------
+// Helper – lien entre une assignation et le « travail prévu » du journal
+// ---------------------------------------------------------------------------
+// Chaque assignation reportée dans le journal y laisse une ligne préfixée par
+// son propre tag ([EVAL#12]). C'est ce tag qui permet de la retrouver plus tard
+// pour la mettre à jour ou la retirer sans toucher au texte saisi à la main.
+const assignmentTag = (assignmentId) => `[EVAL#${assignmentId}]`;
+
+const buildAssignmentLine = (assignment) => {
+    const label = assignment.type || 'Évaluation';
+    const detail = (assignment.description || '').trim();
+    return `${assignmentTag(assignment.id)} ${detail ? `${label} : ${detail}` : label}`;
+};
+
+const stripAssignmentLine = (text, assignmentId) => {
+    const tag = assignmentTag(assignmentId);
+    return (text || '')
+        .split('\n')
+        .filter(line => !line.trimStart().startsWith(tag))
+        .join('\n')
+        .trim();
+};
+
+const withAssignmentLine = (text, assignment) => {
+    const base = stripAssignmentLine(text, assignment.id);
+    const line = buildAssignmentLine(assignment);
+    return base ? `${base}\n${line}` : line;
+};
+
+// Affichage : les tags techniques n'ont rien à faire dans l'aperçu des cartes.
+const cleanAssignmentTags = (text) => (text || '').replace(/\[EVAL#\d+\]\s*/g, '');
+
+// JournalService passe par axios : le corps de la réponse est dans `response.data`,
+// et le contrôleur y place lui-même { success, data: { id } }. L'id d'une entité
+// fraîchement créée se trouve donc sous `response.data.data.id`.
+const extractSavedId = (response) =>
+    response?.data?.data?.id ?? response?.data?.id ?? response?.id ?? null;
+
+// Les dates renvoyées par l'API portent parfois une heure ('2026-09-04T00:00:00.000Z') :
+// on ne garde que la partie calendaire, seule clé utilisée côté journal.
+const toDateKey = (value) => (value ? String(value).split('T')[0] : '');
+
 const getClassColor = (subject, classLevel) => {
     // Deterministic colour from subject name
     const colours = [
@@ -156,7 +198,7 @@ const JournalView = ({ journalId, isArchived }) => {
     const [showAssignmentModal, setShowAssignmentModal] = useState(false);
     const [selectedAssignment, setSelectedAssignment] = useState(null);
     const [assignmentForm, setAssignmentForm] = useState({
-        id: null, class_id: '', subject: '', type: 'Devoir',
+        id: null, class_id: '', schedule_slot_id: '', subject: '', type: 'Devoir',
         description: '', due_date: '', is_completed: false, is_corrected: false,
     });
     const assignmentTypes = ['Interro', 'Devoir', 'Projet', 'Examen', 'Autre'];
@@ -354,6 +396,87 @@ const JournalView = ({ journalId, isArchived }) => {
     }, [sessions]);
 
     // -----------------------------------------------------------------------
+    // Helper – créneau visé par une assignation (classe + jour d'échéance)
+    // -----------------------------------------------------------------------
+    const findSlotForAssignment = useCallback((classId, dateKey, preferredSlotId, subject) => {
+        if (!classId || !dateKey) return null;
+
+        let dayIndex;
+        try { dayIndex = parseISO(dateKey).getDay(); } catch { return null; }
+
+        const daySlots = (slotsByDay[dayIndex] || [])
+            .filter(s => String(s.class_id) === String(classId) && (s.slot_id != null || s.id != null));
+        if (daySlots.length === 0) return null;
+
+        // 1. Le créneau explicitement choisi, s'il est toujours à l'horaire ce jour-là
+        if (preferredSlotId) {
+            const exact = daySlots.find(s => String(s.slot_id || s.id) === String(preferredSlotId));
+            if (exact) return exact;
+        }
+        // 2. Sinon le premier cours de la même matière
+        if (subject) {
+            const sameSubject = daySlots.find(s => (s.subject_name || s.subject) === subject);
+            if (sameSubject) return sameSubject;
+        }
+        // 3. À défaut, le premier cours de la journée pour cette classe
+        return daySlots[0];
+    }, [slotsByDay]);
+
+    // -----------------------------------------------------------------------
+    // Report d'une assignation dans le « travail prévu » du jour concerné
+    // -----------------------------------------------------------------------
+    const syncAssignmentToPlannedWork = useCallback(async (assignment, { remove = false } = {}) => {
+        if (!assignment?.id) return null;
+
+        const dateKey = toDateKey(assignment.due_date);
+        const slot = findSlotForAssignment(
+            assignment.class_id, dateKey, assignment.schedule_slot_id, assignment.subject
+        );
+        if (!slot) return null;
+
+        const slotId = slot.slot_id || slot.id;
+        const entry = getSession(slotId, dateKey);
+        // Rien à retirer d'une entrée qui n'existe pas encore
+        if (remove && !entry) return null;
+
+        const currentPlanned = entry?.planned_work || '';
+        const nextPlanned = remove
+            ? stripAssignmentLine(currentPlanned, assignment.id)
+            : withAssignmentLine(currentPlanned, assignment);
+
+        // Le tag [INTERRO] en tête du travail effectué est ce qui colore la carte
+        // (classe .is-interro). On le recalcule à partir des interros réellement
+        // posées sur ce créneau, pour ne pas décolorer une interro voisine.
+        const currentActual = entry?.actual_work || '';
+        let nextActual = currentActual;
+        // [CANCELLED] / [EXAM] / [HOLIDAY] sont des statuts exclusifs : on n'y touche pas.
+        if (getStatusFromActualWork(currentActual) === 'given') {
+            const otherInterro = assignments.some(a =>
+                String(a.id) !== String(assignment.id) &&
+                String(a.schedule_slot_id) === String(slotId) &&
+                toDateKey(a.due_date) === dateKey &&
+                a.type === 'Interro'
+            );
+            const shouldTag = otherInterro || (!remove && assignment.type === 'Interro');
+            const base = currentActual.replace('[INTERRO]', '').trim();
+            nextActual = shouldTag ? `[INTERRO] ${base}`.trim() : base;
+        }
+
+        if (nextPlanned === currentPlanned && nextActual === currentActual) return slot;
+
+        await JournalService.upsertJournalEntry({
+            id: entry?.id || null,
+            journal_id: journalId,
+            schedule_slot_id: slotId,
+            date: dateKey,
+            planned_work: nextPlanned,
+            actual_work: nextActual,
+            notes: entry?.notes || '',
+        });
+        return slot;
+    }, [findSlotForAssignment, getSession, journalId, assignments]);
+
+    // -----------------------------------------------------------------------
     // Debounced save
     // -----------------------------------------------------------------------
     const debouncedSave = useCallback((entryData) => {
@@ -377,7 +500,7 @@ const JournalView = ({ journalId, isArchived }) => {
                     const response = await JournalService.upsertJournalEntry(payload);
 
                     // Mise à jour de l'ID de l'entrée si le backend en renvoie un nouveau
-                    const newId = response?.data?.id || response?.id;
+                    const newId = extractSavedId(response);
                     if (newId && String(slotId) === String(selectedSlot.slot_id || selectedSlot.id)) {
                         setCurrentEntryId(newId);
                     }
@@ -694,66 +817,65 @@ const JournalView = ({ journalId, isArchived }) => {
         const checked = e.target.checked;
         setIsInterro(checked);
 
-        // Mise à jour du texte de travail effectué pour ajouter/retirer le tag [INTERRO]
+        const slotId = selectedSlot.id || selectedSlot.slot_id;
         const baseWork = journalForm.actual_work.replace('[INTERRO]', '').trim();
+        // Mise à jour du texte de travail effectué pour ajouter/retirer le tag [INTERRO]
         const newAw = checked ? `[INTERRO] ${baseWork}` : baseWork;
-        const updForm = { ...journalForm, actual_work: newAw };
 
+        const existing = assignments.find(a =>
+            String(a.schedule_slot_id) === String(slotId) &&
+            toDateKey(a.due_date) === selectedDay.key &&
+            a.type === 'Interro'
+        );
+
+        // Le travail prévu et le travail effectué partent dans la même sauvegarde :
+        // deux écritures concurrentes sur la même entrée s'écraseraient l'une l'autre.
+        let plannedWork = journalForm.planned_work;
+        let message = null;
+
+        try {
+            if (checked) {
+                const newAssignment = {
+                    id: existing?.id || null,
+                    journal_id: journalId,
+                    class_id: selectedSlot.class_id,
+                    schedule_slot_id: slotId,
+                    subject: selectedSlot.subject_name || selectedSlot.subject,
+                    type: 'Interro',
+                    description: baseWork,
+                    due_date: selectedDay.key,
+                    is_completed: false,
+                    is_corrected: false,
+                };
+
+                const response = await JournalService.upsertAssignment(newAssignment);
+                const savedId = newAssignment.id || extractSavedId(response);
+                if (savedId) {
+                    plannedWork = withAssignmentLine(plannedWork, { ...newAssignment, id: savedId });
+                }
+                message = 'Assignation "Interro" créée et reportée dans le travail prévu.';
+            } else if (existing) {
+                await JournalService.deleteAssignment(existing.id);
+                plannedWork = stripAssignmentLine(plannedWork, existing.id);
+                message = 'Assignation "Interro" retirée.';
+            }
+        } catch (err) {
+            showError('Erreur : ' + err.message);
+        }
+
+        const updForm = { ...journalForm, actual_work: newAw, planned_work: plannedWork };
         setJournalForm(updForm);
 
-        // Sauvegarde immédiate de la note de cours
+        // Sauvegarde de la note de cours (travail prévu + effectué en une seule requête)
         debouncedSave({
             id: currentEntryId,
-            schedule_slot_id: selectedSlot.id || selectedSlot.slot_id,
+            schedule_slot_id: slotId,
             date: selectedDay.key,
             ...updForm
         });
 
-        if (checked) {
-            const newAssignment = {
-                journal_id: journalId,
-                class_id: selectedSlot.class_id,
-                schedule_slot_id: selectedSlot.id || selectedSlot.slot_id,
-                subject: selectedSlot.subject_name || selectedSlot.subject,
-                type: 'Interro',
-                description: baseWork,
-                due_date: selectedDay.key,
-                is_completed: false,
-                is_corrected: false,
-            };
-
-            const existing = assignments.find(a =>
-                String(a.schedule_slot_id) === String(selectedSlot.id || selectedSlot.slot_id) &&
-                a.due_date === selectedDay.key &&
-                a.type === 'Interro'
-            );
-
-            if (existing) {
-                newAssignment.id = existing.id;
-            }
-
-            try {
-                await JournalService.upsertAssignment(newAssignment);
-                await loadAssignments();
-                success('Assignation "Interro" créée.');
-            } catch (err) { showError('Erreur : ' + err.message); }
-        } else {
-            const existing = assignments.find(a =>
-                String(a.schedule_slot_id) === String(selectedSlot.id || selectedSlot.slot_id) &&
-                a.due_date === selectedDay.key &&
-                a.type === 'Interro'
-            );
-
-            if (existing) {
-                try {
-                    await JournalService.deleteAssignment(existing.id);
-                    await loadAssignments();
-                    success('Assignation "Interro" retirée.');
-                } catch (err) {
-                    showError('Erreur lors du retrait : ' + err.message);
-                }
-            }
-        }
+        await loadAssignments();
+        if (message) success(message);
     };
 
     // -----------------------------------------------------------------------
@@ -763,9 +885,11 @@ const JournalView = ({ journalId, isArchived }) => {
     const handleValidatePlannedWork = () => {
         if (isArchived || !journalForm.planned_work) return;
 
+        // On copie le texte, sans les tags [EVAL#…] et en conservant le tag [INTERRO]
+        const done = cleanAssignmentTags(journalForm.planned_work).trim();
         const updatedForm = {
             ...journalForm,
-            actual_work: journalForm.planned_work // On copie le texte
+            actual_work: isInterro ? `[INTERRO] ${done}`.trim() : done
         };
 
         setJournalForm(updatedForm);
@@ -832,9 +956,40 @@ const JournalView = ({ journalId, isArchived }) => {
             return showError('Veuillez remplir tous les champs obligatoires.');
         }
         try {
-            await JournalService.upsertAssignment({ ...assignmentForm, journal_id: journalId });
-            await loadAssignments();
-            success('Assignation sauvegardée !');
+            // Le créneau visé est figé à la sauvegarde : c'est lui qui reçoit le
+            // report dans le travail prévu, et il reste modifiable dans le formulaire.
+            const targetSlot = findSlotForAssignment(
+                assignmentForm.class_id,
+                assignmentForm.due_date,
+                assignmentForm.schedule_slot_id,
+                assignmentForm.subject
+            );
+            const payload = {
+                ...assignmentForm,
+                journal_id: journalId,
+                schedule_slot_id: targetSlot ? (targetSlot.slot_id || targetSlot.id) : null,
+            };
+
+            const response = await JournalService.upsertAssignment(payload);
+            const savedId = payload.id || extractSavedId(response);
+
+            // L'assignation a pu changer de jour ou de créneau : on nettoie l'ancien.
+            if (selectedAssignment?.id) {
+                const oldKey = `${selectedAssignment.schedule_slot_id ?? ''}|${toDateKey(selectedAssignment.due_date)}`;
+                const newKey = `${payload.schedule_slot_id ?? ''}|${payload.due_date}`;
+                if (oldKey !== newKey) {
+                    await syncAssignmentToPlannedWork(selectedAssignment, { remove: true });
+                }
+            }
+
+            const reported = savedId
+                ? await syncAssignmentToPlannedWork({ ...payload, id: savedId })
+                : null;
+
+            await Promise.all([loadAssignments(), loadSessions()]);
+            success(reported
+                ? 'Assignation sauvegardée et reportée dans le travail prévu.'
+                : 'Assignation sauvegardée (aucun cours de cette classe ce jour-là : pas de report).');
             setShowAssignmentModal(false);
         } catch (err) { showError(err.message); }
     };
@@ -843,8 +998,9 @@ const JournalView = ({ journalId, isArchived }) => {
         if (!selectedAssignment?.id || isArchived) return;
         try {
             await JournalService.deleteAssignment(selectedAssignment.id);
-            await loadAssignments();
-            success('Assignation supprimée.');
+            await syncAssignmentToPlannedWork(selectedAssignment, { remove: true });
+            await Promise.all([loadAssignments(), loadSessions()]);
+            success('Assignation supprimée (et retirée du travail prévu).');
             setShowAssignmentModal(false);
             setConfirmModal({ isOpen: false });
         } catch (err) { showError(err.message); }
@@ -863,6 +1019,16 @@ const JournalView = ({ journalId, isArchived }) => {
         }
         return dates;
     }, [assignmentForm.class_id, currentWeekStart, slotsByDay, getHolidayForDate]);
+
+    // Créneaux de la classe le jour de l'échéance : c'est l'un d'eux qui portera
+    // le report dans le travail prévu.
+    const availableSlotsForDueDate = useMemo(() => {
+        if (!assignmentForm.class_id || !assignmentForm.due_date) return [];
+        let dayIndex;
+        try { dayIndex = parseISO(assignmentForm.due_date).getDay(); } catch { return []; }
+        return (slotsByDay[dayIndex] || [])
+            .filter(s => String(s.class_id) === String(assignmentForm.class_id) && (s.slot_id != null || s.id != null));
+    }, [assignmentForm.class_id, assignmentForm.due_date, slotsByDay]);
 
     // -----------------------------------------------------------------------
     // Navigation helpers
@@ -894,11 +1060,18 @@ const JournalView = ({ journalId, isArchived }) => {
         let contentType = ''; // 'actual' ou 'planned'
 
         if (entry && !isCancelled && !isExam && !isManualHoliday) {
-            if (entry.actual_work) {
-                previewText = isInterroSlot ? entry.actual_work.replace('[INTERRO]', '').trim() : entry.actual_work;
+            const done = isInterroSlot
+                ? entry.actual_work.replace('[INTERRO]', '').trim()
+                : (entry.actual_work || '');
+            const planned = cleanAssignmentTags(entry.planned_work).trim();
+
+            if (done) {
+                previewText = done;
                 contentType = 'actual';
-            } else if (entry.planned_work) {
-                previewText = entry.planned_work;
+            } else if (planned) {
+                // Cas d'une interro annoncée : le tag colore déjà la carte, mais
+                // seul le travail prévu a du texte à montrer.
+                previewText = planned;
                 contentType = 'planned';
             }
         }
@@ -1041,7 +1214,7 @@ const JournalView = ({ journalId, isArchived }) => {
                         {!isArchived && (
                             <button className="btn-primary" onClick={() => {
                                 setSelectedAssignment(null);
-                                setAssignmentForm({ id: null, class_id: '', subject: '', type: 'Devoir', description: '', due_date: '', is_completed: false, is_corrected: false });
+                                setAssignmentForm({ id: null, class_id: '', schedule_slot_id: '', subject: '', type: 'Devoir', description: '', due_date: '', is_completed: false, is_corrected: false });
                                 setShowAssignmentModal(true);
                             }}>
                                 <Plus size={14} /> Nouvelle
@@ -1090,7 +1263,11 @@ const JournalView = ({ journalId, isArchived }) => {
                                         {!isArchived && (
                                             <button className="btn-icon" onClick={() => {
                                                 setSelectedAssignment(assign);
-                                                setAssignmentForm({ ...assign, due_date: assign.due_date ? format(parseISO(assign.due_date), 'yyyy-MM-dd') : '' });
+                                                setAssignmentForm({
+                                                    ...assign,
+                                                    schedule_slot_id: assign.schedule_slot_id ?? '',
+                                                    due_date: toDateKey(assign.due_date),
+                                                });
                                                 setShowAssignmentModal(true);
                                             }}><Pencil size={14} /></button>
                                         )}
@@ -1171,7 +1348,7 @@ const JournalView = ({ journalId, isArchived }) => {
                                             <label style={{ margin: 0 }}>Travail effectué</label>
 
                                             {/* BOUTON VALIDER LE PRÉVU */}
-                                            {journalForm.planned_work && !journalForm.actual_work && (
+                                            {journalForm.planned_work && !journalForm.actual_work.replace('[INTERRO]', '').trim() && (
                                                 <button
                                                     type="button"
                                                     className="btn-validate-planned"
@@ -1289,7 +1466,7 @@ const JournalView = ({ journalId, isArchived }) => {
                             <form id="assignment-form" onSubmit={handleSaveAssignment}>
                                 <div className="form-group">
                                     <label>Classe</label>
-                                    <select value={assignmentForm.class_id} onChange={e => setAssignmentForm({ ...assignmentForm, class_id: e.target.value })} required disabled={isArchived}>
+                                    <select value={assignmentForm.class_id} onChange={e => setAssignmentForm({ ...assignmentForm, class_id: e.target.value, schedule_slot_id: '' })} required disabled={isArchived}>
                                         <option value="">Sélectionnez une classe</option>
                                         {classes.map(cls => <option key={cls.id} value={cls.id}>{cls.name}</option>)}
                                     </select>
@@ -1310,11 +1487,29 @@ const JournalView = ({ journalId, isArchived }) => {
                                 </div>
                                 <div className="form-group">
                                     <label>Date d'échéance</label>
-                                    <select value={assignmentForm.due_date} onChange={e => setAssignmentForm({ ...assignmentForm, due_date: e.target.value })} required disabled={isArchived}>
+                                    <select value={assignmentForm.due_date} onChange={e => setAssignmentForm({ ...assignmentForm, due_date: e.target.value, schedule_slot_id: '' })} required disabled={isArchived}>
                                         <option value="">Sélectionnez une date</option>
                                         {availableDueDates.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
                                     </select>
                                 </div>
+                                {availableSlotsForDueDate.length > 1 && (
+                                    <div className="form-group">
+                                        <label>Heure de cours concernée</label>
+                                        <select
+                                            value={assignmentForm.schedule_slot_id || ''}
+                                            onChange={e => setAssignmentForm({ ...assignmentForm, schedule_slot_id: e.target.value })}
+                                            disabled={isArchived}
+                                        >
+                                            <option value="">Premier cours de la journée</option>
+                                            {availableSlotsForDueDate.map(s => (
+                                                <option key={s.slot_id || s.id} value={s.slot_id || s.id}>
+                                                    {s.time_label} · {s.subject_name || s.subject}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <small className="field-hint">L'assignation est reportée dans le travail prévu de ce créneau.</small>
+                                    </div>
+                                )}
                             </form>
                         </div>
                         <div className="modal-footer">
